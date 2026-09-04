@@ -1,0 +1,6 @@
+{
+  "name": "bioeksen-sds",
+  "description": "Shared BioEksen conventions: API design, auth, logging, commits",
+  "version": "0.1.0",
+  "author": { "name": "BioEksen Ar-Ge Teknolojileri A.Ş." }
+}
