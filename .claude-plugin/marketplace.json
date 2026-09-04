@@ -1,0 +1,19 @@
+{
+  "name": "bioeksen-skills",
+  "owner": {
+    "name": "BioEksen Ar-Ge Teknolojileri A.Ş."
+  },
+  "version": "0.1.0",
+  "description": "BioEksen Claude Code marketplace.",
+  "author": {
+    "name": "BioEksen Ar-Ge Teknolojileri A.Ş."
+  },
+  "plugins": [
+    {
+      "name": "bioeksen-sds",
+      "source": "./plugins/bioeksen-sds",
+      "description": "Shared BioEksen conventions: API design, auth, logging, commits",
+      "version": "0.1.0"
+    }
+  ]
+}
