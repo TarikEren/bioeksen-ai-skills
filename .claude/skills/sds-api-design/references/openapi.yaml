@@ -1,0 +1,507 @@
+openapi: 3.1.0
+
+info:
+  title: BioEksen Standard API Endpoints
+  version: 1.0.0
+  description: >-
+    Normative definition of the health and admin-log endpoints every BioEksen
+    web app must expose. Paths are relative to the host of the app in question.
+    See standard-api-endpoints.md for rationale.
+
+paths:
+  /api/health:
+    get:
+      summary: Full health report
+      description: >-
+        Process status plus every dependency check, including capacity numbers.
+        Exposes internals, so it must not be publicly reachable.
+      operationId: getHealth
+      tags: [health]
+      security:
+        - operatorAuth: []
+      responses:
+        "200":
+          description: Healthy.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          description: Not ready, or a required dependency failed.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+
+  /api/health/live:
+    get:
+      summary: Liveness probe
+      description: >-
+        Is the process alive and able to answer? Checks no dependency and
+        should respond in under 100 ms. A failure means the process is
+        unrecoverable and should be restarted.
+      operationId: getLiveness
+      tags: [health]
+      security: []
+      responses:
+        "200":
+          description: Process is alive.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Liveness"
+        "503":
+          description: Process is alive but unrecoverable.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Liveness"
+
+  /api/health/ready:
+    get:
+      summary: Readiness probe
+      description: >-
+        Can this instance serve traffic right now? The endpoint load balancers
+        and orchestrators should probe.
+      operationId: getReadiness
+      tags: [health]
+      security: []
+      responses:
+        "200":
+          description: Ready to serve traffic.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+        "503":
+          description: Not ready, or a required dependency failed.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+
+  /api/admin/logs:
+    get:
+      summary: Fetch filtered, paginated logs
+      operationId: getAdminLogs
+      tags: [admin]
+      security:
+        - operatorAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          description: Inclusive lower bound on timestamp. Defaults to the earliest record.
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          required: false
+          description: Inclusive upper bound on timestamp. Defaults to now.
+          schema:
+            type: string
+            format: date-time
+        - name: severity
+          in: query
+          required: false
+          description: Defaults to all severities.
+          schema:
+            $ref: "#/components/schemas/Severity"
+        - name: type
+          in: query
+          required: false
+          description: Defaults to all types.
+          schema:
+            $ref: "#/components/schemas/LogType"
+        - name: id
+          in: query
+          required: false
+          description: Owner ID of the log — the service, app or process that emitted it.
+          schema:
+            type: string
+            minLength: 1
+        - name: code
+          in: query
+          required: false
+          description: Exact error code. Defaults to all codes.
+          schema:
+            $ref: "#/components/schemas/ErrorCode"
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: >-
+            Matching logs, newest first. A page beyond the last one returns an
+            empty logs array with the true totalCount.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  securitySchemes:
+    operatorAuth:
+      type: http
+      scheme: bearer
+      description: Operator credential. The concrete scheme is set per deployment.
+
+  headers:
+    NoStore:
+      description: Always "no-store" for these endpoints.
+      required: true
+      schema:
+        type: string
+        const: no-store
+
+  responses:
+    BadRequest:
+      description: Invalid query parameter.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Missing or invalid credential.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Authenticated, but not an operator.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalError:
+      description: Unhandled server error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Status:
+      type: string
+      enum: [ok, fail, not-ready]
+      description: >-
+        ok = up and serving (HTTP 200); not-ready = alive but dependencies not
+        ready; fail = a required dependency failed. Both of the latter are
+        served with HTTP 503. Unreachable is not representable — a client must
+        treat a connection failure or timeout as fail.
+
+    CheckValue:
+      type: string
+      enum: [ok, fail, na]
+      description: >-
+        ok = working, fail = present but broken, na = not applicable to this
+        app. Never omit the key; report na instead.
+
+    ErrorCode:
+      type: string
+      enum:
+        - AUTH-4100
+        - AUTH-4101
+        - AUTH-4102
+        - AUTH-4103
+        - AUTH-5500
+        - PERM-4150
+        - PERM-4151
+        - PERM-4152
+        - VAL-4000
+        - VAL-4001
+        - VAL-4002
+        - VAL-4003
+        - VAL-4004
+        - VAL-4005
+        - RES-4200
+        - RES-4300
+        - RES-4301
+        - RATE-4400
+        - DB-5000
+        - DB-5001
+        - DB-5002
+        - DB-5500
+        - DB-5501
+        - CACHE-5000
+        - CACHE-5500
+        - UP-5000
+        - UP-5500
+        - UP-5501
+        - CFG-5000
+        - CFG-5001
+        - JOB-4000
+        - JOB-5000
+        - JOB-5001
+        - LOG-4000
+        - LOG-5000
+        - LOG-5500
+        - SYS-5000
+        - SYS-5500
+      description: >-
+        Stable error code, e.g. VAL-4004. MUST be one of the codes listed in
+        sds-logging/references/code-prefixes.md — that list is closed, and
+        codes are never invented at the point of use. 4xxx is the caller's
+        fault, 5xxx is the app's.
+
+    Severity:
+      type: string
+      enum: [DEBUG, INFO, WARNING, ERROR, CRITICAL]
+
+    LogType:
+      type: string
+      enum: [APP, SECURITY, AUDIT, ACCESS, JOB]
+
+    Gigabytes:
+      type: number
+      minimum: 0
+      description: Size in GB (decimal).
+
+    Liveness:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok, fail]
+          description: not-ready is not valid here; readiness is /api/health/ready.
+
+    Readiness:
+      type: object
+      additionalProperties: false
+      required: [status, uptime, checks]
+      properties:
+        status:
+          $ref: "#/components/schemas/Status"
+        uptime:
+          type: integer
+          minimum: 0
+          description: Seconds the server has been up.
+        checks:
+          type: object
+          additionalProperties: false
+          required: [db, cache]
+          properties:
+            db:
+              $ref: "#/components/schemas/CheckValue"
+            cache:
+              $ref: "#/components/schemas/CheckValue"
+
+    Health:
+      type: object
+      additionalProperties: false
+      required: [status, uptime, checks]
+      properties:
+        status:
+          $ref: "#/components/schemas/Status"
+        uptime:
+          type: integer
+          minimum: 0
+          description: Seconds the server has been up.
+        checks:
+          type: object
+          additionalProperties: false
+          required: [db, cache, memory, disk]
+          properties:
+            db:
+              type: object
+              additionalProperties: false
+              required: [status, openConnections, inUseConnections, idleConnections]
+              description: Connection counts are 0 when status is na.
+              properties:
+                status:
+                  $ref: "#/components/schemas/CheckValue"
+                openConnections:
+                  type: integer
+                  minimum: 0
+                inUseConnections:
+                  type: integer
+                  minimum: 0
+                idleConnections:
+                  type: integer
+                  minimum: 0
+            cache:
+              $ref: "#/components/schemas/CheckValue"
+            memory:
+              type: object
+              additionalProperties: false
+              required: [totalHeap, usedHeap, totalMemory, usedMemory]
+              properties:
+                totalHeap:
+                  $ref: "#/components/schemas/Gigabytes"
+                usedHeap:
+                  $ref: "#/components/schemas/Gigabytes"
+                totalMemory:
+                  $ref: "#/components/schemas/Gigabytes"
+                usedMemory:
+                  $ref: "#/components/schemas/Gigabytes"
+            disk:
+              type: object
+              additionalProperties: false
+              required: [total, used, free]
+              properties:
+                total:
+                  $ref: "#/components/schemas/Gigabytes"
+                used:
+                  $ref: "#/components/schemas/Gigabytes"
+                free:
+                  $ref: "#/components/schemas/Gigabytes"
+
+    LogRecord:
+      type: object
+      additionalProperties: false
+      required: [id, timestamp, severity, type, code, message]
+      properties:
+        id:
+          type: string
+          description: Owner ID assigned by the emitting app.
+        timestamp:
+          type: string
+          format: date-time
+          description: >-
+            RFC 3339 with offset and at least millisecond precision, e.g.
+            2026-09-03T14:05:00.123Z. The time the event occurred, not the time
+            it was submitted.
+        severity:
+          $ref: "#/components/schemas/Severity"
+        type:
+          $ref: "#/components/schemas/LogType"
+        code:
+          oneOf:
+            - $ref: "#/components/schemas/ErrorCode"
+            - type: "null"
+          description: >-
+            Null when the record does not describe a failure. Required to be
+            non-null when severity is ERROR or CRITICAL.
+        message:
+          type: string
+          description: >-
+            Prose followed by a logfmt tail. Never repeats the error code.
+
+    LogPage:
+      type: object
+      additionalProperties: false
+      required: [status, page, count, totalCount, logs, filterParams]
+      properties:
+        status:
+          type: string
+          const: ok
+        page:
+          type: integer
+          minimum: 1
+        count:
+          type: integer
+          minimum: 0
+          description: Number of records in logs for this page.
+        totalCount:
+          type: integer
+          minimum: 0
+          description: Total records matching the filter across all pages.
+        logs:
+          type: array
+          description: Newest first, tie-broken by id ascending. Empty, never null.
+          items:
+            $ref: "#/components/schemas/LogRecord"
+        filterParams:
+          type: object
+          additionalProperties: false
+          description: The filters actually applied, after defaults are resolved.
+          required: [id, severity, type, code, startDate, endDate]
+          properties:
+            id:
+              type: [string, "null"]
+            code:
+              oneOf:
+                - $ref: "#/components/schemas/ErrorCode"
+                - type: "null"
+            severity:
+              oneOf:
+                - $ref: "#/components/schemas/Severity"
+                - type: "null"
+            type:
+              oneOf:
+                - $ref: "#/components/schemas/LogType"
+                - type: "null"
+            startDate:
+              type: string
+              format: date-time
+            endDate:
+              type: string
+              format: date-time
+
+    Error:
+      type: object
+      additionalProperties: false
+      required: [status, code, message, details]
+      properties:
+        status:
+          type: string
+          const: fail
+        code:
+          allOf:
+            - $ref: "#/components/schemas/ErrorCode"
+          description: >-
+            Identical to the code field of the log record written for this
+            failure. Clients branch on this, not on message.
+        message:
+          type: string
+          description: Human readable summary. May be reworded at any time.
+        details:
+          type: [array, "null"]
+          description: Field errors for validation failures; null otherwise.
+          items:
+            type: object
+            additionalProperties: false
+            required: [field, issue]
+            properties:
+              field:
+                type: string
+              issue:
+                type: string
