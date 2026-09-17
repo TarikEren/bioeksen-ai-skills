@@ -222,8 +222,8 @@ All are optional.
 
 | Parameter | Type | Default | Notes |
 |-----------|------|---------|-------|
-| `startDate` | ISO 8601 | earliest log record | Inclusive lower bound on `timestamp` |
-| `endDate` | ISO 8601 | now | Inclusive upper bound on `timestamp` |
+| `startDate` | RFC 3339 | earliest log record | Inclusive lower bound on `timestamp` |
+| `endDate` | RFC 3339 | now | Inclusive upper bound on `timestamp` |
 | `severity` | enum | all | `DEBUG` \| `INFO` \| `WARNING` \| `ERROR` \| `CRITICAL` |
 | `type` | enum | all | `APP` \| `SECURITY` \| `AUDIT` \| `ACCESS` \| `JOB` |
 | `id` | string | all | Owner ID of the log — the service, app or process that emitted it |
