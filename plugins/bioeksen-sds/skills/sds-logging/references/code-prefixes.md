@@ -109,10 +109,19 @@ Given the code, everything else follows. No implementer decides these.
 |------|----------|
 | Any `4xxx` code | `WARNING` |
 | Any `5xxx` code | `ERROR` |
-| `DB-5500`, `CFG-5000`, `CFG-5001`, `SYS-5500` | `CRITICAL` |
+| `DB-5500`, `CFG-5000`, `CFG-5001` | `CRITICAL` |
+| `SYS-5500` after the app's startup budget has elapsed | `CRITICAL` |
 
 The `CRITICAL` row wins where it applies. A record with no code carries no
 severity constraint from this document.
+
+`SYS-5500` is the one conditional row. An app reporting "not ready" during
+startup or a rolling deploy is behaving correctly, and `CRITICAL` is defined in
+`SKILL.md` as something a person must act on now — so emitting it on every
+deploy would page someone for a healthy release, and train them to ignore the
+severity. Not-ready is `ERROR` until the app has been given its configured time
+to come up, and `CRITICAL` once it has missed that deadline, which is the point
+at which a person genuinely does need to look.
 
 **Log type**
 
