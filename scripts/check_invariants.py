@@ -28,6 +28,8 @@ AUTH_SKILL = SKILLS / "sds-auth" / "SKILL.md"
 AGGREGATOR = SKILLS / "sds-logging" / "references" / "aggregator-api.md"
 SERVICE_CALLS = SKILLS / "sds-api-design" / "references" / "service-calls.md"
 OPENAPI = SKILLS / "sds-api-design" / "references" / "openapi.yaml"
+AGGREGATOR_YAML = SKILLS / "sds-logging" / "references" / "aggregator-api.yaml"
+SCHEMAS = (OPENAPI, AGGREGATOR_YAML)
 
 # The only unversioned paths in the estate; everything else carries /api/v{major}/.
 STANDARD_PATHS = {"/api/health", "/api/health/live", "/api/health/ready",
@@ -55,6 +57,33 @@ def fail(invariant: str, detail: str) -> None:
 
 def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
+
+def iter_refs(node):
+    """Every $ref value anywhere in a parsed document."""
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key == "$ref" and isinstance(value, str):
+                yield value
+            else:
+                yield from iter_refs(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from iter_refs(value)
+
+
+def resolve_pointer(doc, pointer: str):
+    """Walk a JSON pointer, returning None when any step is missing."""
+    node = doc
+    for part in pointer.lstrip("/").split("/"):
+        part = part.replace("~1", "/").replace("~0", "~")
+        if isinstance(node, dict) and part in node:
+            node = node[part]
+        elif isinstance(node, list) and part.isdigit() and int(part) < len(node):
+            node = node[int(part)]
+        else:
+            return None
+    return node
 
 
 def main() -> int:
@@ -100,13 +129,19 @@ def main() -> int:
                                 "the four unversioned standard endpoints")
         for missing in sorted(STANDARD_PATHS - paths):
             fail("invariant 4", f"openapi.yaml no longer defines {missing}")
-    endpoints = AGG_PATH.findall(read(AGGREGATOR))
-    if not endpoints:
+    agg = yaml.safe_load(read(AGGREGATOR_YAML))
+    # `:recordId` in the prose is `{recordId}` in the schema; same endpoint.
+    documented_paths = {re.sub(r":(\w+)", r"{\1}", p)
+                        for p in AGG_PATH.findall(read(AGGREGATOR))}
+    if not documented_paths:
         fail("invariant 4", "no endpoint headings found in aggregator-api.md")
-    for path in endpoints:
+    for path in documented_paths | set(agg["paths"]):
         if not re.match(r"^/api/v\d+/", path):
             fail("invariant 4", f"aggregator endpoint {path} is app-specific and "
                                 "must be served under /api/v{major}/")
+    if documented_paths != set(agg["paths"]):
+        fail("invariant 4", f"aggregator-api.md documents {sorted(documented_paths)}, "
+                            f"aggregator-api.yaml defines {sorted(agg['paths'])}")
 
     # 5. Retryable is exactly the 503 range, non-retryable exactly the 500 range.
     retry = {(int(a), int(b), int(h)): yes == "Yes"
@@ -119,6 +154,22 @@ def main() -> int:
         if retryable != (http == 503):
             verb = "retryable" if retryable else "not retryable"
             fail("invariant 5", f"service-calls.md calls {lo}-{hi} ({http}) {verb}")
+
+    # 6. Every $ref in every schema file resolves, across files as well as within.
+    loaded = {OPENAPI: spec, AGGREGATOR_YAML: agg}
+    refs = 0
+    for source in SCHEMAS:
+        for ref in iter_refs(loaded[source]):
+            refs += 1
+            filepart, _, pointer = ref.partition("#")
+            target = (source.parent / filepart).resolve() if filepart else source
+            if target not in loaded:
+                if not target.is_file():
+                    fail("invariant 6", f"{source.name}: $ref {ref} names no file")
+                    continue
+                loaded[target] = yaml.safe_load(read(target))
+            if resolve_pointer(loaded[target], pointer) is None:
+                fail("invariant 6", f"{source.name}: $ref {ref} resolves to nothing")
 
     # The manifests and the schema must at least parse.
     for manifest in (ROOT / ".claude-plugin" / "marketplace.json",
@@ -146,8 +197,9 @@ def main() -> int:
     print(f"OK - sds-auth restates steps 1-{len(auth)} in the same order")
     print("OK - every code's HTTP status matches the range table")
     print(f"OK - the {len(STANDARD_PATHS)} standard endpoints are unversioned and "
-          f"the {len(endpoints)} aggregator endpoints are not")
+          f"the {len(documented_paths)} aggregator paths are not")
     print("OK - retryable codes are exactly the 503 range, per error-codes.md")
+    print(f"OK - all {refs} $refs across {len(SCHEMAS)} schema files resolve")
     print("OK - manifests parse, every skill declares name and description")
     return 0
 

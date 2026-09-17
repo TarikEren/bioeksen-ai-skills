@@ -65,6 +65,14 @@ in CI on every push and pull request, and locally when you run it.
    covers exactly the two server-fault ranges of `error-codes.md`, and calls
    the 503 range retryable and the 500 range not. Retry policy is derived from
    the code numbering rather than kept as a second list.
+6. Every `$ref` in every OpenAPI file resolves, across files as well as within
+   one. The aggregator schema references the shared enumerations and log record
+   fields rather than copying them, so a rename that breaks the link has to
+   fail loudly — a second copy that silently drifts is what this avoids.
+
+The endpoints in `aggregator-api.md` and `aggregator-api.yaml` must also be the
+same set, which invariant 4 checks. The prose writes a path parameter as
+`:recordId` and the schema as `{recordId}`; the checker normalises between them.
 
 ## Rules for editing
 
