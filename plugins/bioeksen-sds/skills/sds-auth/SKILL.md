@@ -45,11 +45,13 @@ Authorization: Bearer <token>
 
 Validate in exactly this order and stop at the first failure. The order is
 fixed by the error code selection procedure in
-`sds-logging/references/code-prefixes.md`, and the two MUST stay in step.
+`sds-logging/references/code-prefixes.md`, which is normative: this table
+restates steps 1-9 of it with the HTTP status added, and where the two disagree
+that file wins and this one MUST be corrected.
 
 | Step | Condition | Code | HTTP |
 |------|-----------|------|------|
-| 1 | Source is over its failed-authentication allowance | `RATE-4400` | 429 |
+| 1 | Caller is over a rate limit — its request allowance, or its failed-authentication allowance | `RATE-4400` | 429 |
 | 2 | No `Authorization` header, or not a `Bearer` scheme | `AUTH-4100` | 401 |
 | 3 | Token present but not parseable | `AUTH-4103` | 401 |
 | 4 | Token parses, `exp` is in the past | `AUTH-4102` | 401 |

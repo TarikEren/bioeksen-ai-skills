@@ -38,7 +38,7 @@ stop there.** Do not weigh which code fits best — order decides.
 
 | # | Condition | Code |
 |---|-----------|------|
-| 1 | Caller exceeded its request allowance | `RATE-4400` |
+| 1 | Caller is over a rate limit — its request allowance, or its failed-authentication allowance | `RATE-4400` |
 | 2 | No credential supplied | `AUTH-4100` |
 | 3 | Credential supplied but not parseable as one | `AUTH-4103` |
 | 4 | Credential parses, expiry is in the past | `AUTH-4102` |
@@ -88,8 +88,10 @@ Authentication is then evaluated before validation, so an unauthenticated
 caller MUST NOT receive an error that describes the shape of the payload —
 including `VAL-4000`, which would otherwise reveal whether the body parsed.
 
-`sds-auth/SKILL.md` restates steps 1-9 as its validation order. The two MUST
-stay in step.
+`sds-auth/SKILL.md` restates steps 1-9 as its validation order, for readers
+protecting an endpoint. **This table is the normative one**; where the two
+disagree, this file wins and `sds-auth/SKILL.md` MUST be corrected. Changing a
+condition here means changing it there in the same commit.
 
 ## Derived attributes
 
