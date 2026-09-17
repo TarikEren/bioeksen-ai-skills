@@ -1,0 +1,16 @@
+# Normalise to LF in the repository, check out CRLF in the working tree.
+# Settles the "LF will be replaced by CRLF" warning that core.autocrlf raises
+# on every command when nothing declares the intent.
+* text=auto eol=crlf
+
+# Files that must keep LF even on Windows: these run on Linux, and CRLF breaks
+# a shebang line or is rejected outright.
+*.sh   text eol=lf
+*.bash text eol=lf
+
+# Never touched.
+*.png  binary
+*.jpg  binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary

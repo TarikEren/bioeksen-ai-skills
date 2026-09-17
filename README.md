@@ -9,6 +9,13 @@ point and, where the detail warrants it, a `references/` folder. Conventions tha
 two services must agree on live here; anything that only affects how one codebase
 is written does not.
 
+## Licence
+
+Proprietary. Copyright (c) 2026 BioEksen Ar-Ge Teknolojileri A.Ş., all rights
+reserved — see [LICENSE](LICENSE). The repository is publicly readable, which
+is not a grant of permission to use it; the installation steps below are for
+BioEksen personnel and authorised parties.
+
 ## Skills
 
 | Skill | Covers |
