@@ -413,9 +413,13 @@ components:
                 free:
                   $ref: "#/components/schemas/Gigabytes"
 
-    LogRecord:
+    # The six emitted fields, defined once for the whole estate. Kept separate
+    # from LogRecord so that a schema adding a field — the aggregator's
+    # StoredRecord adds recordId — can compose this rather than copy it. It
+    # deliberately constrains nothing about extra properties; the schemas that
+    # compose it do that.
+    LogFields:
       type: object
-      additionalProperties: false
       required: [id, timestamp, severity, type, code, message]
       properties:
         id:
@@ -448,10 +452,21 @@ components:
           description: >-
             Prose followed by a logfmt tail. Never repeats the error code.
 
-    LogPage:
+    # A record as emitted and as this endpoint returns it: the six fields and
+    # nothing else. unevaluatedProperties rather than additionalProperties,
+    # because additionalProperties cannot see through allOf — it would reject
+    # every one of the six. Do not "simplify" it back.
+    LogRecord:
+      allOf:
+        - $ref: "#/components/schemas/LogFields"
+      unevaluatedProperties: false
+
+    # Everything in a page of logs except the logs themselves, so that a
+    # response carrying a different record type composes this instead of
+    # restating it.
+    LogPageBase:
       type: object
-      additionalProperties: false
-      required: [status, page, count, totalCount, logs, filterParams]
+      required: [status, page, count, totalCount, filterParams]
       properties:
         status:
           type: string
@@ -467,14 +482,6 @@ components:
           type: integer
           minimum: 0
           description: Total records matching the filter across all pages.
-        logs:
-          type: array
-          description: >-
-            Newest first, tie-broken by the store's own record identifier
-            ascending — not by the id field, which names the emitting app and is
-            constant across this response. Empty, never null.
-          items:
-            $ref: "#/components/schemas/LogRecord"
         filterParams:
           type: object
           additionalProperties: false
@@ -510,6 +517,25 @@ components:
             endDate:
               type: string
               format: date-time
+
+    # The page this endpoint returns: the common wrapper plus records in the
+    # emitted shape. The aggregator composes LogPageBase the same way, with
+    # StoredRecord in place of LogRecord.
+    LogPage:
+      allOf:
+        - $ref: "#/components/schemas/LogPageBase"
+        - type: object
+          required: [logs]
+          properties:
+            logs:
+              type: array
+              description: >-
+                Newest first, tie-broken by the store's own record identifier
+                ascending — not by the id field, which names the emitting app
+                and is constant across this response. Empty, never null.
+              items:
+                $ref: "#/components/schemas/LogRecord"
+      unevaluatedProperties: false
 
     Error:
       type: object
