@@ -116,6 +116,9 @@ readable without writing a regex per message. Any log tooling that can parse
   in calls to other BioEksen services.
 - The identifier travels between services in the `X-Request-Id` header.
 - Background work uses `job=<run id>` in place of `request=`.
+- A record describing a retried outbound call carries `attempt=<n>`, counting
+  from 1, so the attempts of one logical call are distinguishable while sharing
+  a `request=` value. See `sds-api-design/references/service-calls.md`.
 - When a request fails, the `code` in the API error response and the `code`
   field of the log record MUST be the same value.
 
