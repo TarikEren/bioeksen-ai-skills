@@ -117,9 +117,33 @@ readable without writing a regex per message. Any log tooling that can parse
 - Every record emitted while handling one request MUST carry `request=<id>` in
   the structured tail, using the same value for the whole request, including
   in calls to other BioEksen services.
-- The identifier is generated at the edge if the incoming request does not
-  already carry one, and propagated onward.
+- The identifier travels between services in the `X-Request-Id` header.
 - Background work uses `job=<run id>` in place of `request=`.
+
+### `X-Request-Id`
+
+```
+X-Request-Id: 8c21f3a94e7b1d05
+```
+
+- A service receiving a request with `X-Request-Id` MUST adopt that value as
+  its `request=` value. Absent or malformed, it MUST generate one.
+- Every outbound call to another BioEksen service MUST carry the value it
+  adopted, so one identifier spans the whole call tree.
+- Every response MUST echo `X-Request-Id`, including error responses. Without
+  the echo, a caller reporting a failure cannot name the request an operator
+  needs to search for.
+- The value is opaque: `[A-Za-z0-9_-]`, 1 to 128 characters. It SHOULD carry at
+  least 64 bits of entropy — a UUID or 16 hex characters. Examples throughout
+  these documents shorten it for readability.
+- It MUST NOT be trusted as input: it is echoed and logged, never used to
+  authorize, address a resource, or build a query. Reject a malformed value by
+  generating a fresh one rather than by failing the request.
+
+The header is named here rather than in `sds-api-design` because propagation
+is what makes a record traceable, and a name agreed by only one side of a call
+is not a convention. Anything that generates the id at the edge — a load
+balancer or ingress — sets the same header.
 - When a request fails, the `code` in the API error response and the `code`
   field of the log record MUST be the same value.
 

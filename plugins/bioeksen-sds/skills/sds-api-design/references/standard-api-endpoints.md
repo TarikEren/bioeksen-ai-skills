@@ -43,6 +43,16 @@ Every entry under `checks` uses: `ok` (working), `fail` (present but broken),
 `na` (not applicable to this app). An app without a cache MUST report
 `"cache": "na"` rather than omitting the key.
 
+### Correlation
+
+Every request carries a correlation identifier in the `X-Request-Id` header,
+adopted from the caller or generated when absent, propagated on outbound calls
+and echoed on every response including errors. The header, its value format and
+the propagation rules are defined normatively in
+`sds-logging/references/log-record.md`.
+
+This applies to every endpoint an app serves, not only the standard ones.
+
 ### Error envelope
 
 Any 4xx or 5xx response that has a body MUST use the envelope below, with one
