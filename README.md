@@ -49,6 +49,9 @@ the plugin is installed or the repository is being read directly.
 - Where a machine-checkable artifact exists, it is normative and the prose is
   explanatory.
 
+`scripts/check_invariants.py` enforces the cross-file invariants these
+conventions depend on, and runs in CI on every push and pull request.
+
 ## Installation
 
 Run:

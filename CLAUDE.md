@@ -3,8 +3,15 @@
 A Claude Code plugin marketplace holding one plugin, `bioeksen-sds`, whose
 skills are the shared specifications every BioEksen service is built against.
 
-There is no application code here — no build, no test suite, nothing for an LSP
-to navigate. It is Markdown plus one OpenAPI file, so grep is the right tool.
+There is no application code here — nothing for an LSP to navigate. It is
+Markdown plus one OpenAPI file, so grep is the right tool. The only executable
+is `scripts/check_invariants.py`, which enforces the invariants below.
+
+Run it before committing any change to a skill:
+
+```bash
+python scripts/check_invariants.py
+```
 
 Editing a skill changes a contract that services in other repositories already
 implement. Treat a change here as an API change, not a docs tweak.
@@ -37,7 +44,8 @@ When two disagree, the normative one is right and the other gets corrected.
 
 ## Invariants
 
-These MUST hold after any change. Nothing enforces them yet — check by hand.
+These MUST hold after any change. `scripts/check_invariants.py` enforces them,
+in CI on every push and pull request, and locally when you run it.
 
 1. The same 38 error codes appear in all three of: the per-prefix tables in
    `code-prefixes.md`, the selection procedure in the same file, and the
