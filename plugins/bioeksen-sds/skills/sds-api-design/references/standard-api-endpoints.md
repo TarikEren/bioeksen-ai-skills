@@ -84,6 +84,21 @@ reworded at any time; clients that branch on the error MUST branch on `code`.
 `details` MUST be `null` unless the error is a validation error, in which case
 it is an array of `{ "field": "<name>", "issue": "<what is wrong>" }`.
 
+### Rate limited responses
+
+A 429 response MUST carry a `Retry-After` header giving whole seconds until the
+caller may retry:
+
+```
+Retry-After: 30
+```
+
+A 429 without it tells a client to back off but not for how long, so each
+client picks its own interval and the ones that pick badly sustain the overload
+the status code exists to shed. Seconds are used rather than an HTTP date
+because the value is a backoff, not a deadline, and a clock-skewed client
+cannot misread a duration.
+
 ### Caching
 
 All endpoints in this document MUST be served with `Cache-Control: no-store`.

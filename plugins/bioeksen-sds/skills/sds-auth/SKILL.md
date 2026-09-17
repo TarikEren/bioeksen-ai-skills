@@ -107,3 +107,7 @@ exceeded the response is `RATE-4400` / 429, which takes precedence over
 repeating the authentication failure — this is step 1 of the validation order
 above. Default rate limit is 10 failures per minute per source, but the service
 MAY choose a different limit.
+
+The 429 MUST carry `Retry-After`, per the rule in
+`sds-api-design/references/standard-api-endpoints.md`. A caller hammering a bad
+credential is the case that rule exists for.
