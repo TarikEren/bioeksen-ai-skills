@@ -30,6 +30,8 @@ SERVICE_CALLS = SKILLS / "sds-api-design" / "references" / "service-calls.md"
 OPENAPI = SKILLS / "sds-api-design" / "references" / "openapi.yaml"
 AGGREGATOR_YAML = SKILLS / "sds-logging" / "references" / "aggregator-api.yaml"
 SCHEMAS = (OPENAPI, AGGREGATOR_YAML)
+MARKETPLACE = ROOT / ".claude-plugin" / "marketplace.json"
+PLUGIN_MANIFEST = ROOT / "plugins" / "bioeksen-sds" / ".claude-plugin" / "plugin.json"
 
 # The only unversioned paths in the estate; everything else carries /api/v{major}/.
 STANDARD_PATHS = {"/api/health", "/api/health/live", "/api/health/ready",
@@ -171,13 +173,24 @@ def main() -> int:
             if resolve_pointer(loaded[target], pointer) is None:
                 fail("invariant 6", f"{source.name}: $ref {ref} resolves to nothing")
 
-    # The manifests and the schema must at least parse.
-    for manifest in (ROOT / ".claude-plugin" / "marketplace.json",
-                     ROOT / "plugins" / "bioeksen-sds" / ".claude-plugin" / "plugin.json"):
+    # The manifests must parse, and 7: the marketplace must mirror each plugin's
+    # own version. The marketplace's own version tracks which plugins it offers,
+    # not what is inside them, so the two move independently and only the
+    # mirrored entry has to agree.
+    manifests = {}
+    for manifest in (MARKETPLACE, PLUGIN_MANIFEST):
         try:
-            json.loads(read(manifest))
+            manifests[manifest] = json.loads(read(manifest))
         except (OSError, json.JSONDecodeError) as exc:
             fail("manifests", f"{manifest.relative_to(ROOT)}: {exc}")
+    if len(manifests) == 2:
+        listed = {p["name"]: p.get("version") for p in manifests[MARKETPLACE]["plugins"]}
+        own = manifests[PLUGIN_MANIFEST]
+        if own["name"] not in listed:
+            fail("invariant 7", f"marketplace.json lists no plugin named {own['name']}")
+        elif listed[own["name"]] != own.get("version"):
+            fail("invariant 7", f"marketplace.json says {own['name']} is "
+                                f"{listed[own['name']]}, plugin.json says {own.get('version')}")
 
     # Every skill needs the frontmatter that decides when it loads.
     for skill in sorted(SKILLS.glob("*/SKILL.md")):
@@ -200,7 +213,8 @@ def main() -> int:
           f"the {len(documented_paths)} aggregator paths are not")
     print("OK - retryable codes are exactly the 503 range, per error-codes.md")
     print(f"OK - all {refs} $refs across {len(SCHEMAS)} schema files resolve")
-    print("OK - manifests parse, every skill declares name and description")
+    print("OK - manifests parse and agree on the plugin version, "
+          "every skill declares name and description")
     return 0
 
 

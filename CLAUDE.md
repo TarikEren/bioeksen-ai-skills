@@ -70,6 +70,13 @@ in CI on every push and pull request, and locally when you run it.
    fields rather than copying them, so a rename that breaks the link has to
    fail loudly — a second copy that silently drifts is what this avoids.
 
+7. The plugin version in `marketplace.json`'s `plugins` entry equals the one in
+   that plugin's own `plugin.json`. The entry is a mirror and moves in the same
+   commit. The marketplace's **own** `version` is a different thing: it tracks
+   which plugins the marketplace offers, so it moves when one is added,
+   removed or renamed, and not when a plugin releases. The two coinciding is
+   allowed and means nothing.
+
 The endpoints in `aggregator-api.md` and `aggregator-api.yaml` must also be the
 same set, which invariant 4 checks. The prose writes a path parameter as
 `:recordId` and the schema as `{recordId}`; the checker normalises between them.
