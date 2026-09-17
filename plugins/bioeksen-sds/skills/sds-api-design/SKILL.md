@@ -1,6 +1,6 @@
 ---
 name: sds-api-design
-description: BioEksen API design conventions. Use when designing, reviewing or implementing an HTTP API endpoint, and when writing a call to another service — timeouts, retries, circuit breakers and idempotency
+description: BioEksen API design conventions. Use when designing, reviewing or implementing an HTTP API endpoint, and when writing a call to another service — timeouts, retries, circuit breakers and idempotency.
 ---
 
 # API Design

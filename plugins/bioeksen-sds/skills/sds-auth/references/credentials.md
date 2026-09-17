@@ -188,9 +188,10 @@ aggregator's read endpoints.
 
 Those endpoints are not equally sensitive. A health report exposes capacity
 numbers. The aggregator holds every app's records, including whatever
-identifiers the structured tail carries, which is why `aggregator-api.md` calls
-it the highest-value read target in the estate. One role covers both, so anyone
-who can read a dashboard can read the estate's logs.
+identifiers the structured tail carries, which is why
+`sds-logging/references/aggregator-api.md` calls it the highest-value read
+target in the estate. One role covers both, so anyone who can read a dashboard
+can read the estate's logs.
 
 That is acceptable while the operator population is small and uniformly
 trusted. It stops being acceptable the moment someone needs one of those
