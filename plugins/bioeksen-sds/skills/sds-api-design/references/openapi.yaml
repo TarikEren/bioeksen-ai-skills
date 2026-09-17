@@ -21,12 +21,17 @@ paths:
       tags: [health]
       security:
         - operatorAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RequestId"
+        - $ref: "#/components/parameters/RequestDeadline"
       responses:
         "200":
           description: Healthy.
           headers:
             Cache-Control:
               $ref: "#/components/headers/NoStore"
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
           content:
             application/json:
               schema:
@@ -35,11 +40,15 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
         "503":
           description: Not ready, or a required dependency failed.
           headers:
             Cache-Control:
               $ref: "#/components/headers/NoStore"
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
           content:
             application/json:
               schema:
@@ -55,12 +64,17 @@ paths:
       operationId: getLiveness
       tags: [health]
       security: []
+      parameters:
+        - $ref: "#/components/parameters/RequestId"
+        - $ref: "#/components/parameters/RequestDeadline"
       responses:
         "200":
           description: Process is alive.
           headers:
             Cache-Control:
               $ref: "#/components/headers/NoStore"
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
           content:
             application/json:
               schema:
@@ -70,6 +84,8 @@ paths:
           headers:
             Cache-Control:
               $ref: "#/components/headers/NoStore"
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
           content:
             application/json:
               schema:
@@ -84,12 +100,17 @@ paths:
       operationId: getReadiness
       tags: [health]
       security: []
+      parameters:
+        - $ref: "#/components/parameters/RequestId"
+        - $ref: "#/components/parameters/RequestDeadline"
       responses:
         "200":
           description: Ready to serve traffic.
           headers:
             Cache-Control:
               $ref: "#/components/headers/NoStore"
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
           content:
             application/json:
               schema:
@@ -99,6 +120,8 @@ paths:
           headers:
             Cache-Control:
               $ref: "#/components/headers/NoStore"
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
           content:
             application/json:
               schema:
@@ -112,6 +135,8 @@ paths:
       security:
         - operatorAuth: []
       parameters:
+        - $ref: "#/components/parameters/RequestId"
+        - $ref: "#/components/parameters/RequestDeadline"
         - name: startDate
           in: query
           required: false
@@ -176,6 +201,8 @@ paths:
           headers:
             Cache-Control:
               $ref: "#/components/headers/NoStore"
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
           content:
             application/json:
               schema:
@@ -186,6 +213,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
         "500":
           $ref: "#/components/responses/InternalError"
         "503":
@@ -209,28 +238,111 @@ components:
       schema:
         type: string
         const: no-store
+    RequestId:
+      description: >-
+        The correlation identifier this request was handled under, echoed on
+        every response including errors. Defined normatively in
+        sds-logging/references/log-record.md.
+      required: true
+      schema:
+        $ref: "#/components/schemas/RequestId"
+    RetryAfter:
+      description: >-
+        Whole seconds until the caller may retry. An HTTP date is not used: the
+        value is a backoff, not a deadline, and a clock-skewed client cannot
+        misread a duration.
+      required: true
+      schema:
+        type: integer
+        minimum: 0
+
+  # Cross-cutting request headers. Every endpoint in the estate takes these,
+  # not only the four defined here, so they are referenced rather than repeated
+  # — aggregator-api.yaml points at these same definitions.
+  parameters:
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      description: >-
+        The caller's correlation identifier. A receiver adopts it, and
+        generates one when it is absent or malformed, so it is never required
+        of a caller. It is echoed, logged, and never used to authorize, address
+        a resource or build a query.
+      schema:
+        $ref: "#/components/schemas/RequestId"
+    RequestDeadline:
+      name: X-Request-Deadline-Ms
+      in: header
+      required: false
+      description: >-
+        Milliseconds remaining in the caller's budget. A receiver takes the
+        lesser of this and its own default and passes the remainder onward. A
+        duration rather than a timestamp, so clock skew is not an availability
+        dependency. See sds-api-design/references/service-calls.md.
+      schema:
+        type: integer
+        minimum: 1
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: >-
+        Makes a state-changing POST safe to retry. Required of a caller that
+        may retry one, and honoured by any app serving one, but not required of
+        a caller that will not retry — which is why it is optional here. The
+        same value on every attempt of one logical request; a different request
+        under a spent key is RES-4301. See service-calls.md.
+      schema:
+        $ref: "#/components/schemas/RequestId"
 
   responses:
     BadRequest:
       description: Invalid query parameter.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
     Unauthorized:
       description: Missing or invalid credential.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
     Forbidden:
       description: Authenticated, but not an operator.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    RateLimited:
+      description: >-
+        Caller is over its request allowance or its failed-authentication
+        allowance — RATE-4400, step 1 of the validation order in
+        sds-auth/SKILL.md, evaluated before authentication.
+      headers:
+        Retry-After:
+          $ref: "#/components/headers/RetryAfter"
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
     InternalError:
       description: Unhandled server error.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
       content:
         application/json:
           schema:
@@ -240,6 +352,9 @@ components:
         The app is not yet ready to serve. Carries the error envelope with
         SYS-5500 — unlike the 503 of the health endpoints, which reports the
         state of the app itself and carries the health schema instead.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
       content:
         application/json:
           schema:
@@ -308,6 +423,16 @@ components:
         sds-logging/references/code-prefixes.md — that list is closed, and
         codes are never invented at the point of use. 4xxx is the caller's
         fault, 5xxx is the app's.
+
+    RequestId:
+      type: string
+      minLength: 1
+      maxLength: 128
+      pattern: "^[A-Za-z0-9_-]+$"
+      description: >-
+        An opaque correlation value. Should carry at least 64 bits of entropy —
+        a UUID, or 16 hex characters. Examples in these documents shorten it
+        for readability.
 
     Severity:
       type: string

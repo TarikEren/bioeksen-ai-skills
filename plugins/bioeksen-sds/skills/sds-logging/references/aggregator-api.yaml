@@ -28,6 +28,10 @@ paths:
       tags: [logs]
       security:
         - appAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RequestId"
+        - $ref: "#/components/parameters/RequestDeadline"
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -40,6 +44,8 @@ paths:
           headers:
             Cache-Control:
               $ref: "#/components/headers/NoStore"
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
           content:
             application/json:
               schema:
@@ -70,6 +76,8 @@ paths:
       security:
         - operatorAuth: []
       parameters:
+        - $ref: "#/components/parameters/RequestId"
+        - $ref: "#/components/parameters/RequestDeadline"
         - name: startDate
           in: query
           required: false
@@ -135,6 +143,8 @@ paths:
           headers:
             Cache-Control:
               $ref: "#/components/headers/NoStore"
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
           content:
             application/json:
               schema:
@@ -163,6 +173,8 @@ paths:
       security:
         - operatorAuth: []
       parameters:
+        - $ref: "#/components/parameters/RequestId"
+        - $ref: "#/components/parameters/RequestDeadline"
         - name: recordId
           in: path
           required: true
@@ -176,6 +188,8 @@ paths:
           headers:
             Cache-Control:
               $ref: "#/components/headers/NoStore"
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
           content:
             application/json:
               schema:
@@ -214,12 +228,20 @@ components:
   headers:
     NoStore:
       $ref: "../../sds-api-design/references/openapi.yaml#/components/headers/NoStore"
+    RequestId:
+      $ref: "../../sds-api-design/references/openapi.yaml#/components/headers/RequestId"
     RetryAfter:
-      description: Whole seconds until the caller may retry.
-      required: true
-      schema:
-        type: integer
-        minimum: 0
+      $ref: "../../sds-api-design/references/openapi.yaml#/components/headers/RetryAfter"
+
+  # The cross-cutting request headers, referenced so that every app in the
+  # estate takes the same ones under the same rules.
+  parameters:
+    RequestId:
+      $ref: "../../sds-api-design/references/openapi.yaml#/components/parameters/RequestId"
+    RequestDeadline:
+      $ref: "../../sds-api-design/references/openapi.yaml#/components/parameters/RequestDeadline"
+    IdempotencyKey:
+      $ref: "../../sds-api-design/references/openapi.yaml#/components/parameters/IdempotencyKey"
 
   responses:
     BadRequest:
@@ -227,24 +249,36 @@ components:
         The record or a query parameter failed validation. For a submission,
         details lists the offending fields and the record MUST NOT be retried
         unchanged.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
     Unauthorized:
       description: Missing or invalid credential.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
     Forbidden:
       description: Authenticated, but not the principal this endpoint requires.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
     NotFound:
       description: No record with that recordId.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
       content:
         application/json:
           schema:
@@ -254,6 +288,8 @@ components:
       headers:
         Retry-After:
           $ref: "#/components/headers/RetryAfter"
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
       content:
         application/json:
           schema:
@@ -262,6 +298,9 @@ components:
       description: >-
         Stored nowhere, or the query failed. Retryable on the terms in
         sds-api-design/references/service-calls.md.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
       content:
         application/json:
           schema:
@@ -269,6 +308,9 @@ components:
     NotReady:
       description: >-
         The aggregator is not ready to accept or serve records. Retryable.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
       content:
         application/json:
           schema:
