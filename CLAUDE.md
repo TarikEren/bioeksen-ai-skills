@@ -113,7 +113,20 @@ Mint the identifier as `bioeksen-sds-<UTC timestamp>-<4+ random chars>`, e.g.
 plugin that gets versioned and released. Commits made before 2026-09-17 predate
 the trailer and do not carry one.
 
-Still unadopted: the `/release-notes/{version}.md` file `sds-commit` requires of
-every release. The Change-Id trailers above are what those notes will reference
-once they exist. Ask before introducing them; it is a workflow decision, not a
-cleanup.
+## Releases
+
+Adopted at `0.2.0`. Every release gets its note at `/release-notes/{version}.md`
+and a `v{version}` tag on the commit that adds it, per
+`sds-commit/references/release-notes.md`. That commit carries an entry for
+itself, so the entry count equals `git log --no-merges v{previous}..v{version}`
+exactly.
+
+`0.1.0` has no note and is exempt. It is tagged retroactively at `df84917`, the
+last commit before the `Change-Id` trailer was adopted; the seven commits it
+covers predate the trailer and cannot produce valid entries. The convention
+begins at `0.2.0`, and the tag exists to give that note a lower bound.
+
+Bump the plugin version in `plugin.json` **and** its mirror in
+`marketplace.json`, in the same commit — invariant 7 requires them to agree.
+Leave the marketplace's own `version` alone unless the set of plugins it offers
+has changed.
