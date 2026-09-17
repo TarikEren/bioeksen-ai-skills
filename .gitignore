@@ -1,0 +1,17 @@
+# Patch and diff scratch files. A stray sel.patch from an interrupted staging
+# session was very nearly committed to the repository root.
+*.patch
+*.diff
+*.orig
+*.rej
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Python, for the invariant checks under scripts/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
