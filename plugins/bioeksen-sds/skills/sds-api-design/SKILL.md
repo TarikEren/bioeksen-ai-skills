@@ -9,14 +9,17 @@ Every API contains standard and specialized endpoints.
 
 ## Standard API Endpoints
 
-Every app MUST expose:
+Every app MUST expose these four, with identical paths and schemas:
 
-- Health
-- Readiness
-- Liveness
-- Admin logs
+| Endpoint | Is | Principal |
+|----------|-----|-----------|
+| `GET /api/health` | Full health report: process status, dependency checks, capacity numbers | Operator |
+| `GET /api/health/live` | Liveness probe: is the process alive? Checks no dependency | None |
+| `GET /api/health/ready` | Readiness probe: can this instance serve traffic now? What load balancers probe | None |
+| `GET /api/admin/logs` | This app's logs, filtered and paginated | Operator |
 
-with identical paths and schemas.
+All four MUST be served with `Cache-Control: no-store`. The principal column is
+`sds-auth`'s; the schemas and status codes are in the references below.
 
 - `references/standard-api-endpoints.md` — the conventions and the reasoning
   behind them.
