@@ -119,6 +119,8 @@ readable without writing a regex per message. Any log tooling that can parse
   in calls to other BioEksen services.
 - The identifier travels between services in the `X-Request-Id` header.
 - Background work uses `job=<run id>` in place of `request=`.
+- When a request fails, the `code` in the API error response and the `code`
+  field of the log record MUST be the same value.
 
 ### `X-Request-Id`
 
@@ -144,8 +146,6 @@ The header is named here rather than in `sds-api-design` because propagation
 is what makes a record traceable, and a name agreed by only one side of a call
 is not a convention. Anything that generates the id at the edge — a load
 balancer or ingress — sets the same header.
-- When a request fails, the `code` in the API error response and the `code`
-  field of the log record MUST be the same value.
 
 Like timestamp precision, this cannot be added retroactively: a record written
 without a correlation identifier can never be tied to the request that caused
