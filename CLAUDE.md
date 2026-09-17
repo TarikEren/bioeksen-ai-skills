@@ -4,7 +4,7 @@ A Claude Code plugin marketplace holding one plugin, `bioeksen-sds`, whose
 skills are the shared specifications every BioEksen service is built against.
 
 There is no application code here — nothing for an LSP to navigate. It is
-Markdown plus one OpenAPI file, so grep is the right tool. The only executable
+Markdown plus two OpenAPI files, so grep is the right tool. The only executable
 is `scripts/check_invariants.py`, which enforces the invariants below.
 
 Run it before committing any change to a skill:
@@ -23,6 +23,9 @@ implement. Treat a change here as an API change, not a docs tweak.
 - `plugins/bioeksen-sds/skills/<skill>/SKILL.md` — entry point, with the
   `name` + `description` frontmatter that decides when the skill loads
 - `plugins/bioeksen-sds/skills/<skill>/references/` — the detail
+- `release-notes/{version}.md` — one per release, per the Releases section below
+- `scripts/check_invariants.py` — the invariant checker
+- `.github/workflows/invariants.yml` — runs it on every push and pull request
 
 Skills cross-reference each other by paths relative to `skills/`, e.g.
 `sds-logging/references/log-record.md`. Keep that form: it resolves the same

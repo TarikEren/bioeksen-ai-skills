@@ -20,7 +20,7 @@ BioEksen personnel and authorised parties.
 
 | Skill | Covers |
 |-------|--------|
-| [`sds-api-design`](plugins/bioeksen-sds/skills/sds-api-design/) | HTTP API conventions: the standard health and admin endpoints, response envelopes, error shape, pagination, status codes |
+| [`sds-api-design`](plugins/bioeksen-sds/skills/sds-api-design/) | HTTP API conventions, both sides of a call: the standard health and admin endpoints, response envelopes, error shape, pagination and status codes — and, for a caller, deadlines, timeouts, retries, circuit breaking and idempotency |
 | [`sds-auth`](plugins/bioeksen-sds/skills/sds-auth/) | Who may call what: operator and app credentials, how they are presented and validated |
 | [`sds-logging`](plugins/bioeksen-sds/skills/sds-logging/) | Log records, severities and types, the error code registry, the log aggregator API |
 | [`sds-commit`](plugins/bioeksen-sds/skills/sds-commit/) | Conventional commit format and the release version it implies |
@@ -47,6 +47,11 @@ the plugin is installed or the repository is being read directly.
 - **Log record shape** — `sds-logging/references/log-record.md`.
 - **API response and error envelopes** — `sds-api-design/references/openapi.yaml`
   is normative; the markdown beside it is the rationale.
+- **The aggregator's own endpoints** — `sds-logging/references/aggregator-api.yaml`,
+  normative on the same terms. It references the schemas above rather than
+  copying them, so the two cannot drift apart.
+- **Calling another service** — `sds-api-design/references/service-calls.md`.
+  What a caller does when a call is slow, fails, or must not be repeated.
 
 ## Conventions used in these documents
 
