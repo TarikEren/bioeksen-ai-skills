@@ -70,6 +70,25 @@ ascending so paging is stable — `recordId` being the store-assigned identifier
 that endpoint's tie-break rule calls for. Every record in the response carries
 it, so a listing can be followed to a single record.
 
+### Retention
+
+The aggregator keeps records for **90 days**. It is the estate's archive: the
+90 days is what makes a quarterly incident review possible and what any
+"when did this start?" investigation reads.
+
+`startDate` defaults to the start of that window, and a `startDate` earlier
+than it is clamped rather than rejected, per the rule in
+`standard-api-endpoints.md`. `filterParams` echoes the clamped value, so a
+caller asking for a year sees what it actually got.
+
+Records older than the window are removed. Nothing in these specs promises an
+archival tier beyond it, so a record that must outlive 90 days — an `AUDIT`
+record kept for a compliance obligation, say — needs somewhere else to live,
+and that is a decision for whoever has the obligation.
+
+An app's own `GET /api/admin/logs` reads a different store with a shorter
+window. The two disagreeing is expected, not data loss.
+
 ### Response
 
 ```json

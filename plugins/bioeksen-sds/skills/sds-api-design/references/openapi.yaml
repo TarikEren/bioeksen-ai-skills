@@ -113,7 +113,9 @@ paths:
         - name: startDate
           in: query
           required: false
-          description: Inclusive lower bound on timestamp. Defaults to the earliest record.
+          description: >-
+            Inclusive lower bound on timestamp. Defaults to the start of the
+            retention window, and is clamped to it when earlier.
           schema:
             type: string
             format: date-time

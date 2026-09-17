@@ -186,6 +186,13 @@ is already answered whenever storage or tooling changes.
   retried unchanged; retrying a malformed record loops forever.
 - `DEBUG` records MUST NOT be submitted from production by default.
 
+A record dropped from a full buffer, or rejected as malformed, never reaches
+the archive. It exists only in the app's own store, and only for that store's
+retention window — see
+`sds-api-design/references/standard-api-endpoints.md`. Dropping is therefore a
+real loss, not a deferral, which is what the bound on the buffer is trading
+against.
+
 ## Rendering
 
 The aggregator renders a stored record as:

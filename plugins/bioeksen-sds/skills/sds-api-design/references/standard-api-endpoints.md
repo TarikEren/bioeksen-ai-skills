@@ -249,7 +249,7 @@ All are optional.
 
 | Parameter | Type | Default | Notes |
 |-----------|------|---------|-------|
-| `startDate` | RFC 3339 | earliest log record | Inclusive lower bound on `timestamp` |
+| `startDate` | RFC 3339 | start of the retention window | Inclusive lower bound on `timestamp`. Clamped — see below |
 | `endDate` | RFC 3339 | now | Inclusive upper bound on `timestamp` |
 | `severity` | enum | all | `DEBUG` \| `INFO` \| `WARNING` \| `ERROR` \| `CRITICAL` |
 | `type` | enum | all | `APP` \| `SECURITY` \| `AUDIT` \| `ACCESS` \| `JOB` |
@@ -260,6 +260,22 @@ All are optional.
 
 An unknown `severity` or `type` value, an unparseable date, `page` < 1, or
 `endDate` earlier than `startDate` MUST return 400 with the error envelope.
+
+### Retention
+
+An app MUST keep its own records for at least **7 days**, which is what this
+endpoint reads. That is a working week: long enough to debug an app directly
+when the aggregator is unreachable or when its records are in doubt.
+
+The archive is the aggregator, which keeps **90 days** — see
+`sds-logging/references/aggregator-api.md`. The two windows are deliberately
+different, and an operator comparing them will find records here that the
+aggregator no longer holds, and far more there than here. Neither gap is loss.
+
+A `startDate` earlier than the window MUST be clamped to the start of it rather
+than rejected, and `filterParams` MUST echo the clamped value. A 400 would make
+a caller guess a boundary it was never told, and the guess goes stale the next
+time the window changes.
 
 Results MUST be sorted by `timestamp` descending (newest first), tie-broken by
 the store's own record identifier ascending so paging is stable.
@@ -342,5 +358,3 @@ spec:
 - **Versioning.** Paths are currently unversioned. Decide whether standard
   endpoints get a `/api/v1` prefix, or stay unversioned on the grounds that
   they never break.
-- **Log retention.** `startDate` defaults to "the earliest log record", which
-  is only meaningful once a retention window is defined.
