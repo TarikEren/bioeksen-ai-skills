@@ -63,15 +63,13 @@ that file wins and this one MUST be corrected.
 
 Expiry is checked before signature validity so that an expired token yields
 `AUTH-4102` rather than `AUTH-4101`. The distinction matters operationally:
-one means a client needs to refresh, the other means something is wrong.
+one means a client needs to refresh, the other means something is wrong. That
+ordering is internal to this table.
 
-Rate limiting is checked before authentication so that a throttled caller is
-told it has been throttled, rather than receiving the same authentication
-failure it is already retrying.
-
-Authentication is evaluated before request validation, so an unauthenticated
-caller never receives an error describing the payload shape — including
-`VAL-4000`, which would otherwise reveal whether the body parsed.
+The two orderings this table inherits — rate limiting before authentication,
+and authentication before request validation, which keeps an unauthenticated
+caller from learning the shape of the payload — are argued where the procedure
+is normative, in `sds-logging/references/code-prefixes.md`.
 
 ## What a rejection may say
 
