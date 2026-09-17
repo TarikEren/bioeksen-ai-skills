@@ -512,8 +512,7 @@ components:
           type: string
           const: fail
         code:
-          allOf:
-            - $ref: "#/components/schemas/ErrorCode"
+          $ref: "#/components/schemas/ErrorCode"
           description: >-
             Identical to the code field of the log record written for this
             failure. Clients branch on this, not on message.
