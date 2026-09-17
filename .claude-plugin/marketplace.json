@@ -5,9 +5,6 @@
   },
   "version": "0.1.0",
   "description": "BioEksen Claude Code marketplace.",
-  "author": {
-    "name": "BioEksen Ar-Ge Teknolojileri A.Ş."
-  },
   "plugins": [
     {
       "name": "bioeksen-sds",
