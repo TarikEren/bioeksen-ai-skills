@@ -180,8 +180,10 @@ is already answered whenever storage or tooling changes.
   swallowed and reported through the app's own local error channel.
 - Submission MUST NOT block the request path. Emit asynchronously.
 - When the aggregator returns 503, or is unreachable, the app SHOULD buffer
-  records and retry with exponential backoff. It MUST bound the buffer and
-  drop oldest-first when full, rather than growing without limit.
+  records and retry on the background-class terms in
+  `sds-api-design/references/service-calls.md` — including its circuit breaker,
+  so a down aggregator is not called on every record. It MUST bound the buffer
+  and drop oldest-first when full, rather than growing without limit.
 - When the aggregator returns 400, the record is malformed. It MUST NOT be
   retried unchanged; retrying a malformed record loops forever.
 - `DEBUG` records MUST NOT be submitted from production by default.

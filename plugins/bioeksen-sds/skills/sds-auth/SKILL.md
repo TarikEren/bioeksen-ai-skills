@@ -109,3 +109,8 @@ MAY choose a different limit.
 The 429 MUST carry `Retry-After`, per the rule in
 `sds-api-design/references/standard-api-endpoints.md`. A caller hammering a bad
 credential is the case that rule exists for.
+
+What the caller does with it is in
+`sds-api-design/references/service-calls.md`: `Retry-After` overrides its own
+backoff, and repeated failures trip its circuit breaker. A limit is only
+respectable if the calling side has a rule to respect it with.

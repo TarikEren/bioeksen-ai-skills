@@ -137,6 +137,10 @@ An app MUST refresh before expiry rather than on rejection: discovering expiry
 through a 401 means the failure surfaces as a request error rather than as a
 background retry.
 
+The lead time is **75% of the lifetime read from `exp`**, per
+`sds-api-design/references/service-calls.md`. The remaining quarter is what
+gives a failed refresh room to retry before the token actually expires.
+
 ## Rotation and revocation
 
 Signing keys belong to the issuer, not to any app. A verifier:
