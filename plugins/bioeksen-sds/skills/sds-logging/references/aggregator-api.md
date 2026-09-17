@@ -39,7 +39,7 @@ All six fields MUST be present; `code` MAY be `null`. Validation rules:
 
 | HTTP | When |
 |------|------|
-| 201 | Stored. Body carries the assigned record id |
+| 201 | Stored. Body carries the assigned `recordId` |
 | 400 | Schema validation failed. `details` lists the offending fields |
 | 500 | Stored nowhere — the database rejected the write or was unreachable |
 | 503 | The aggregator is not ready to accept records |
@@ -70,8 +70,14 @@ All optional.
 | `page` | integer | `1` | 1-based |
 | `limit` | integer | `50` | Max `200` |
 
-Results MUST be sorted by `timestamp` descending, tie-broken by record id
-ascending so paging is stable.
+Results MUST be sorted by `timestamp` descending, tie-broken by `recordId`
+ascending so paging is stable. Not by the `id` field, which names the emitting
+app and breaks no ties between two records from the same one.
+
+Each returned record carries `recordId`, the aggregator's own identifier for
+the stored row. It is assigned on write, is not part of the submitted record in
+`log-record.md`, and is the value `GET HOST/api/logs/:id` takes — without it in
+this response there is no way to reach a single record from a listing.
 
 ### Response
 
@@ -83,6 +89,7 @@ ascending so paging is stable.
     "totalCount": 137,
     "logs": [
         {
+            "recordId": "01J9Z4K7XQ2M8N",
             "id": "auth-service",
             "timestamp": "2026-09-03T14:05:00.123Z",
             "severity": "ERROR",
@@ -116,8 +123,10 @@ Returns a single stored record by its aggregator-assigned record id.
 | 500 | Query failed |
 | 503 | Not ready |
 
-Note that the path parameter is the aggregator's own record id, not the
-record's `id` field, which identifies the emitting app.
+Note that the path parameter is `recordId`, the aggregator's own identifier for
+the stored row, not the record's `id` field, which identifies the emitting app.
+It is returned by `POST HOST/api/logs` on 201 and on every record in
+`GET HOST/api/logs`.
 
 ## Authorization
 

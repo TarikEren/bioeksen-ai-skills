@@ -18,6 +18,12 @@ aggregator endpoints that carry these records are in `aggregator-api.md`.
 The same six fields are what an app's own `GET /api/admin/logs` returns — see
 `sds-api-design/references/standard-api-endpoints.md`.
 
+These six are the record as *emitted*. A store that keeps records MAY add its
+own identifier for the stored row, which is assigned on write and never
+submitted: the aggregator returns one as `recordId`, per `aggregator-api.md`.
+Such an identifier is detail, not a dimension — see below — and MUST NOT be
+confused with `id`, which names the emitting app.
+
 ### Severity
 
 `DEBUG` | `INFO` | `WARNING` | `ERROR` | `CRITICAL`
