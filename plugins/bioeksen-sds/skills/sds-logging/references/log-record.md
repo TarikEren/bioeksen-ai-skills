@@ -76,8 +76,8 @@ The message is the only free-text field, which makes it the field most likely
 to become unusable. It MUST:
 
 - Begin with the prose fixed by the record's `code`, derived exactly as
-  **Message prose** in `code-prefixes.md` specifies — that rule is normative
-  for the derivation. A record with no code states what happened in the past
+  **Derived attributes** in `code-prefixes.md` specifies under *Message prose*
+  — that rule is normative for the derivation. A record with no code states what happened in the past
   tense as a fact: `"job completed"`, not `"completing job"`
 - Carry all varying values in a structured tail, so the prose prefix stays
   constant and greppable — see below

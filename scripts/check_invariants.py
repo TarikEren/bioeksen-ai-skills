@@ -6,7 +6,8 @@ this notices when two copies drift apart. Run from the repository root:
 
     python scripts/check_invariants.py
 
-Exits non-zero on the first failing invariant, listing every problem found.
+Every invariant is checked before exiting, so one run lists every problem found
+rather than stopping at the first.
 """
 from __future__ import annotations
 

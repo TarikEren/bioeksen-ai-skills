@@ -149,8 +149,9 @@ measure, but it is not a substitute for the credential: an internal network is
 not a trust boundary, and any service that reaches the endpoint would otherwise
 read the app's capacity internals unauthenticated.
 
-**Responses:** 200 (`ok`), 401, 403, 503 (`fail` or `not-ready`). The 401 and
-403 carry the error envelope; the 200 and 503 carry the health schema below.
+**Responses:** 200 (`ok`), 401, 403, 429, 503 (`fail` or `not-ready`). The 401,
+403 and 429 carry the error envelope; the 200 and 503 carry the health schema
+below.
 
 ### Fields
 
@@ -213,7 +214,9 @@ A `fail` here means the process is unrecoverable and SHOULD be restarted.
 
 **Authorization:** MAY be unauthenticated; it exposes nothing.
 
-**Responses:** 200 (`ok`), 503 (`fail`).
+**Responses:** 200 (`ok`), 503 (`fail`). No 429: a rate limited probe takes a
+healthy instance out of rotation, which is the failure this endpoint exists to
+detect rather than cause.
 
 ### Fields
 
@@ -273,8 +276,8 @@ format defined by the log aggregator.
 **Authorization:** MUST require an authenticated operator. Unauthenticated
 requests return 401; authenticated non-operators return 403.
 
-**Responses:** 200, 400 (invalid query parameter), 401, 403, 500, 503 (not yet
-ready to serve — `SYS-5500`, carrying the error envelope like any other
+**Responses:** 200, 400 (invalid query parameter), 401, 403, 429, 500, 503 (not
+yet ready to serve — `SYS-5500`, carrying the error envelope like any other
 rejection).
 
 ### Query parameters
@@ -380,6 +383,6 @@ above and need not be returned.
 
 ## Machine-readable schema
 
-`references/openapi.yaml` is the normative OpenAPI 3.1 definition of these
-endpoints. This document is the rationale layer; when the two disagree, the
+`openapi.yaml`, beside this file, is the normative OpenAPI 3.1 definition of
+these endpoints. This document is the rationale layer; when the two disagree, the
 OpenAPI file wins and this document MUST be corrected.

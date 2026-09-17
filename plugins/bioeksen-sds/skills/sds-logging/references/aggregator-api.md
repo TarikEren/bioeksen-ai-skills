@@ -6,7 +6,8 @@ is denoted `HOST`.
 `aggregator-api.yaml` beside this file is the normative OpenAPI 3.1 definition
 of these endpoints. This document is the rationale layer; where the two
 disagree, the schema wins and this document MUST be corrected — the same
-relationship `standard-api-endpoints.md` has with `openapi.yaml`.
+relationship `sds-api-design/references/standard-api-endpoints.md` has with
+the schema beside it.
 
 The aggregator is itself a BioEksen app: it follows
 `sds-api-design/references/standard-api-endpoints.md`, including the string
@@ -58,6 +59,9 @@ All six fields MUST be present; `code` MAY be `null`. Validation rules:
 |------|------|
 | 201 | Stored. Body carries the `recordId` |
 | 400 | Schema validation failed. `details` lists the offending fields |
+| 401 | No app credential, or one that does not validate |
+| 403 | Authenticated, but not an app — an operator credential does not satisfy this endpoint |
+| 429 | Over the caller's allowance — `RATE-4400`, carrying `Retry-After` |
 | 500 | Stored nowhere — the database rejected the write or was unreachable |
 | 503 | The aggregator is not ready to accept records |
 
@@ -83,6 +87,18 @@ ascending so paging is stable — `recordId` being the store-assigned identifier
 that endpoint's tie-break rule calls for. Every record in the response carries
 it, so a listing can be followed to a single record.
 
+### Responses
+
+| HTTP | When |
+|------|------|
+| 200 | Matching records, newest first. A page beyond the last returns an empty `logs` array and the true `totalCount` |
+| 400 | A query parameter failed validation |
+| 401 | No operator credential, or one that does not validate |
+| 403 | Authenticated, but not an operator |
+| 429 | Over the caller's allowance — `RATE-4400`, carrying `Retry-After` |
+| 500 | The query failed |
+| 503 | Not ready |
+
 ### Retention
 
 The aggregator keeps records for **90 days**. It is the estate's archive: the
@@ -91,8 +107,8 @@ The aggregator keeps records for **90 days**. It is the estate's archive: the
 
 `startDate` defaults to the start of that window, and a `startDate` earlier
 than it is clamped rather than rejected, per the rule in
-`standard-api-endpoints.md`. `filterParams` echoes the clamped value, so a
-caller asking for a year sees what it actually got.
+`sds-api-design/references/standard-api-endpoints.md`. `filterParams` echoes
+the clamped value, so a caller asking for a year sees what it actually got.
 
 Records older than the window are removed. Nothing in these specs promises an
 archival tier beyond it, so a record that must outlive 90 days — an `AUDIT`
@@ -145,7 +161,10 @@ the top of this document, not the record's `id` field.
 | HTTP | When |
 |------|------|
 | 200 | Found; body is the record |
+| 401 | No operator credential, or one that does not validate |
+| 403 | Authenticated, but not an operator |
 | 404 | No record with that `recordId` — `RES-4200` |
+| 429 | Over the caller's allowance — `RATE-4400`, carrying `Retry-After` |
 | 500 | Query failed |
 | 503 | Not ready |
 
