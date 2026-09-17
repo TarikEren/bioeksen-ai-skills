@@ -39,6 +39,7 @@ one is normative and the other says so:
 | Error code selection order | `sds-logging/references/code-prefixes.md` — `sds-auth/SKILL.md` restates steps 1-9 |
 | The log record contract | `sds-logging/references/log-record.md` |
 | Standard endpoint schemas | `sds-api-design/references/openapi.yaml` — the markdown beside it is rationale |
+| Outbound call behaviour | `sds-api-design/references/service-calls.md` — timeouts, retries, breakers, idempotency |
 
 When two disagree, the normative one is right and the other gets corrected.
 

@@ -1,6 +1,6 @@
 ---
 name: sds-api-design
-description: BioEksen API design conventions. Use when designing, reviewing or implementing an HTTP API endpoint
+description: BioEksen API design conventions. Use when designing, reviewing or implementing an HTTP API endpoint, and when writing a call to another service — timeouts, retries, circuit breakers and idempotency
 ---
 
 # API Design
@@ -24,6 +24,8 @@ All four MUST be served with `Cache-Control: no-store`. The principal column is
 - `references/standard-api-endpoints.md` — the conventions and the reasoning
   behind them.
 - `references/openapi.yaml` — the normative OpenAPI 3.1 definition, takes precedence over the markdown.
+- `references/service-calls.md` — the calling side: deadlines, timeouts, what
+  may be retried, circuit breakers and idempotency.
 
 ## Specialized Endpoints
 
