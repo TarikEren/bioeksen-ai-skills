@@ -98,7 +98,8 @@ configuration survives intact, and `tid` is the one that fails it.
 
 Operator tokens carry `roles`, an array of strings, being the app roles the
 directory has assigned to that person. The only role these specs require is
-`operator`.
+`operator` — see **Roles** for why there is exactly one, and what adding a
+second involves.
 
 ## Validation
 
@@ -176,6 +177,40 @@ and belongs to whoever runs the incident.
   client secret. A secret that must be rotated on a calendar is a secret that
   expires in production on a Friday.
 
+## Roles
+
+There is exactly one operator role, `operator`, and that is a decision rather
+than a gap waiting to be filled. It grants every operator endpoint in the
+estate: the full health report, an app's own `GET /api/admin/logs`, and the
+aggregator's read endpoints.
+
+### The gradient this accepts
+
+Those endpoints are not equally sensitive. A health report exposes capacity
+numbers. The aggregator holds every app's records, including whatever
+identifiers the structured tail carries, which is why `aggregator-api.md` calls
+it the highest-value read target in the estate. One role covers both, so anyone
+who can read a dashboard can read the estate's logs.
+
+That is acceptable while the operator population is small and uniformly
+trusted. It stops being acceptable the moment someone needs one of those
+endpoints and should not have the other — most likely a read-only auditor who
+needs the log history but has no business seeing an app's connection pool and
+disk internals. **That person arriving is the trigger**, and the reason this is
+written down rather than left to be rediscovered when they do.
+
+### Adding one
+
+A second role is defined here, in this document, and assigned as an app role in
+the directory. An app MUST NOT invent a role of its own: a role defined in one
+service is an authorization decision in a place nobody auditing access will
+look for it.
+
+An app checks for the role it requires and ignores any others present in
+`roles`. Adding a role to the directory therefore cannot break a deployed app,
+which is what makes keeping one role today a cheap decision rather than a
+commitment.
+
 ## Configuration
 
 Every value below arrives as environment configuration. This is the concrete
@@ -198,11 +233,3 @@ An app MUST fail to start when any of these is missing, rather than starting
 and rejecting every request it receives. A service that is up but can
 authenticate nobody is harder to diagnose than one that never came up, and it
 stays in the load balancer's rotation while it does it.
-
-## Open decisions
-
-Unresolved, and needed before the first app implements this:
-
-- **Operator roles beyond `operator`.** The estate currently needs exactly one
-  role. Adding a second is a change here, not per app — and on Entra it is an
-  app role in the directory, not something an app defines for itself.
