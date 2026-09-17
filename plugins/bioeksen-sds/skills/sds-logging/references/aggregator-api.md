@@ -104,7 +104,9 @@ this response there is no way to reach a single record from a listing.
         "type": "APP",
         "code": "DB-5001",
         "startDate": "2026-09-01T00:00:00.000Z",
-        "endDate": "2026-09-03T23:59:59.999Z"
+        "endDate": "2026-09-03T23:59:59.999Z",
+        "page": 1,
+        "limit": 50
     }
 }
 ```

@@ -455,9 +455,18 @@ components:
         filterParams:
           type: object
           additionalProperties: false
-          description: The filters actually applied, after defaults are resolved.
-          required: [id, severity, type, code, startDate, endDate]
+          description: >-
+            The filters actually applied, after defaults are resolved, including
+            the pagination the server used.
+          required: [id, severity, type, code, startDate, endDate, page, limit]
           properties:
+            page:
+              type: integer
+              minimum: 1
+            limit:
+              type: integer
+              minimum: 1
+              maximum: 200
             id:
               type: [string, "null"]
             code:

@@ -251,7 +251,10 @@ but it MUST give a total order.
 - `count`: number of records in `logs` for this page.
 - `totalCount`: total records matching the filter across all pages.
 - `logs`: array of log records; empty array when nothing matches (never `null`).
-- `filterParams`: the filters actually applied, after defaults are resolved.
+- `filterParams`: the filters actually applied, after defaults are resolved,
+  including the `page` and `limit` the server used. Echoing the resolved
+  pagination is what lets a caller that sent neither know how much of the
+  result it is looking at.
 
 A page beyond the last one is not an error: it returns 200, an empty `logs`
 array, and the true `totalCount`.
@@ -292,7 +295,9 @@ Matches the aggregator's stored log shape, defined normatively in
         "type": "APP",
         "code": "DB-5001",
         "startDate": "2026-09-01T00:00:00Z",
-        "endDate": "2026-09-03T23:59:59Z"
+        "endDate": "2026-09-03T23:59:59Z",
+        "page": 1,
+        "limit": 50
     }
 }
 ```
