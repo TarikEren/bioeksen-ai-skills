@@ -149,9 +149,13 @@ estate, or is a model with only the text in front of it.
 
 ### When the software id is unknown
 
-The software id is supplied by the project. When it has not been, the
-identifier MUST NOT be written with a guess: ask for it, or emit the literal
-placeholder `<software-id>` for a person to replace.
+The software id is supplied by the project, or by the id-issuing service once
+one exists, and is allocated per the rule in
+`sds-logging/references/log-record.md`, which is normative for it.
+
+When it has not been supplied, the identifier MUST NOT be written with a guess:
+ask for it, or emit the literal placeholder `<software-id>` for a person to
+replace.
 
 ```
 <software-id>-20260904T140512Z-a3f9 feat(api): ...

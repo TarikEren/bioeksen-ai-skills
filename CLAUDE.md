@@ -57,6 +57,9 @@ These MUST hold after any change. Nothing enforces them yet — check by hand.
   `code-prefixes.md`, *and* the `ErrorCode` enum. All three, or it is unusable.
 - Codes are permanent: never renumbered, never redefined, never reused for a
   different meaning. A retired code stays in its table marked retired.
+- **Never invent a software id.** It is supplied by the project or by the
+  id-issuing service; when it has not been, ask. A guessed id looks correct, so
+  nothing flags it — see `sds-logging/references/log-record.md`.
 - State each fact once. Where it must be restated, name the normative source in
   the restating document.
 - MUST, SHOULD and MAY carry RFC 2119 meanings. Use them deliberately.

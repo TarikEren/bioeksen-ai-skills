@@ -24,6 +24,29 @@ submitted: the aggregator returns one as `recordId`, per `aggregator-api.md`.
 Such an identifier is detail, not a dimension — see below — and MUST NOT be
 confused with `id`, which names the emitting app.
 
+### Allocating an id
+
+This is the normative rule for the value, which `sds-commit` reuses as the
+`{software-id}` half of a change identifier — see
+`sds-commit/references/release-notes.md`.
+
+- The id is **supplied**: by the project itself, or by the id-issuing service
+  once one exists. It is never derived from a repository name, a directory
+  name, or anything else at the point of use.
+- When it has not been supplied, **ask for it**. An assistant or generator MUST
+  NOT invent one, and MUST NOT fall back to a plausible-looking guess.
+- Format: `[a-z0-9-]`, lowercase, `-` separated, e.g. `auth-service`.
+- Once allocated it is permanent. Changing it severs every existing log record
+  and release-note entry from the service that produced them.
+
+A guessed id is worse than a missing one. It looks correct, so nothing flags
+it, and the records it labels are filed under a service that does not exist —
+while the real service's records are split across two names.
+
+`id` bears no relation to an error code prefix. Prefixes name the kind of
+failure and are shared across the estate, so every app emits many of them; see
+`error-codes.md`.
+
 ### Severity
 
 `DEBUG` | `INFO` | `WARNING` | `ERROR` | `CRITICAL`

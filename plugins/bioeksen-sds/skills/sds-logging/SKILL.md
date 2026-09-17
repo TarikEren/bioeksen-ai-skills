@@ -84,8 +84,11 @@ logged twice rather than compromising on one.
 ## Correlation
 
 - The `id` field is the emitting service, app or process. It MUST be stable
-  across restarts and deployments, and MUST match the prefix used by that
-  app's error codes — see `references/error-codes.md`.
+  across restarts and deployments, and is allocated per the rule in
+  `references/log-record.md` — never guessed.
+- `id` has nothing to do with the prefix of an error code. Prefixes name the
+  *kind* of failure and are shared by every app, so one app emits several of
+  them — see `references/error-codes.md`.
 - Every record produced while handling one request MUST carry the same
   `request=<id>` value in its structured tail, so a failure can be traced end
   to end — see `references/log-record.md`.
