@@ -1,0 +1,342 @@
+openapi: 3.1.0
+
+info:
+  title: BioEksen Log Aggregator
+  version: 1.0.0
+  description: >-
+    Normative definition of the log aggregator's own endpoints. Paths are
+    relative to the aggregator host, denoted HOST in aggregator-api.md, which
+    is the rationale layer for this file.
+
+    The aggregator also exposes the four standard endpoints, unversioned, as
+    every app does; those are defined in
+    sds-api-design/references/openapi.yaml and are not repeated here.
+
+    Shared schemas are referenced from that file rather than copied. A second
+    copy of the error codes or of the log record fields could drift from the
+    first, which is the failure this repository exists to prevent.
+
+paths:
+  /api/v1/logs:
+    post:
+      summary: Submit a log record
+      description: >-
+        Validates an incoming record and stores it. Requires an app credential:
+        any app able to reach this endpoint could otherwise forge records
+        attributed to another id.
+      operationId: submitLog
+      tags: [logs]
+      security:
+        - appAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogSubmission"
+      responses:
+        "201":
+          description: Stored.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmitResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/NotReady"
+
+    get:
+      summary: Fetch filtered, paginated logs across every app
+      description: >-
+        Same parameters, defaults and pagination as an app's own
+        GET /api/admin/logs, except that id selects between apps rather than
+        being implied. Requires an operator credential: this endpoint holds
+        every app's logs, which makes it the highest-value read target in the
+        estate.
+      operationId: listLogs
+      tags: [logs]
+      security:
+        - operatorAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          required: false
+          description: >-
+            Inclusive lower bound on timestamp. Defaults to the start of the
+            retention window, and is clamped to it when earlier.
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          required: false
+          description: Inclusive upper bound on timestamp. Defaults to now.
+          schema:
+            type: string
+            format: date-time
+        - name: severity
+          in: query
+          required: false
+          description: Defaults to all severities.
+          schema:
+            $ref: "#/components/schemas/Severity"
+        - name: type
+          in: query
+          required: false
+          description: Defaults to all types.
+          schema:
+            $ref: "#/components/schemas/LogType"
+        - name: id
+          in: query
+          required: false
+          description: >-
+            The emitting service, app or process. Defaults to every app.
+          schema:
+            type: string
+            minLength: 1
+        - name: code
+          in: query
+          required: false
+          description: Exact error code. Defaults to all codes.
+          schema:
+            $ref: "#/components/schemas/ErrorCode"
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: >-
+            Matching records, newest first. A page beyond the last one returns
+            an empty logs array with the true totalCount.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoredLogPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/NotReady"
+
+  /api/v1/logs/{recordId}:
+    get:
+      summary: Fetch one stored record
+      description: >-
+        The path parameter is the aggregator-assigned recordId, not the
+        record's id field, which names the emitting app.
+      operationId: getLog
+      tags: [logs]
+      security:
+        - operatorAuth: []
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          description: The identifier assigned on write.
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Found.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoredRecord"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/NotReady"
+
+components:
+  securitySchemes:
+    appAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >-
+        App credential: a JWT from the issuer named in
+        sds-auth/references/credentials.md, carrying an app-only token's
+        claims. An operator credential does not satisfy it.
+    operatorAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >-
+        Operator credential: a JWT from the same issuer, carrying the
+        configured operator scope. An app credential does not satisfy it.
+
+  headers:
+    NoStore:
+      $ref: "../../sds-api-design/references/openapi.yaml#/components/headers/NoStore"
+    RetryAfter:
+      description: Whole seconds until the caller may retry.
+      required: true
+      schema:
+        type: integer
+        minimum: 0
+
+  responses:
+    BadRequest:
+      description: >-
+        The record or a query parameter failed validation. For a submission,
+        details lists the offending fields and the record MUST NOT be retried
+        unchanged.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Missing or invalid credential.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Authenticated, but not the principal this endpoint requires.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: No record with that recordId.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    RateLimited:
+      description: Caller is over its allowance.
+      headers:
+        Retry-After:
+          $ref: "#/components/headers/RetryAfter"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalError:
+      description: >-
+        Stored nowhere, or the query failed. Retryable on the terms in
+        sds-api-design/references/service-calls.md.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotReady:
+      description: >-
+        The aggregator is not ready to accept or serve records. Retryable.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    # Referenced, never copied. A second definition of any of these could drift
+    # from the first, and only the first is checked against code-prefixes.md.
+    Severity:
+      $ref: "../../sds-api-design/references/openapi.yaml#/components/schemas/Severity"
+    LogType:
+      $ref: "../../sds-api-design/references/openapi.yaml#/components/schemas/LogType"
+    ErrorCode:
+      $ref: "../../sds-api-design/references/openapi.yaml#/components/schemas/ErrorCode"
+    Error:
+      $ref: "../../sds-api-design/references/openapi.yaml#/components/schemas/Error"
+
+    # A record as submitted: the six emitted fields and nothing else.
+    # recordId is assigned on write, so a submission carrying one is rejected
+    # rather than silently ignored — an app that thinks it chooses record
+    # identifiers should find out immediately.
+    LogSubmission:
+      $ref: "../../sds-api-design/references/openapi.yaml#/components/schemas/LogRecord"
+
+    RecordId:
+      type: string
+      minLength: 1
+      description: >-
+        Assigned by the aggregator on write. Not part of a submitted record,
+        and not the record's id field, which names the emitting app.
+
+    # The six fields plus the assigned identifier. Composed from LogFields
+    # rather than restating it, with unevaluatedProperties because
+    # additionalProperties cannot see through allOf.
+    StoredRecord:
+      allOf:
+        - $ref: "../../sds-api-design/references/openapi.yaml#/components/schemas/LogFields"
+        - type: object
+          required: [recordId]
+          properties:
+            recordId:
+              $ref: "#/components/schemas/RecordId"
+      unevaluatedProperties: false
+
+    SubmitResult:
+      type: object
+      unevaluatedProperties: false
+      required: [status, recordId]
+      properties:
+        status:
+          type: string
+          const: ok
+        recordId:
+          $ref: "#/components/schemas/RecordId"
+
+    # The same page wrapper an app's own logs endpoint returns, carrying stored
+    # records instead of emitted ones.
+    StoredLogPage:
+      allOf:
+        - $ref: "../../sds-api-design/references/openapi.yaml#/components/schemas/LogPageBase"
+        - type: object
+          required: [logs]
+          properties:
+            logs:
+              type: array
+              description: >-
+                Newest first, tie-broken by recordId ascending so paging is
+                stable. Empty, never null.
+              items:
+                $ref: "#/components/schemas/StoredRecord"
+      unevaluatedProperties: false

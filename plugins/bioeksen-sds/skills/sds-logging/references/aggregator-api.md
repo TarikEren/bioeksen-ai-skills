@@ -3,6 +3,11 @@
 The log aggregator collects and serves logs from every BioEksen app. Its host
 is denoted `HOST`.
 
+`aggregator-api.yaml` beside this file is the normative OpenAPI 3.1 definition
+of these endpoints. This document is the rationale layer; where the two
+disagree, the schema wins and this document MUST be corrected — the same
+relationship `standard-api-endpoints.md` has with `openapi.yaml`.
+
 The aggregator is itself a BioEksen app: it follows
 `sds-api-design/references/standard-api-endpoints.md`, including the string
 `status` values, the HTTP status mapping, and the error envelope. It therefore
@@ -39,9 +44,13 @@ All six fields MUST be present; `code` MAY be `null`. Validation rules:
 
 - `severity` and `type` MUST be members of their enumerations
 - `timestamp` MUST be RFC 3339 with at least millisecond precision
-- `code`, when not null, MUST match `^[A-Z][A-Z0-9]{1,7}-[45][0-9]{3}$` and
-  MUST be a code listed in `code-prefixes.md`
+- `code`, when not null, MUST be a code listed in `code-prefixes.md` — which
+  the schema enforces by enumerating them, so an unlisted code fails validation
+  rather than being stored
 - `code` MUST NOT be null when `severity` is `ERROR` or `CRITICAL`
+- A submission carrying `recordId` MUST be rejected. The aggregator assigns it
+  on write; an app that believes it chooses record identifiers should find that
+  out at once rather than have the value silently dropped
 
 ### Responses
 
@@ -136,7 +145,7 @@ the top of this document, not the record's `id` field.
 | HTTP | When |
 |------|------|
 | 200 | Found; body is the record |
-| 404 | No record with that id |
+| 404 | No record with that `recordId` — `RES-4200` |
 | 500 | Query failed |
 | 503 | Not ready |
 
