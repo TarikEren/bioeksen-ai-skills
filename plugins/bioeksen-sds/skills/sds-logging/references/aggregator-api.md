@@ -6,15 +6,19 @@ is denoted `HOST`.
 The aggregator is itself a BioEksen app: it follows
 `sds-api-design/references/standard-api-endpoints.md`, including the string
 `status` values, the HTTP status mapping, and the error envelope. It therefore
-also exposes the standard health endpoints.
+also exposes the standard health endpoints, unversioned like every app's.
+
+Its own log endpoints are app-specific, so they carry a version — they are
+below at `/api/v1/`, on the terms that document sets, including the 90 day
+window during which a superseded version stays served.
 
 Record fields and their rules are defined in `log-record.md`. The aggregator
 adds one value of its own: `recordId`, the identifier it assigns to a stored row
 on write. It is not part of a submitted record, and it is not the record's `id`
 field, which names the emitting app. It is returned by every endpoint below and
-is what `GET HOST/api/logs/:id` takes.
+is what `GET HOST/api/v1/logs/:id` takes.
 
-## `POST HOST/api/logs`
+## `POST HOST/api/v1/logs`
 
 Validates an incoming record and stores it.
 
@@ -51,7 +55,7 @@ All six fields MUST be present; `code` MAY be `null`. Validation rules:
 A 400 means the record is malformed and MUST NOT be retried unchanged. A 500
 or 503 is retryable — see the emission rules in `log-record.md`.
 
-## `GET HOST/api/logs`
+## `GET HOST/api/v1/logs`
 
 Returns stored logs across all apps, filtered and paginated.
 
@@ -124,7 +128,7 @@ window. The two disagreeing is expected, not data loss.
 A page beyond the last one returns 200 with an empty `logs` array and the true
 `totalCount`.
 
-## `GET HOST/api/logs/:id`
+## `GET HOST/api/v1/logs/:id`
 
 Returns a single stored record. The path parameter is the `recordId` defined at
 the top of this document, not the record's `id` field.
@@ -138,7 +142,7 @@ the top of this document, not the record's `id` field.
 
 ## Authorization
 
-`POST /api/logs` MUST require an app credential; any app that can reach it can
+`POST /api/v1/logs` MUST require an app credential; any app that can reach it can
 otherwise forge records attributed to another `id`. The two read endpoints
 MUST require an operator credential — the aggregator holds every app's logs,
 which makes it the highest-value read target in the estate.

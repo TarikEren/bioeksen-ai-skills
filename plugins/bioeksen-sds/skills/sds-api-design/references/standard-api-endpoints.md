@@ -10,6 +10,40 @@ documented in the owning app's own API spec.
 
 ## Conventions
 
+### Versioning
+
+Paths fall into two groups, and only one of them carries a version.
+
+| Endpoints | Path | Versioned |
+|-----------|------|-----------|
+| The four in this document | `/api/health`, `/api/health/live`, `/api/health/ready`, `/api/admin/logs` | No |
+| Everything else an app serves, including the log aggregator's own endpoints | `/api/v{major}/…` | Yes |
+
+The standard four are unversioned because every app implements them
+identically, and because they are configured outside the app that serves them:
+in load balancer definitions, orchestrator manifests and monitoring checks. A
+version bump there is the hardest kind to roll out, and a probe path that moves
+takes healthy instances out of rotation while the configuration catches up. If
+one of the four ever has to break, the honest signal is a new path, not a
+version negotiation.
+
+For the versioned group:
+
+- The segment carries the **major version only**, as an integer — `/api/v1/`,
+  `/api/v2/`. There is no `v0` and no minor component, because a minor version
+  by definition adds nothing a caller must be told about.
+- It increments only for a change that would carry `!` under
+  `sds-commit/SKILL.md`. Additive change never bumps it.
+- When it increments, both versions MUST be served for **90 days** from the
+  release of the new one. Removing the old version is itself a breaking change
+  and is announced as one.
+- A request to an unrecognised version is a request to a path that does not
+  exist: 404 with `RES-4200`. It is not `VAL-4002` — that code is for a value
+  outside an enumeration in a body or query string, and the version is neither.
+
+A deprecation window nobody wrote down is a window that never closes, which is
+why the 90 days is stated here rather than agreed per migration.
+
 ### Types and units
 
 | Concept | Type | Unit / format |
@@ -349,12 +383,3 @@ above and need not be returned.
 `references/openapi.yaml` is the normative OpenAPI 3.1 definition of these
 endpoints. This document is the rationale layer; when the two disagree, the
 OpenAPI file wins and this document MUST be corrected.
-
-## Open decisions
-
-These are unresolved and MUST be settled before the first app implements the
-spec:
-
-- **Versioning.** Paths are currently unversioned. Decide whether standard
-  endpoints get a `/api/v1` prefix, or stay unversioned on the grounds that
-  they never break.

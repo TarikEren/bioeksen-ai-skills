@@ -5,8 +5,10 @@ info:
   version: 1.0.0
   description: >-
     Normative definition of the health and admin-log endpoints every BioEksen
-    web app must expose. Paths are relative to the host of the app in question.
-    See standard-api-endpoints.md for rationale.
+    web app must expose. Paths are relative to the host of the app in question,
+    and are deliberately unversioned: these four are the only unversioned paths
+    in the estate, and every app-specific endpoint is served under
+    /api/v{major}/ instead. See standard-api-endpoints.md for rationale.
 
 paths:
   /api/health:

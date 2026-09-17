@@ -28,3 +28,8 @@ All four MUST be served with `Cache-Control: no-store`. The principal column is
 ## Specialized Endpoints
 
 App-specific endpoints have no shared schema, but MUST follow the conventions in `references/standard-api-endpoints.md`: the type and unit table, the body `status` vs HTTP status code mapping, and the error envelope.
+
+They are also the versioned half of the estate: every app-specific path is
+served under `/api/v{major}/`, and the four standard endpoints above are the
+only unversioned ones. The rule, and the 90 day deprecation window a bump
+carries, are in the same document.
