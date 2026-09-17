@@ -196,7 +196,11 @@ components:
     operatorAuth:
       type: http
       scheme: bearer
-      description: Operator credential. The concrete scheme is set per deployment.
+      bearerFormat: JWT
+      description: >-
+        Operator credential: a JWT from the issuer named in
+        sds-auth/references/credentials.md, carrying the configured operator
+        scope. An app credential does not satisfy it.
 
   headers:
     NoStore:
