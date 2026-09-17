@@ -446,7 +446,10 @@ components:
           description: Total records matching the filter across all pages.
         logs:
           type: array
-          description: Newest first, tie-broken by id ascending. Empty, never null.
+          description: >-
+            Newest first, tie-broken by the store's own record identifier
+            ascending — not by the id field, which names the emitting app and is
+            constant across this response. Empty, never null.
           items:
             $ref: "#/components/schemas/LogRecord"
         filterParams:

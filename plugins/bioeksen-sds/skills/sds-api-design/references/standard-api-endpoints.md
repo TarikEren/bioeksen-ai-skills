@@ -235,7 +235,14 @@ An unknown `severity` or `type` value, an unparseable date, `page` < 1, or
 `endDate` earlier than `startDate` MUST return 400 with the error envelope.
 
 Results MUST be sorted by `timestamp` descending (newest first), tie-broken by
-`id` ascending so paging is stable.
+the store's own record identifier ascending so paging is stable.
+
+The tie-break MUST NOT be the record's `id` field: `id` names the emitting app,
+which is the same value for every record this endpoint returns, so ordering by
+it breaks no ties at all and leaves records sharing a timestamp free to swap
+places between two requests for adjacent pages. The identifier used instead is
+whatever the log store assigns per row; it need not be exposed in the response,
+but it MUST give a total order.
 
 ### Response fields
 
