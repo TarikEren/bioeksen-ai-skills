@@ -92,7 +92,7 @@ Drawn from the endpoints already specified elsewhere:
 | `GET /api/health` | Operator |
 | `GET /api/admin/logs` | Operator |
 | `POST HOST/api/v1/logs` | App |
-| `GET HOST/api/v1/logs`, `GET HOST/api/v1/logs/:id` | Operator |
+| `GET HOST/api/v1/logs`, `GET HOST/api/v1/logs/:recordId` | Operator |
 
 The two probe endpoints are deliberately unauthenticated: they expose nothing,
 and a probe that can fail on credential expiry is a probe that will eventually

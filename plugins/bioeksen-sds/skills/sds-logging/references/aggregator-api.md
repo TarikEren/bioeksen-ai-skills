@@ -16,7 +16,7 @@ Record fields and their rules are defined in `log-record.md`. The aggregator
 adds one value of its own: `recordId`, the identifier it assigns to a stored row
 on write. It is not part of a submitted record, and it is not the record's `id`
 field, which names the emitting app. It is returned by every endpoint below and
-is what `GET HOST/api/v1/logs/:id` takes.
+is what `GET HOST/api/v1/logs/:recordId` takes.
 
 ## `POST HOST/api/v1/logs`
 
@@ -128,7 +128,7 @@ window. The two disagreeing is expected, not data loss.
 A page beyond the last one returns 200 with an empty `logs` array and the true
 `totalCount`.
 
-## `GET HOST/api/v1/logs/:id`
+## `GET HOST/api/v1/logs/:recordId`
 
 Returns a single stored record. The path parameter is the `recordId` defined at
 the top of this document, not the record's `id` field.
