@@ -36,6 +36,10 @@ prefix and number. `4xxx` is the caller's fault, `5xxx` is the app's.
 Evaluate in this order. **The first condition that holds determines the code;
 stop there.** Do not weigh which code fits best — order decides.
 
+Where a request has several faults at once, the code is still the first
+condition that holds over all of them; the rest are reported as `details`
+entries under that one code. See the rule in `error-codes.md`.
+
 | # | Condition | Code |
 |---|-----------|------|
 | 1 | Caller is over a rate limit — its request allowance, or its failed-authentication allowance | `RATE-4400` |
