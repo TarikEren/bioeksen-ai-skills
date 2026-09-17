@@ -214,7 +214,9 @@ format defined by the log aggregator.
 **Authorization:** MUST require an authenticated operator. Unauthenticated
 requests return 401; authenticated non-operators return 403.
 
-**Responses:** 200, 400 (invalid query parameter), 401, 403, 500.
+**Responses:** 200, 400 (invalid query parameter), 401, 403, 500, 503 (not yet
+ready to serve — `SYS-5500`, carrying the error envelope like any other
+rejection).
 
 ### Query parameters
 

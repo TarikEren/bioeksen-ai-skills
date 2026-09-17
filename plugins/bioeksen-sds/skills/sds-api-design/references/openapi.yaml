@@ -184,6 +184,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/NotReady"
 
 components:
   securitySchemes:
@@ -221,6 +223,15 @@ components:
             $ref: "#/components/schemas/Error"
     InternalError:
       description: Unhandled server error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotReady:
+      description: >-
+        The app is not yet ready to serve. Carries the error envelope with
+        SYS-5500 — unlike the 503 of the health endpoints, which reports the
+        state of the app itself and carries the health schema instead.
       content:
         application/json:
           schema:
