@@ -288,15 +288,14 @@ array, and the true `totalCount`.
 
 ### Log record
 
-Matches the aggregator's stored log shape, defined normatively in
-`sds-logging/references/log-record.md`:
+Each entry in `logs` is a record in the shape defined normatively by
+`sds-logging/references/log-record.md`: the six emitted fields `id`,
+`timestamp`, `severity`, `type`, `code` and `message`, carrying the
+enumerations and rules that document sets — including how `id` is allocated,
+which is not something an app decides for itself.
 
-- `id`: owner ID assigned by the emitting app.
-- `timestamp`: RFC 3339 time the event occurred, millisecond precision.
-- `severity`: `DEBUG` | `INFO` | `WARNING` | `ERROR` | `CRITICAL`
-- `type`: `APP` | `SECURITY` | `AUDIT` | `ACCESS` | `JOB`
-- `code`: the error code, or `null` when the record is not a failure.
-- `message`: additional details regarding the log.
+The store's own row identifier is not one of the six. It provides the tie-break
+above and need not be returned.
 
 ### Schema
 

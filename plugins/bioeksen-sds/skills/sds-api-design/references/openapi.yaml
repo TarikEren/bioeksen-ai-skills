@@ -412,7 +412,11 @@ components:
       properties:
         id:
           type: string
-          description: Owner ID assigned by the emitting app.
+          minLength: 1
+          description: >-
+            The emitting service, app or process. Allocated per
+            sds-logging/references/log-record.md: supplied to the app, never
+            derived at the point of use.
         timestamp:
           type: string
           format: date-time
