@@ -17,7 +17,12 @@ selection applied.
 |------|-------|
 | Path | `/release-notes/{version}.md`, relative to the repository root |
 | `{version}` | The released version, no `v` prefix, e.g. `/release-notes/2.4.0.md` |
+| Tag | `v{version}`, e.g. `v2.4.0`, on the commit that adds the note |
 | Existence | The note MUST be committed before the release is tagged |
+
+The tag carries the `v` and the file does not. That is the one place the two
+spellings differ, and it is recorded here so nobody has to guess from whichever
+they saw last.
 
 One file per release, never a single accumulating changelog. A released version
 is immutable, so its note is immutable too: it is written once and afterwards
@@ -184,6 +189,11 @@ and what keeps the note verifiable once the subject lines have been forgotten.
 - Merge commits are not listed. The commits they bring in are.
 - One commit is one entry. A commit whose change cannot be stated as a single
   entry is a commit that should have been split.
+- **The commit that adds the note carries an entry for itself.** The tag sits
+  on that commit, so it is inside the range the count is taken over. Mint its
+  change identifier first, write the entry with it, then commit using it as the
+  trailer. Without this the count is short by one at every release, and the
+  check stops meaning anything.
 
 Listing every commit is what makes the note checkable against `git log`:
 the entry count MUST equal `git log --no-merges {previous}..{version}`.
