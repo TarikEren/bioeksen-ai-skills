@@ -60,6 +60,10 @@ in CI on every push and pull request, and locally when you run it.
    `/api/health/live`, `/api/health/ready` and `/api/admin/logs`, unversioned;
    every endpoint in `aggregator-api.md` is served under `/api/v{major}/`.
    Those four are the only unversioned paths in the estate.
+5. The retry classification in `sds-api-design/references/service-calls.md`
+   covers exactly the two server-fault ranges of `error-codes.md`, and calls
+   the 503 range retryable and the 500 range not. Retry policy is derived from
+   the code numbering rather than kept as a second list.
 
 ## Rules for editing
 

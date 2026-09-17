@@ -26,6 +26,7 @@ CODE_PREFIXES = SKILLS / "sds-logging" / "references" / "code-prefixes.md"
 ERROR_CODES = SKILLS / "sds-logging" / "references" / "error-codes.md"
 AUTH_SKILL = SKILLS / "sds-auth" / "SKILL.md"
 AGGREGATOR = SKILLS / "sds-logging" / "references" / "aggregator-api.md"
+SERVICE_CALLS = SKILLS / "sds-api-design" / "references" / "service-calls.md"
 OPENAPI = SKILLS / "sds-api-design" / "references" / "openapi.yaml"
 
 # The only unversioned paths in the estate; everything else carries /api/v{major}/.
@@ -42,6 +43,8 @@ AUTH_ROW = re.compile(r"^\|\s*\d+\s*\|\s*.+?\s*\|\s*`([A-Z0-9-]+)`\s*\|\s*\d{3}\
 RANGE_ROW = re.compile(r"^\|\s*`(\d{4})-(\d{4})`\s*\|\s*(\d{3})\s*\|", re.M)
 # '## `POST HOST/api/v1/logs`' — an aggregator endpoint heading.
 AGG_PATH = re.compile(r"^##\s+`(?:GET|POST|PUT|PATCH|DELETE)\s+HOST(/\S*?)`\s*$", re.M)
+# `| `5500-5999` | 503 | Yes |` — the retry classification.
+RETRY_ROW = re.compile(r"^\|\s*`(\d{4})-(\d{4})`\s*\|\s*(\d{3})\s*\|\s*(Yes|No)\s*\|", re.M)
 
 failures: list[str] = []
 
@@ -105,6 +108,18 @@ def main() -> int:
             fail("invariant 4", f"aggregator endpoint {path} is app-specific and "
                                 "must be served under /api/v{major}/")
 
+    # 5. Retryable is exactly the 503 range, non-retryable exactly the 500 range.
+    retry = {(int(a), int(b), int(h)): yes == "Yes"
+             for a, b, h, yes in RETRY_ROW.findall(read(SERVICE_CALLS))}
+    documented = {(lo, hi, h) for lo, hi, h in ranges if h in (500, 503)}
+    if set(retry) != documented:
+        fail("invariant 5", f"service-calls.md classifies {sorted(retry)}, "
+                            f"error-codes.md documents {sorted(documented)}")
+    for (lo, hi, http), retryable in sorted(retry.items()):
+        if retryable != (http == 503):
+            verb = "retryable" if retryable else "not retryable"
+            fail("invariant 5", f"service-calls.md calls {lo}-{hi} ({http}) {verb}")
+
     # The manifests and the schema must at least parse.
     for manifest in (ROOT / ".claude-plugin" / "marketplace.json",
                      ROOT / "plugins" / "bioeksen-sds" / ".claude-plugin" / "plugin.json"):
@@ -132,6 +147,7 @@ def main() -> int:
     print("OK - every code's HTTP status matches the range table")
     print(f"OK - the {len(STANDARD_PATHS)} standard endpoints are unversioned and "
           f"the {len(endpoints)} aggregator endpoints are not")
+    print("OK - retryable codes are exactly the 503 range, per error-codes.md")
     print("OK - manifests parse, every skill declares name and description")
     return 0
 
