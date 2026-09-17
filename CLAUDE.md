@@ -55,6 +55,10 @@ in CI on every push and pull request, and locally when you run it.
    **codes**, not the prose — the conditions deliberately differ in wording,
    one being credential-agnostic and the other JWT-specific.
 3. Every code's HTTP status matches the range table in `error-codes.md`.
+4. The four standard endpoints in `openapi.yaml` are exactly `/api/health`,
+   `/api/health/live`, `/api/health/ready` and `/api/admin/logs`, unversioned;
+   every endpoint in `aggregator-api.md` is served under `/api/v{major}/`.
+   Those four are the only unversioned paths in the estate.
 
 ## Rules for editing
 

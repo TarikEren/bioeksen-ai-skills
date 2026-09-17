@@ -25,7 +25,12 @@ SKILLS = ROOT / "plugins" / "bioeksen-sds" / "skills"
 CODE_PREFIXES = SKILLS / "sds-logging" / "references" / "code-prefixes.md"
 ERROR_CODES = SKILLS / "sds-logging" / "references" / "error-codes.md"
 AUTH_SKILL = SKILLS / "sds-auth" / "SKILL.md"
+AGGREGATOR = SKILLS / "sds-logging" / "references" / "aggregator-api.md"
 OPENAPI = SKILLS / "sds-api-design" / "references" / "openapi.yaml"
+
+# The only unversioned paths in the estate; everything else carries /api/v{major}/.
+STANDARD_PATHS = {"/api/health", "/api/health/live", "/api/health/ready",
+                  "/api/admin/logs"}
 
 # `| `AUTH-4100` | 401 | Credential missing |` — the per-prefix tables.
 PREFIX_ROW = re.compile(r"^\|\s*`([A-Z][A-Z0-9]*-\d{4})`\s*\|\s*(\d{3})\s*\|", re.M)
@@ -35,6 +40,8 @@ SELECT_ROW = re.compile(r"^\|\s*\d+\s*\|\s*.+?\s*\|\s*`([A-Z0-9-]+)`\s*\|\s*$", 
 AUTH_ROW = re.compile(r"^\|\s*\d+\s*\|\s*.+?\s*\|\s*`([A-Z0-9-]+)`\s*\|\s*\d{3}\s*\|\s*$", re.M)
 # `| `4100-4149` | 401 | Missing or invalid credential |` — the range table.
 RANGE_ROW = re.compile(r"^\|\s*`(\d{4})-(\d{4})`\s*\|\s*(\d{3})\s*\|", re.M)
+# '## `POST HOST/api/v1/logs`' — an aggregator endpoint heading.
+AGG_PATH = re.compile(r"^##\s+`(?:GET|POST|PUT|PATCH|DELETE)\s+HOST(/\S*?)`\s*$", re.M)
 
 failures: list[str] = []
 
@@ -82,6 +89,22 @@ def main() -> int:
         elif expected != http:
             fail("invariant 3", f"{code} is documented as {http}, range table says {expected}")
 
+    # 4. The four standard endpoints are unversioned; every other path is not.
+    paths = set(spec["paths"])
+    if paths != STANDARD_PATHS:
+        for extra in sorted(paths - STANDARD_PATHS):
+            fail("invariant 4", f"openapi.yaml defines {extra}, which is not one of "
+                                "the four unversioned standard endpoints")
+        for missing in sorted(STANDARD_PATHS - paths):
+            fail("invariant 4", f"openapi.yaml no longer defines {missing}")
+    endpoints = AGG_PATH.findall(read(AGGREGATOR))
+    if not endpoints:
+        fail("invariant 4", "no endpoint headings found in aggregator-api.md")
+    for path in endpoints:
+        if not re.match(r"^/api/v\d+/", path):
+            fail("invariant 4", f"aggregator endpoint {path} is app-specific and "
+                                "must be served under /api/v{major}/")
+
     # The manifests and the schema must at least parse.
     for manifest in (ROOT / ".claude-plugin" / "marketplace.json",
                      ROOT / "plugins" / "bioeksen-sds" / ".claude-plugin" / "plugin.json"):
@@ -107,6 +130,8 @@ def main() -> int:
           f"code-prefixes.md, its selection procedure and the ErrorCode enum")
     print(f"OK - sds-auth restates steps 1-{len(auth)} in the same order")
     print("OK - every code's HTTP status matches the range table")
+    print(f"OK - the {len(STANDARD_PATHS)} standard endpoints are unversioned and "
+          f"the {len(endpoints)} aggregator endpoints are not")
     print("OK - manifests parse, every skill declares name and description")
     return 0
 
