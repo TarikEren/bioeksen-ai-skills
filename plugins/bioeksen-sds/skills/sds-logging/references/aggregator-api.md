@@ -8,7 +8,11 @@ The aggregator is itself a BioEksen app: it follows
 `status` values, the HTTP status mapping, and the error envelope. It therefore
 also exposes the standard health endpoints.
 
-Record fields and their rules are defined in `log-record.md`.
+Record fields and their rules are defined in `log-record.md`. The aggregator
+adds one value of its own: `recordId`, the identifier it assigns to a stored row
+on write. It is not part of a submitted record, and it is not the record's `id`
+field, which names the emitting app. It is returned by every endpoint below and
+is what `GET HOST/api/logs/:id` takes.
 
 ## `POST HOST/api/logs`
 
@@ -39,7 +43,7 @@ All six fields MUST be present; `code` MAY be `null`. Validation rules:
 
 | HTTP | When |
 |------|------|
-| 201 | Stored. Body carries the assigned `recordId` |
+| 201 | Stored. Body carries the `recordId` |
 | 400 | Schema validation failed. `details` lists the offending fields |
 | 500 | Stored nowhere — the database rejected the write or was unreachable |
 | 503 | The aggregator is not ready to accept records |
@@ -49,35 +53,22 @@ or 503 is retryable — see the emission rules in `log-record.md`.
 
 ## `GET HOST/api/logs`
 
-Returns stored logs across all apps, filtered and paginated. Same envelope,
-parameters and pagination rules as an app's own `GET /api/admin/logs` in
-`sds-api-design/references/standard-api-endpoints.md`, with one addition:
-because the aggregator holds records from every app, `id` selects the emitting
-app rather than being implied.
+Returns stored logs across all apps, filtered and paginated.
 
-### Query parameters
-
-All optional.
+The query parameters, their defaults, the pagination rules, the response fields
+and the error envelope are the ones defined for an app's own
+`GET /api/admin/logs` in
+`sds-api-design/references/standard-api-endpoints.md`, which is normative for
+them. One parameter differs:
 
 | Parameter | Type | Default | Notes |
 |-----------|------|---------|-------|
-| `startDate` | RFC 3339 | earliest record | Inclusive lower bound on `timestamp` |
-| `endDate` | RFC 3339 | now | Inclusive upper bound on `timestamp` |
-| `severity` | enum | all | Per `log-record.md` |
-| `type` | enum | all | Per `log-record.md` |
-| `code` | string | all | Exact error code, e.g. `DB-5001` |
-| `id` | string | all | The emitting service, app or process |
-| `page` | integer | `1` | 1-based |
-| `limit` | integer | `50` | Max `200` |
+| `id` | string | all | The emitting service, app or process. On an app's own endpoint every record has the same value; here it selects between apps |
 
 Results MUST be sorted by `timestamp` descending, tie-broken by `recordId`
-ascending so paging is stable. Not by the `id` field, which names the emitting
-app and breaks no ties between two records from the same one.
-
-Each returned record carries `recordId`, the aggregator's own identifier for
-the stored row. It is assigned on write, is not part of the submitted record in
-`log-record.md`, and is the value `GET HOST/api/logs/:id` takes — without it in
-this response there is no way to reach a single record from a listing.
+ascending so paging is stable — `recordId` being the store-assigned identifier
+that endpoint's tie-break rule calls for. Every record in the response carries
+it, so a listing can be followed to a single record.
 
 ### Response
 
@@ -116,7 +107,8 @@ A page beyond the last one returns 200 with an empty `logs` array and the true
 
 ## `GET HOST/api/logs/:id`
 
-Returns a single stored record by its aggregator-assigned record id.
+Returns a single stored record. The path parameter is the `recordId` defined at
+the top of this document, not the record's `id` field.
 
 | HTTP | When |
 |------|------|
@@ -124,11 +116,6 @@ Returns a single stored record by its aggregator-assigned record id.
 | 404 | No record with that id |
 | 500 | Query failed |
 | 503 | Not ready |
-
-Note that the path parameter is `recordId`, the aggregator's own identifier for
-the stored row, not the record's `id` field, which identifies the emitting app.
-It is returned by `POST HOST/api/logs` on 201 and on every record in
-`GET HOST/api/logs`.
 
 ## Authorization
 

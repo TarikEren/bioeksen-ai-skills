@@ -83,15 +83,16 @@ logged twice rather than compromising on one.
 
 ## Correlation
 
-- The `id` field is the emitting service, app or process. It MUST be stable
-  across restarts and deployments, and is allocated per the rule in
-  `references/log-record.md` — never guessed.
+`references/log-record.md` defines the mechanics: the `id` field naming the
+emitting app, the `request=` value every record of one request shares, and the
+`X-Request-Id` header that carries it between services. Three rules are
+repeated here because they are the ones that get missed:
+
+- The `id` is allocated, never guessed — supplied by the project or by the
+  id-issuing service, and asked for when it has not been.
 - `id` has nothing to do with the prefix of an error code. Prefixes name the
   *kind* of failure and are shared by every app, so one app emits several of
   them — see `references/error-codes.md`.
-- Every record produced while handling one request MUST carry the same
-  `request=<id>` value in its structured tail, so a failure can be traced end
-  to end — see `references/log-record.md`.
 - When a request fails, the `code` in the API error response and the `code`
   field of the log record MUST be the same value.
 

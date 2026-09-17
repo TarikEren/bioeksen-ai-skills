@@ -80,8 +80,8 @@ The two MUST be the same code for the same failure. That equality is what lets
 an operator take a code from a user's screenshot and filter the aggregator
 straight to the matching records.
 
-The code MUST NOT be repeated inside `message`. It is a field precisely so
-that filtering does not depend on parsing free text.
+Neither `message` repeats the code, which is a rule about the message field and
+is stated with the others in `log-record.md`.
 
 ## Registry rules
 
@@ -89,10 +89,12 @@ that filtering does not depend on parsing free text.
 keep their own; a code that exists in one repository and nowhere else cannot
 be filtered, alerted on, or looked up.
 
-- A code, once used, is permanent. Its meaning MUST NOT be redefined.
-- A retired code MUST NOT be reused for something else. Mark it retired and
-  allocate a new number.
-- Codes MUST NOT be renumbered. Clients and runbooks reference them.
+Codes are permanent: never renumbered, never redefined, never reused for a
+different meaning, and a retired one stays in its table marked retired.
+**Extending the list** in `code-prefixes.md` states those rules normatively,
+together with what adding a code requires. Two consequences shape how a code
+is chosen:
+
 - Message text MAY be reworded freely; that is why the code exists.
 - A new failure mode gets a new code rather than an existing code with a
   different message.
