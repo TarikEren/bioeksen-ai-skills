@@ -56,14 +56,14 @@ selection guidance:
 | `INFO` | A normal, noteworthy event: startup, job completed, resource created | No |
 | `WARNING` | Degraded but handled: retry succeeded, fell back to a default, approaching a limit | No |
 | `ERROR` | One operation failed and a user or job is affected. The app keeps running | Not immediately |
-| `CRITICAL` | The app cannot serve traffic, or data integrity is at risk | Yes |
+| `FATAL` | The app cannot serve traffic, or data integrity is at risk | Yes |
 
 Rules:
 
 - A handled, expected condition is not an `ERROR`. A rejected 400 request is
   `WARNING` at most; it means the client misbehaved, not the app.
 - A 5xx response MUST be logged at `ERROR` or higher.
-- `CRITICAL` MUST correspond to something a person should act on now. If
+- `FATAL` MUST correspond to something a person should act on now. If
   nothing can be done about it, it is an `ERROR`.
 
 ## Choosing a type

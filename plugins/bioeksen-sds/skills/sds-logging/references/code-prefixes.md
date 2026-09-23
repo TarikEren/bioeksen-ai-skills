@@ -109,21 +109,21 @@ Given the code, everything else follows. No implementer decides these.
 |------|----------|
 | Any `4xxx` code | `WARNING` |
 | Any `5xxx` code | `ERROR` |
-| `DB-5500`, `CFG-5000`, `CFG-5001` | `CRITICAL` |
-| `SYS-5500` after the app's startup budget has elapsed | `CRITICAL` |
-| `DB-5501` sustained for more than 60 seconds | `CRITICAL` |
+| `DB-5500`, `CFG-5000`, `CFG-5001` | `FATAL` |
+| `SYS-5500` after the app's startup budget has elapsed | `FATAL` |
+| `DB-5501` sustained for more than 60 seconds | `FATAL` |
 
-The `CRITICAL` row wins where it applies. A record with no code carries no
+The `FATAL` row wins where it applies. A record with no code carries no
 severity constraint from this document.
 
 Two rows are conditional, and for the same reason: the condition they describe
 is normal at one duration and an outage at another.
 
 `SYS-5500`. An app reporting "not ready" during startup or a rolling deploy is
-behaving correctly, and `CRITICAL` is defined in `SKILL.md` as something a
+behaving correctly, and `FATAL` is defined in `SKILL.md` as something a
 person must act on now — so emitting it on every deploy would page someone for
 a healthy release, and train them to ignore the severity. Not-ready is `ERROR`
-until the app has been given its configured time to come up, and `CRITICAL`
+until the app has been given its configured time to come up, and `FATAL`
 once it has missed that deadline, which is the point at which a person
 genuinely does need to look.
 
@@ -132,7 +132,7 @@ and `SKILL.md` is explicit that a condition nothing can be done about is an
 `ERROR`. A pool that stays exhausted is a different thing: the app is serving
 nobody, and no one has been told. Both unconditional answers are wrong in the
 way this table has already been wrong once — always `ERROR` leaves a real
-outage unpaged, and always `CRITICAL` pages on every traffic spike until the
+outage unpaged, and always `FATAL` pages on every traffic spike until the
 severity means nothing.
 
 Sixty seconds is an empirical value in the sense of

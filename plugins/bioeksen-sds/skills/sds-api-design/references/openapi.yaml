@@ -436,7 +436,7 @@ components:
 
     Severity:
       type: string
-      enum: [DEBUG, INFO, WARNING, ERROR, CRITICAL]
+      enum: [DEBUG, INFO, WARNING, ERROR, FATAL]
 
     LogType:
       type: string
@@ -571,7 +571,7 @@ components:
             - type: "null"
           description: >-
             Null when the record does not describe a failure. Required to be
-            non-null when severity is ERROR or CRITICAL.
+            non-null when severity is ERROR or FATAL.
         message:
           type: string
           description: >-

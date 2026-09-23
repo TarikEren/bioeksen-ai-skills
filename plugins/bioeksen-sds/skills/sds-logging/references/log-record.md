@@ -12,7 +12,7 @@ aggregator endpoints that carry these records are in `aggregator-api.md`.
 | `timestamp` | string | RFC 3339 with offset and at least millisecond precision, e.g. `2026-09-03T14:05:00.123Z`. MUST be the time the event occurred, not the time it was submitted |
 | `severity` | enum | See below |
 | `type` | enum | See below |
-| `code` | string \| null | The error code identifying the failure, per `error-codes.md`. `null` when the record does not describe a failure. REQUIRED when `severity` is `ERROR` or `CRITICAL` |
+| `code` | string \| null | The error code identifying the failure, per `error-codes.md`. `null` when the record does not describe a failure. REQUIRED when `severity` is `ERROR` or `FATAL` |
 | `message` | string | See below |
 
 The same six fields are what an app's own `GET /api/admin/logs` returns — see
@@ -49,7 +49,7 @@ failure and are shared across the estate, so every app emits many of them; see
 
 ### Severity
 
-`DEBUG` | `INFO` | `WARNING` | `ERROR` | `CRITICAL`
+`DEBUG` | `INFO` | `WARNING` | `ERROR` | `FATAL`
 
 Guidance on choosing between them is in `SKILL.md`.
 

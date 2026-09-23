@@ -288,7 +288,7 @@ All are optional.
 |-----------|------|---------|-------|
 | `startDate` | RFC 3339 | start of the retention window | Inclusive lower bound on `timestamp`. Clamped — see below |
 | `endDate` | RFC 3339 | now | Inclusive upper bound on `timestamp` |
-| `severity` | enum | all | `DEBUG` \| `INFO` \| `WARNING` \| `ERROR` \| `CRITICAL` |
+| `severity` | enum | all | `DEBUG` \| `INFO` \| `WARNING` \| `ERROR` \| `FATAL` |
 | `type` | enum | all | `APP` \| `SECURITY` \| `AUDIT` \| `ACCESS` \| `JOB` |
 | `id` | string | all | Owner ID of the log — the service, app or process that emitted it |
 | `code` | string | all | Exact error code, e.g. `DB-5001` |
