@@ -79,6 +79,20 @@ in CI on every push and pull request, and locally when you run it.
    which plugins the marketplace offers, so it moves when one is added,
    removed or renamed, and not when a plugin releases. The two coinciding is
    allowed and means nothing.
+8. The severity and type values are listed identically in `log-record.md`,
+   the two selection tables in `sds-logging/SKILL.md`, the query parameter
+   table in `standard-api-endpoints.md`, and the `Severity` and `LogType`
+   enums in `openapi.yaml`. Both sets are closed and restated four times, so a
+   rename has to land in every copy in one commit.
+9. Every file a skill document names resolves once the plugin is installed:
+   from `skills/`, beside the naming file, or from the naming skill's own
+   directory. A path starting with `/` or containing `{` names a file in the
+   project using the skill and is exempt; a repository path (`plugins/…`)
+   always fails, because it does not exist in an installed copy.
+
+Every `SKILL.md` must also open with frontmatter whose `name` is its
+directory's and whose `description` is not empty — the description is what
+decides when the skill loads.
 
 The endpoints in `aggregator-api.md` and `aggregator-api.yaml` must also be the
 same set, which invariant 4 checks. The prose writes a path parameter as

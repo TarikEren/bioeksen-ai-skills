@@ -31,8 +31,14 @@ SERVICE_CALLS = SKILLS / "sds-api-design" / "references" / "service-calls.md"
 OPENAPI = SKILLS / "sds-api-design" / "references" / "openapi.yaml"
 AGGREGATOR_YAML = SKILLS / "sds-logging" / "references" / "aggregator-api.yaml"
 SCHEMAS = (OPENAPI, AGGREGATOR_YAML)
+LOG_RECORD = SKILLS / "sds-logging" / "references" / "log-record.md"
+LOGGING_SKILL = SKILLS / "sds-logging" / "SKILL.md"
+STANDARD_ENDPOINTS = SKILLS / "sds-api-design" / "references" / "standard-api-endpoints.md"
 MARKETPLACE = ROOT / ".claude-plugin" / "marketplace.json"
 PLUGIN_MANIFEST = ROOT / "plugins" / "bioeksen-sds" / ".claude-plugin" / "plugin.json"
+
+# sds-auth restates exactly steps 1-9 of the selection procedure.
+AUTH_STEPS = 9
 
 # The only unversioned paths in the estate; everything else carries /api/v{major}/.
 STANDARD_PATHS = {"/api/health", "/api/health/live", "/api/health/ready",
@@ -50,6 +56,33 @@ RANGE_ROW = re.compile(r"^\|\s*`(\d{4})-(\d{4})`\s*\|\s*(\d{3})\s*\|", re.M)
 AGG_PATH = re.compile(r"^##\s+`(?:GET|POST|PUT|PATCH|DELETE)\s+HOST(/\S*?)`\s*$", re.M)
 # `| `5500-5999` | 503 | Yes |` — the retry classification.
 RETRY_ROW = re.compile(r"^\|\s*`(\d{4})-(\d{4})`\s*\|\s*(\d{3})\s*\|\s*(Yes|No)\s*\|", re.M)
+# A fenced code block, stripped before looking for references: paths inside
+# examples name files in the project using a skill, not files in this plugin.
+FENCE = re.compile(r"^```.*?^```", re.M | re.S)
+# `sds-logging/references/log-record.md` — a file named in running text.
+TICKED_PATH = re.compile(r"`((?:[\w.-]+/)*[\w-]+\.(?:md|yaml))`")
+# [text](target) — a markdown link.
+LINK = re.compile(r"\]\(([^)\s]+)\)")
+# The same paths as they appear in plain YAML description text.
+PLAIN_PATH = re.compile(r"(?<![\w./-])((?:[\w-]+/)*[\w-]+\.(?:md|yaml))\b")
+# `---\nname: ...\n---` — the frontmatter block that decides when a skill loads.
+FRONTMATTER = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.S)
+
+
+def cells(row: str) -> list[str]:
+    """The cells of a markdown table row, split on unescaped pipes only."""
+    return [c.strip() for c in re.split(r"(?<!\\)\|", row.strip().strip("|"))]
+
+
+def ticked(text: str) -> list[str]:
+    """Every backticked token in a piece of text, in order."""
+    return re.findall(r"`([^`]+)`", text)
+
+
+def section(text: str, heading: str) -> str:
+    """The body under a markdown heading, up to the next heading of any level."""
+    match = re.search(rf"^#+\s+{re.escape(heading)}\s*$(.*?)(?=^#|\Z)", text, re.M | re.S)
+    return match.group(1) if match else ""
 
 failures: list[str] = []
 
@@ -108,9 +141,16 @@ def main() -> int:
         fail("invariant 1", "ErrorCode enum contains duplicates")
 
     # 2. sds-auth restates steps 1-9 of the selection procedure, codes and order.
+    # The counts are asserted first: a table the pattern stops matching would
+    # otherwise compare an empty list with an empty slice and pass.
     auth = AUTH_ROW.findall(au)
-    if auth != selection[: len(auth)]:
-        fail("invariant 2", f"sds-auth order {auth} != selection procedure {selection[:len(auth)]}")
+    if not selection:
+        fail("invariant 2", "no selection procedure rows found in code-prefixes.md")
+    if len(auth) != AUTH_STEPS:
+        fail("invariant 2", f"sds-auth validation order has {len(auth)} matching rows, "
+                            f"expected {AUTH_STEPS}")
+    elif auth != selection[:AUTH_STEPS]:
+        fail("invariant 2", f"sds-auth order {auth} != selection procedure {selection[:AUTH_STEPS]}")
 
     # 3. Every code's HTTP status matches the range table in error-codes.md.
     ranges = [(int(a), int(b), int(h)) for a, b, h in RANGE_ROW.findall(read(ERROR_CODES))]
@@ -193,12 +233,69 @@ def main() -> int:
             fail("invariant 7", f"marketplace.json says {own['name']} is "
                                 f"{listed[own['name']]}, plugin.json says {own.get('version')}")
 
-    # Every skill needs the frontmatter that decides when it loads.
+    # 8. The severity and type sets are closed, and restated in four places.
+    # A rename has to land in every one of them, so each is compared to the
+    # schema, which is the only copy a validator ever sees.
+    record, logging_skill = read(LOG_RECORD), read(LOGGING_SKILL)
+    standard = read(STANDARD_ENDPOINTS)
+    query = {cells(row)[0].strip("`"): cells(row) for row in standard.splitlines()
+             if row.startswith("| `")}
+    for name, schema, heading, skill_heading in (
+            ("severity", "Severity", "Severity", "Choosing a severity"),
+            ("type", "LogType", "Type", "Choosing a type")):
+        expected = spec["components"]["schemas"][schema]["enum"]
+        body = section(record, heading).strip()
+        copies = {
+            "log-record.md": ticked(body.splitlines()[0]) if body else [],
+            "sds-logging/SKILL.md": [ticked(cells(row)[0])[0]
+                                     for row in section(logging_skill, skill_heading).splitlines()
+                                     if row.startswith("| `")],
+            "standard-api-endpoints.md": ticked(query[name][3]) if name in query else [],
+        }
+        for where, got in copies.items():
+            if got != expected:
+                fail("invariant 8", f"{where} lists {name} values {got}, "
+                                    f"openapi.yaml {schema} has {expected}")
+
+    # 9. Every file one skill document names resolves once the plugin is
+    # installed: from the skills root, beside the naming file, or from the
+    # naming skill's own directory. Paths starting with `/` or carrying a `{`
+    # name files in the project using a skill, and are skipped.
+    references = 0
+    for doc in sorted(list(SKILLS.rglob("*.md")) + list(SKILLS.rglob("*.yaml"))):
+        text = FENCE.sub("", read(doc))
+        skill_dir = SKILLS / doc.relative_to(SKILLS).parts[0]
+        if doc.suffix == ".md":
+            targets = TICKED_PATH.findall(text) + [
+                t.split("#")[0] for t in LINK.findall(text) if not t.startswith(("http", "#"))]
+        else:
+            targets = PLAIN_PATH.findall(text)
+        for target in targets:
+            if target.startswith("/") or "{" in target:
+                continue
+            references += 1
+            where = doc.relative_to(ROOT)
+            if target.startswith("plugins/"):
+                fail("invariant 9", f"{where} names {target} by a repository path, "
+                                    "which does not exist once the plugin is installed")
+            elif not any((base / target).is_file()
+                         for base in (SKILLS, doc.parent, skill_dir)):
+                fail("invariant 9", f"{where} names {target}, which resolves nowhere")
+
+    # Every skill needs the frontmatter that decides when it loads, and its
+    # name must be its directory's.
     for skill in sorted(SKILLS.glob("*/SKILL.md")):
-        head = read(skill)[:800]
-        for key in ("name:", "description:"):
-            if not re.search(rf"^{key}", head, re.M):
-                fail("frontmatter", f"{skill.relative_to(ROOT)} has no {key.rstrip(':')}")
+        where = skill.relative_to(ROOT)
+        block = FRONTMATTER.match(read(skill))
+        if not block:
+            fail("frontmatter", f"{where} does not open with a --- frontmatter block")
+            continue
+        fields = dict(re.findall(r"^(\w+):\s*(.*?)\s*$", block.group(1), re.M))
+        if fields.get("name") != skill.parent.name:
+            fail("frontmatter", f"{where} is named {fields.get('name')!r}, "
+                                f"its directory {skill.parent.name!r}")
+        if not fields.get("description"):
+            fail("frontmatter", f"{where} has no description")
 
     if failures:
         print(f"FAILED ({len(failures)} problem(s)):\n", file=sys.stderr)
@@ -214,8 +311,11 @@ def main() -> int:
           f"the {len(documented_paths)} aggregator paths are not")
     print("OK - retryable codes are exactly the 503 range, per error-codes.md")
     print(f"OK - all {refs} $refs across {len(SCHEMAS)} schema files resolve")
-    print("OK - manifests parse and agree on the plugin version, "
-          "every skill declares name and description")
+    print("OK - manifests parse and agree on the plugin version")
+    print("OK - severity and type values agree across log-record.md, sds-logging, "
+          "standard-api-endpoints.md and the schema")
+    print(f"OK - all {references} file references in the skills resolve")
+    print("OK - every skill's frontmatter names its directory and has a description")
     return 0
 
 
