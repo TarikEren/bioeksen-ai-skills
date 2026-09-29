@@ -4,7 +4,7 @@ description: BioEksen conventional commit format. Use when writing or amending a
 ---
 
 # Conventional Commits
-Each commit SHOULD abide by the following format:
+Each commit MUST abide by the following format:
 
 ```
 <type>(<scope>): <description>
@@ -29,6 +29,7 @@ Each commit SHOULD abide by the following format:
 | build | Commits that affect build-related components such as build tools, dependencies, project version etc. |
 | ops | Commits that affect operational aspects like infrastructure (IaC), deployment scripts, CI/CD pipelines, backups, monitoring, or recovery procedures |
 | chore | Commits that represent tasks like initial commit, modifying etc. |
+| revert | Commits that undo an earlier commit — see **Reverts** below |
 
 ## Scope
 Optional and provides additional contextual information.
@@ -37,7 +38,7 @@ Optional and provides additional contextual information.
 
 ### Breaking Changes Indicator
 A commit that introduce breaking changes must be indicated by an `!` before the `:` in the subject line e.g. `feat(api)!: remove status endpoint`
-- Breaking changes should be described in the commit footer section, if the commit description isn't sufficiently informative
+- A breaking change MUST also carry a `BREAKING CHANGE:` footer stating what breaks. Its release note entry copies that text rather than paraphrasing it, per [release-notes](references/release-notes.md), so the footer is where the text has to be
 
 ## Description
 The mandatory description contains a concise description of the change.
@@ -57,10 +58,32 @@ The footer should contain the change identifier, issue references and informatio
 - `Change-Id:` carries the identifier its release note entry is written under, e.g. `Change-Id: auth-service-20260904T140512Z-a3f9`
   - Mint it when writing the commit and copy it verbatim into the note, so an entry resolves to the commit that produced it
   - See [release-notes](references/release-notes.md) for the identifier format
+  - Exactly one `Change-Id:` per commit: one commit is one entry
+  - Gerrit uses a `Change-Id:` trailer of its own, `I` followed by 40 hex digits. The two formats cannot share one trailer, so a repository reviewed through Gerrit MUST NOT install Gerrit's commit-msg hook alongside this convention
 - Optionally reference issue identifiers (e.g., Closes #123, Fixes JIRA-456)
 - Breaking changes must start with the phrase `BREAKING CHANGE:`
   - For a single line description just add a space after `BREAKING CHANGE:`
   - For a multi line description add two new lines after `BREAKING CHANGE:`
+
+## Reverts
+`git revert` writes `Revert "<original subject>"`, which fails the format. Reword it before committing:
+
+```
+revert: <the reverted commit's description>
+
+This reverts commit <sha>.
+
+Change-Id: <a freshly minted identifier>
+```
+
+- The description is the reverted commit's own, verbatim, and the body names it by the hash git wrote
+- The `Change-Id:` is new. A revert is a change of its own with its own release note entry, and reusing the original's identifier would make one identifier name two opposite changes
+- A revert that undoes a released change callers depend on is breaking in its own right, and carries `!` and a `BREAKING CHANGE:` footer
+
+## Merging
+One commit is one release note entry, so a branch MUST reach the main branch with every commit's message and trailer intact:
+- **Rebase-merge, or a merge commit**, keeps each commit as written. A merge commit itself carries no entry, per [release-notes](references/release-notes.md)
+- **Squash-merge** replaces a branch's commits with one, and GitHub builds its message by concatenating theirs — several `Change-Id:` trailers in one commit, or none if the message is replaced. A squash-merged commit MUST be edited before merging into this format, with a description covering the whole branch and exactly one freshly minted `Change-Id:`
 
 ## Versioning
 The next release's version follows from the commits it contains, as in SemVer:

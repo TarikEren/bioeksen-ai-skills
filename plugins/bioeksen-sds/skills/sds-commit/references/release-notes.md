@@ -212,7 +212,7 @@ mention — a distinction the change record has to preserve.
 
 Breaking changes first, then the remaining entries in the order the type table
 in `SKILL.md` lists them — `feat`, `fix`, `refactor`, `perf`, `style`, `test`,
-`docs`, `build`, `ops`, `chore`. Within one type, keep commit order.
+`docs`, `build`, `ops`, `chore`, `revert`. Within one type, keep commit order.
 
 The reader looking for what will break their integration finds it at the top,
 without a heading structure the format does not have.
