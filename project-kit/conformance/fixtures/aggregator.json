@@ -1,0 +1,44 @@
+[
+  {
+    "name": "a stored record",
+    "schema": "aggregator-api.yaml#/components/schemas/StoredRecord",
+    "valid": true,
+    "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21"}
+  },
+  {
+    "name": "a stored record without its recordId",
+    "schema": "aggregator-api.yaml#/components/schemas/StoredRecord",
+    "valid": false,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21"}
+  },
+  {
+    "name": "a batch of one",
+    "schema": "aggregator-api.yaml#/components/schemas/LogBatch",
+    "valid": true,
+    "instance": {"records": [{"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "INFO", "type": "ACCESS", "code": null, "message": "request served request=8c21 status=200"}]}
+  },
+  {
+    "name": "an empty batch",
+    "schema": "aggregator-api.yaml#/components/schemas/LogBatch",
+    "valid": false,
+    "instance": {"records": []}
+  },
+  {
+    "name": "a batch whose record carries a recordId",
+    "schema": "aggregator-api.yaml#/components/schemas/LogBatch",
+    "valid": false,
+    "instance": {"records": [{"recordId": "x", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "INFO", "type": "APP", "code": null, "message": "started"}]}
+  },
+  {
+    "name": "a batch result",
+    "schema": "aggregator-api.yaml#/components/schemas/BatchResult",
+    "valid": true,
+    "instance": {"status": "ok", "recordIds": ["01J9Z4K7XQ2M8N", "01J9Z4K7XQ2M8P"]}
+  },
+  {
+    "name": "a page of stored records",
+    "schema": "aggregator-api.yaml#/components/schemas/StoredLogPage",
+    "valid": true,
+    "instance": {"status": "ok", "page": 1, "count": 1, "totalCount": 137, "logs": [{"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21"}], "filterParams": {"id": null, "severity": null, "type": null, "code": null, "startDate": "2026-06-05T00:00:00Z", "endDate": "2026-09-03T23:59:59Z", "page": 1, "limit": 50}}
+  }
+]

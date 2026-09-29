@@ -1,0 +1,74 @@
+[
+  {
+    "name": "a live process",
+    "schema": "openapi.yaml#/components/schemas/Liveness",
+    "valid": true,
+    "instance": {"status": "ok"}
+  },
+  {
+    "name": "not-ready from the liveness probe",
+    "schema": "openapi.yaml#/components/schemas/Liveness",
+    "valid": false,
+    "instance": {"status": "not-ready"}
+  },
+  {
+    "name": "a ready instance with a gating dependency",
+    "schema": "openapi.yaml#/components/schemas/Readiness",
+    "valid": true,
+    "instance": {"status": "ok", "uptime": 86400, "checks": {"db": "ok", "cache": "na", "dependencies": {"billing-service": "ok"}}}
+  },
+  {
+    "name": "a ready instance with no further dependencies",
+    "schema": "openapi.yaml#/components/schemas/Readiness",
+    "valid": true,
+    "instance": {"status": "ok", "uptime": 86400, "checks": {"db": "ok", "cache": "na", "dependencies": {}}}
+  },
+  {
+    "name": "readiness omitting dependencies",
+    "schema": "openapi.yaml#/components/schemas/Readiness",
+    "valid": false,
+    "instance": {"status": "ok", "uptime": 86400, "checks": {"db": "ok", "cache": "na"}}
+  },
+  {
+    "name": "a dependency named with capitals",
+    "schema": "openapi.yaml#/components/schemas/Readiness",
+    "valid": false,
+    "instance": {"status": "ok", "uptime": 86400, "checks": {"db": "ok", "cache": "na", "dependencies": {"Billing": "ok"}}}
+  },
+  {
+    "name": "a full health report",
+    "schema": "openapi.yaml#/components/schemas/Health",
+    "valid": true,
+    "instance": {"status": "ok", "uptime": 86400, "checks": {"db": {"status": "ok", "openConnections": 10, "inUseConnections": 2, "idleConnections": 8}, "cache": "ok", "dependencies": {"object-store": "ok"}, "memory": {"totalHeap": 2.0, "usedHeap": 1.25, "totalMemory": 16.0, "usedMemory": 9.5}, "disk": {"total": 512.0, "used": 210.5, "free": 301.5}}}
+  },
+  {
+    "name": "a page of logs",
+    "schema": "openapi.yaml#/components/schemas/LogPage",
+    "valid": true,
+    "instance": {"status": "ok", "page": 1, "count": 1, "totalCount": 137, "logs": [{"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21"}], "filterParams": {"id": "auth-service", "severity": "ERROR", "type": "APP", "code": "DB-5001", "startDate": "2026-09-01T00:00:00Z", "endDate": "2026-09-03T23:59:59Z", "page": 1, "limit": 50}}
+  },
+  {
+    "name": "a page echoing an id with capitals",
+    "schema": "openapi.yaml#/components/schemas/LogPage",
+    "valid": false,
+    "instance": {"status": "ok", "page": 1, "count": 0, "totalCount": 0, "logs": [], "filterParams": {"id": "Auth", "severity": null, "type": null, "code": null, "startDate": "2026-09-01T00:00:00Z", "endDate": "2026-09-03T23:59:59Z", "page": 1, "limit": 50}}
+  },
+  {
+    "name": "a rejection",
+    "schema": "openapi.yaml#/components/schemas/Error",
+    "valid": true,
+    "instance": {"status": "fail", "code": "AUTH-4100", "message": "Credential missing", "details": null}
+  },
+  {
+    "name": "a validation failure with details",
+    "schema": "openapi.yaml#/components/schemas/Error",
+    "valid": true,
+    "instance": {"status": "fail", "code": "VAL-4006", "message": "quantity must be positive", "details": [{"field": "quantity", "issue": "must be at least 1"}]}
+  },
+  {
+    "name": "an envelope carrying an invented code",
+    "schema": "openapi.yaml#/components/schemas/Error",
+    "valid": false,
+    "instance": {"status": "fail", "code": "ORDER-4001", "message": "order already shipped", "details": null}
+  }
+]

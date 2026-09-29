@@ -1,0 +1,74 @@
+[
+  {
+    "name": "a failure record with its code",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": true,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21"}
+  },
+  {
+    "name": "an INFO record with no code",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": true,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "INFO", "type": "JOB", "code": null, "message": "job completed job=7f2a"}
+  },
+  {
+    "name": "an offset and microseconds",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": true,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T17:05:00.123456+03:00", "severity": "WARNING", "type": "SECURITY", "code": "AUTH-4102", "message": "credential expired request=8c21"}
+  },
+  {
+    "name": "a timestamp without milliseconds",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": false,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00Z", "severity": "INFO", "type": "APP", "code": null, "message": "started"}
+  },
+  {
+    "name": "an ERROR record with a null code",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": false,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": null, "message": "write failed"}
+  },
+  {
+    "name": "a FATAL record with a null code",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": false,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "FATAL", "type": "APP", "code": null, "message": "database unavailable"}
+  },
+  {
+    "name": "the retired CRITICAL severity",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": false,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "CRITICAL", "type": "APP", "code": "DB-5500", "message": "database unavailable"}
+  },
+  {
+    "name": "an id with capitals",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": false,
+    "instance": {"id": "Auth-Service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "INFO", "type": "APP", "code": null, "message": "started"}
+  },
+  {
+    "name": "an id of 64 characters",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": false,
+    "instance": {"id": "abbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "INFO", "type": "APP", "code": null, "message": "started"}
+  },
+  {
+    "name": "a message spanning two lines",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": false,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "INFO", "type": "APP", "code": null, "message": "started\nrequest=8c21"}
+  },
+  {
+    "name": "an invented code",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": false,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "AUTH-5999", "message": "something failed"}
+  },
+  {
+    "name": "a submitted recordId",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": false,
+    "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "INFO", "type": "APP", "code": null, "message": "started"}
+  }
+]
