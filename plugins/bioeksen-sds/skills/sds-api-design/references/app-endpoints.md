@@ -104,14 +104,14 @@ Methods carry their RFC 9110 semantics, which is what the retry rules in
 | Method | Use | Success |
 |--------|-----|---------|
 | `GET` | Read, with no side effects | 200 |
-| `POST` | Create one member of a collection, or run a collection operation | 201 for a create, 200 for an operation |
+| `POST` | Create members of a collection, or run a collection operation | 201 when it creates anything, 200 otherwise |
 | `PUT` | Replace a member entirely | 200, with the member |
 | `PATCH` | Change some fields of a member | 200, with the member |
 | `DELETE` | Remove a member | 204, with no body |
 
-- A create answers 201 with a `Location` header naming the new member, and the
-  member in the body. A collection operation that creates several has no
-  single `Location`, and names what it created in its body.
+- A create of one member answers 201 with a `Location` header naming it, and
+  the member in the body. A collection operation that creates several answers
+  201 with no single `Location`, and names what it created in its body.
 - A `PATCH` body is a JSON Merge Patch, RFC 7396: a field left out is
   unchanged, and a field set to `null` is removed. One patch format across the
   estate means a caller never has to ask which one an app took.

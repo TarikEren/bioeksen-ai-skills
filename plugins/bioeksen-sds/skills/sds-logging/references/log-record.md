@@ -189,6 +189,9 @@ is already answered whenever storage or tooling changes.
   is recorded there and written to stderr — together, the app's local error
   channel.
 - Submission MUST NOT block the request path. Emit asynchronously.
+- An app that emits more than occasionally SHOULD submit in batches, through
+  `POST /api/v1/logs/batch` in `aggregator-api.md`. The response handling below
+  is the same for a batch as for a single record.
 - Every submission MUST carry an `Idempotency-Key`: the same value on every
   retry of that submission, and a fresh one for any submission whose body
   differs. The same key is what stops a retry after a timeout storing a record

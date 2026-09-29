@@ -74,6 +74,61 @@ A 503 is retryable; a 400, 403, 409 or 500 is not. What an emitting app does
 with each is the table under **Handling the aggregator's response** in
 `log-record.md`.
 
+## `POST HOST/api/v1/logs/batch`
+
+Validates and stores up to 500 records in one request. An app that emits more
+than occasionally SHOULD submit this way: every submission costs an
+authenticated round trip, and an `ACCESS` record for every inbound request
+would otherwise mean an outbound request for every inbound one.
+
+### Request
+
+```json
+{
+    "records": [
+        {
+            "id": "auth-service",
+            "timestamp": "2026-09-03T14:05:00.123Z",
+            "severity": "ERROR",
+            "type": "APP",
+            "code": "DB-5001",
+            "message": "write failed request=8c21"
+        }
+    ]
+}
+```
+
+- `records` holds 1 to 500 records, each validated exactly as a single
+  submission is. More than 500 is `VAL-4006`. A body over 1 MiB is refused with
+  413 `VAL-4550` before it is parsed.
+- Every record's `id` MUST be the submitting app's, as for a single
+  submission. One that is not refuses the whole batch with 403 `PERM-4152`.
+- The batch is all or nothing: every record is stored, or none is.
+- A 400 names each failing record by its position — a `details` entry's
+  `field` is `records[3].severity`. The app removes those records and
+  resubmits the rest, which is a changed body and so goes under a fresh
+  `Idempotency-Key`.
+
+All or nothing keeps one status per response and one meaning per idempotency
+key. Partial success would need a status per record, and a retry of a partly
+stored batch would have to know which half to send again.
+
+### Responses
+
+| HTTP | When |
+|------|------|
+| 201 | Every record stored. Body carries their `recordId`s, in submission order |
+| 400 | At least one record failed validation, and none was stored. `details` names each by position |
+| 401 | No app credential, or one that does not validate |
+| 403 | As for a single submission — `PERM-4150` or `PERM-4152` |
+| 409 | The `Idempotency-Key` is already spent on a different body — `RES-4301` |
+| 429 | Over the caller's allowance — `RATE-4400`, carrying `Retry-After` |
+| 500 | Stored nowhere — the database rejected the write, `DB-5001` |
+| 503 | The aggregator is not ready to accept records, or its database is unreachable |
+
+An emitting app handles each exactly as it handles the same status from a
+single submission.
+
 ## `GET HOST/api/v1/logs`
 
 Returns stored logs across all apps, filtered and paginated.
@@ -176,9 +231,9 @@ the top of this document, not the record's `id` field.
 
 ## Authorization
 
-`POST /api/v1/logs` MUST require an app credential holding the `logs.write`
-role from the registry in `sds-auth/references/credentials.md`, and the
-credential MUST be the record's own. Requiring a credential is not enough by itself: any app
+Both submission endpoints MUST require an app credential holding the
+`logs.write` role from the registry in `sds-auth/references/credentials.md`,
+and the credential MUST be the record's own. Requiring a credential is not enough by itself: any app
 holding one could still submit records under another app's `id`, and the
 forgery would pass every check that looks only at the credential.
 

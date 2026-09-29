@@ -94,7 +94,7 @@ Drawn from the endpoints already specified elsewhere:
 | `GET /api/health/ready` | None |
 | `GET /api/health` | Operator |
 | `GET /api/admin/logs` | Operator |
-| `POST HOST/api/v1/logs` | App, holding `logs.write` |
+| `POST HOST/api/v1/logs`, `POST HOST/api/v1/logs/batch` | App, holding `logs.write` |
 | `GET HOST/api/v1/logs`, `GET HOST/api/v1/logs/:recordId` | Operator |
 
 The two probe endpoints are deliberately unauthenticated: they expose nothing,
