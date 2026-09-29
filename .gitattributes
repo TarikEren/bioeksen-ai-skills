@@ -12,6 +12,8 @@
 *.sh   text eol=lf
 *.bash text eol=lf
 *.py   text eol=lf
+# Git hooks carry no extension, and a generator copies them from a checkout.
+project-kit/template/.githooks/* text eol=lf
 
 # Never touched.
 *.png  binary

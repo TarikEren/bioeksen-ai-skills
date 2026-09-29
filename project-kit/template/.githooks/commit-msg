@@ -1,0 +1,16 @@
+#!/bin/sh
+# Checks each commit message against sds-commit, minting its Change-Id when it
+# has none. Enable once per clone:
+#
+#   git config core.hooksPath .githooks
+#
+# It runs the tool from the .bioeksen-sds checkout described in CLAUDE.md. CI
+# runs the same check on every pull request, so a clone without the checkout
+# is told here and caught there, rather than blocked.
+tool="$(git rev-parse --show-toplevel)/.bioeksen-sds/project-kit/tools/commit_msg.py"
+if [ ! -f "$tool" ]; then
+  echo "commit-msg: $tool not found; see CLAUDE.md to check out bioeksen-sds" >&2
+  exit 0
+fi
+if command -v python3 >/dev/null 2>&1; then python=python3; else python=python; fi
+exec "$python" "$tool" --hook "$1"

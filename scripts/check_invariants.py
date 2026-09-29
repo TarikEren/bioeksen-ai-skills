@@ -36,6 +36,9 @@ LOGGING_SKILL = SKILLS / "sds-logging" / "SKILL.md"
 STANDARD_ENDPOINTS = SKILLS / "sds-api-design" / "references" / "standard-api-endpoints.md"
 MARKETPLACE = ROOT / ".claude-plugin" / "marketplace.json"
 PLUGIN_MANIFEST = ROOT / "plugins" / "bioeksen-sds" / ".claude-plugin" / "plugin.json"
+TEMPLATE = ROOT / "project-kit" / "template"
+TEMPLATE_SETTINGS = TEMPLATE / ".claude" / "settings.json"
+TEMPLATE_WORKFLOW = TEMPLATE / ".github" / "workflows" / "bioeksen.yml"
 
 # sds-auth restates exactly steps 1-9 of the selection procedure.
 AUTH_STEPS = 9
@@ -233,6 +236,27 @@ def main() -> int:
             fail("invariant 7", f"marketplace.json says {own['name']} is "
                                 f"{listed[own['name']]}, plugin.json says {own.get('version')}")
 
+        # 10. The project template pins the release it ships in, in both the
+        # places a generated project reads it, so the skills an assistant
+        # loads and the checks CI runs come from one version.
+        marketplace = manifests[MARKETPLACE]["name"]
+        pinned = f"v{own.get('version')}"
+        settings = json.loads(read(TEMPLATE_SETTINGS))
+        source = settings.get("extraKnownMarketplaces", {}).get(marketplace, {}).get("source", {})
+        env = yaml.safe_load(read(TEMPLATE_WORKFLOW)).get("env", {})
+        if source.get("ref") != pinned:
+            fail("invariant 10", f"template settings.json pins {source.get('ref')!r}, "
+                                 f"the plugin is {pinned}")
+        if env.get("BIOEKSEN_SDS_REF") != pinned:
+            fail("invariant 10", f"template workflow pins {env.get('BIOEKSEN_SDS_REF')!r}, "
+                                 f"the plugin is {pinned}")
+        if env.get("BIOEKSEN_SDS_REPO") != source.get("repo"):
+            fail("invariant 10", f"template workflow checks out {env.get('BIOEKSEN_SDS_REPO')!r}, "
+                                 f"settings.json names {source.get('repo')!r}")
+        if settings.get("enabledPlugins", {}).get(f"{own['name']}@{marketplace}") is not True:
+            fail("invariant 10", f"template settings.json does not enable "
+                                 f"{own['name']}@{marketplace}")
+
     # 8. The severity and type sets are closed, and restated in four places.
     # A rename has to land in every one of them, so each is compared to the
     # schema, which is the only copy a validator ever sees.
@@ -311,7 +335,8 @@ def main() -> int:
           f"the {len(documented_paths)} aggregator paths are not")
     print("OK - retryable codes are exactly the 503 range, per error-codes.md")
     print(f"OK - all {refs} $refs across {len(SCHEMAS)} schema files resolve")
-    print("OK - manifests parse and agree on the plugin version")
+    print("OK - manifests parse and agree on the plugin version, and the project "
+          "template pins it")
     print("OK - severity and type values agree across log-record.md, sds-logging, "
           "standard-api-endpoints.md and the schema")
     print(f"OK - all {references} file references in the skills resolve")

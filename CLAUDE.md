@@ -29,6 +29,9 @@ implement. Treat a change here as an API change, not a docs tweak.
 - `plugins/bioeksen-sds/skills/<skill>/references/` — the detail
 - `release-notes/{version}.md` — one per release, per the Releases section below
 - `.bioeksen/software-id` — this repository's own software id, `bioeksen-sds`
+- `project-kit/` — what a project generator copies into a new service, and the
+  commit, release note and conformance tools those services run; see its
+  `README.md`
 - `scripts/check_invariants.py` — the invariant checker
 - `scripts/requirements.txt` — pinned dependencies for it and for CI
 - `.github/workflows/invariants.yml` — runs both on every push and pull request
@@ -97,6 +100,11 @@ in CI on every push and pull request, and locally when you run it.
    directory. A path starting with `/` or containing `{` names a file in the
    project using the skill and is exempt; a repository path (`plugins/…`)
    always fails, because it does not exist in an installed copy.
+10. The project template pins the release it ships in: the `ref` in
+    `project-kit/template/.claude/settings.json` and `BIOEKSEN_SDS_REF` in its
+    workflow both equal `v{plugin version}`, the workflow checks out the
+    repository `settings.json` names, and the plugin is enabled. A release
+    bumps them in the same commit as the plugin version.
 
 Every `SKILL.md` must also open with frontmatter whose `name` is its
 directory's and whose `description` is not empty — the description is what

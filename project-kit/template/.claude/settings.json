@@ -1,0 +1,14 @@
+{
+  "extraKnownMarketplaces": {
+    "bioeksen-skills": {
+      "source": {
+        "source": "github",
+        "repo": "TarikEren/bioeksen-ai-skills",
+        "ref": "v0.2.0"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "bioeksen-sds@bioeksen-skills": true
+  }
+}
