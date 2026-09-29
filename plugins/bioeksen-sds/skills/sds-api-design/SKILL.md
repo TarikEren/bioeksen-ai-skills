@@ -24,12 +24,18 @@ All four MUST be served with `Cache-Control: no-store`. The principal column is
 - `references/standard-api-endpoints.md` — the conventions and the reasoning
   behind them.
 - `references/openapi.yaml` — the normative OpenAPI 3.1 definition, takes precedence over the markdown.
+- `references/app-endpoints.md` — every other endpoint an app serves: paths,
+  the success body, lists, methods and unknown input.
 - `references/service-calls.md` — the calling side: deadlines, timeouts, what
   may be retried, circuit breakers and idempotency.
 
 ## Specialized Endpoints
 
-App-specific endpoints have no shared schema, but MUST follow the conventions in `references/standard-api-endpoints.md`: the type and unit table, the body `status` vs HTTP status code mapping, and the error envelope.
+App-specific endpoints have no shared schema, but MUST follow
+`references/app-endpoints.md`, and the conventions they share with the
+standard endpoints in `references/standard-api-endpoints.md`: the type and unit
+table, correlation, the error envelope, rate limiting, and the 405, 413 and 415
+responses.
 
 They are also the versioned half of the estate: every app-specific path is
 served under `/api/v{major}/`, and the four standard endpoints above are the

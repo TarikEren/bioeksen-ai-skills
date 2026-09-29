@@ -61,7 +61,7 @@ one of which the schema enforces:
 
 | HTTP | When |
 |------|------|
-| 201 | Stored. Body carries the `recordId` |
+| 201 | Stored. Body carries the `recordId`, and `Location` names the stored record |
 | 400 | Schema validation failed. `details` lists the offending fields |
 | 401 | No app credential, or one that does not validate |
 | 403 | Authenticated, but not an app holding `logs.write`, which an operator credential never is — `PERM-4150`; or the record's `id` is not the submitting app's — `PERM-4152` |

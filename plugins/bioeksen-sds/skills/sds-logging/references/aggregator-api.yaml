@@ -51,6 +51,13 @@ paths:
               $ref: "#/components/headers/NoStore"
             X-Request-Id:
               $ref: "#/components/headers/RequestId"
+            Location:
+              description: >-
+                The stored record, /api/v1/logs/{recordId}, per the create
+                rule in sds-api-design/references/app-endpoints.md.
+              required: true
+              schema:
+                type: string
           content:
             application/json:
               schema:

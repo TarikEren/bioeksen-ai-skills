@@ -71,6 +71,9 @@ A server that is unreachable returns no body at all. Clients MUST treat a
 connection failure or timeout as `fail`; no endpoint can report its own
 unreachability.
 
+This table describes the health endpoints. Every other successful body carries
+`ok` and nothing else, per `app-endpoints.md`.
+
 ### Dependency check values
 
 Every entry under `checks` uses: `ok` (working), `fail` (present but broken),
