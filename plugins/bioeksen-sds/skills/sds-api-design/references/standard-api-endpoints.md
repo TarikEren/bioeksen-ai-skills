@@ -76,9 +76,27 @@ This table describes the health endpoints. Every other successful body carries
 
 ### Dependency check values
 
-Every entry under `checks` uses: `ok` (working), `fail` (present but broken),
-`na` (not applicable to this app). An app without a cache MUST report
-`"cache": "na"` rather than omitting the key.
+Every check value — the database's `status`, `cache`, and each entry of
+`dependencies` — uses: `ok` (working), `fail` (present but broken), `na` (not
+applicable to this app). An app without a cache MUST report `"cache": "na"`
+rather than omitting the key, and an app with no further dependencies reports
+`"dependencies": {}`.
+
+### Further dependencies
+
+`db` and `cache` are named because nearly every app has them. Anything else an
+app depends on — a message queue, an object store, another BioEksen app — is
+reported under `checks.dependencies`, keyed by name: the dependency's software
+id when it is a BioEksen app, and otherwise a name in the same format, e.g.
+`object-store`.
+
+- `GET /api/health` lists every dependency.
+- `GET /api/health/ready` lists only those whose failure means this instance
+  should not receive traffic.
+
+A dependency the app degrades gracefully without belongs in the first and not
+the second. Listed under readiness, its failure takes every instance out of
+rotation at once — an outage the app was built to avoid.
 
 ### Correlation
 
@@ -181,6 +199,8 @@ below.
         - `inUseConnections`: count of in-use connections.
         - `idleConnections`: count of idle connections.
     - `cache`: `ok` | `fail` | `na`
+    - `dependencies`: every further dependency, name to `ok` | `fail` | `na`;
+      `{}` when there are none.
     - `memory`: memory of the server, in GB.
         - `totalHeap`: total heap allocated to the process.
         - `usedHeap`: heap currently used by the process.
@@ -192,6 +212,10 @@ below.
         - `free`: available space.
 
 When `db` is `na`, its connection counts MUST be `0`.
+
+A runtime without a managed heap reports its process's resident memory as both
+`totalHeap` and `usedHeap`. The fields then keep one meaning on every runtime —
+memory this process holds — instead of being zero, or absent, on some.
 
 ### Schema
 
@@ -207,6 +231,9 @@ When `db` is `na`, its connection counts MUST be `0`.
             "idleConnections": 8
         },
         "cache": "ok|fail|na",
+        "dependencies": {
+            "billing-service": "ok|fail|na"
+        },
         "memory": {
             "totalHeap": 2.0,
             "usedHeap": 1.25,
@@ -269,8 +296,11 @@ numbers, safe to call frequently.
 - `checks`: dependency checks that gate traffic.
     - `db`: `ok` | `fail` | `na`
     - `cache`: `ok` | `fail` | `na`
+    - `dependencies`: the further dependencies that gate traffic, name to
+      `ok` | `fail` | `na`; `{}` when there are none.
 
-`status` MUST be `ok` only if every check is `ok` or `na`.
+`status` MUST be `ok` only if every check is `ok` or `na`, including every
+entry of `dependencies`.
 
 ### Schema
 
@@ -280,7 +310,10 @@ numbers, safe to call frequently.
     "uptime": 86400,
     "checks": {
         "db": "ok|fail|na",
-        "cache": "ok|fail|na"
+        "cache": "ok|fail|na",
+        "dependencies": {
+            "billing-service": "ok|fail|na"
+        }
     }
 }
 ```

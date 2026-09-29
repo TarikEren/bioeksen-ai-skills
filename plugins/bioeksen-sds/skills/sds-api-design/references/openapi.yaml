@@ -382,6 +382,17 @@ components:
         ok = working, fail = present but broken, na = not applicable to this
         app. Never omit the key; report na instead.
 
+    # Every dependency beyond the database and the cache, by name: a queue, an
+    # object store, another BioEksen app, which is named by its software id.
+    # Required, and {} when there are none, as cache is na rather than absent:
+    # a client never has to tell "none" from "not reported".
+    DependencyChecks:
+      type: object
+      propertyNames:
+        $ref: "#/components/schemas/SoftwareId"
+      additionalProperties:
+        $ref: "#/components/schemas/CheckValue"
+
     ErrorCode:
       type: string
       enum:
@@ -496,12 +507,15 @@ components:
         checks:
           type: object
           additionalProperties: false
-          required: [db, cache]
+          required: [db, cache, dependencies]
           properties:
             db:
               $ref: "#/components/schemas/CheckValue"
             cache:
               $ref: "#/components/schemas/CheckValue"
+            dependencies:
+              $ref: "#/components/schemas/DependencyChecks"
+              description: Only the dependencies that gate this instance's traffic.
 
     Health:
       type: object
@@ -517,8 +531,11 @@ components:
         checks:
           type: object
           additionalProperties: false
-          required: [db, cache, memory, disk]
+          required: [db, cache, memory, disk, dependencies]
           properties:
+            dependencies:
+              $ref: "#/components/schemas/DependencyChecks"
+              description: Every dependency, whether or not it gates traffic.
             db:
               type: object
               additionalProperties: false
@@ -541,6 +558,9 @@ components:
             memory:
               type: object
               additionalProperties: false
+              description: >-
+                A runtime without a managed heap reports its process's
+                resident memory as both totalHeap and usedHeap.
               required: [totalHeap, usedHeap, totalMemory, usedMemory]
               properties:
                 totalHeap:
