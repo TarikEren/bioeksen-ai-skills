@@ -139,7 +139,7 @@ Every entry is identified by:
 
 | Part | Rules |
 |------|-------|
-| `{software-id}` | The service the release belongs to. The same value as the `id` field of a log record — see `sds-logging/references/log-record.md`. Constant across every entry in every note for that project |
+| `{software-id}` | The service the release belongs to. The same value as the `id` field of a log record, in the same format — see `sds-logging/references/log-record.md`. Constant across every entry in every note for that project |
 | `{unique string}` | A UTC timestamp followed by `-` and at least four random characters, e.g. `20260904T140512Z-a3f9` |
 
 Both parts are lowercase apart from the `T` and `Z` of the timestamp, and use

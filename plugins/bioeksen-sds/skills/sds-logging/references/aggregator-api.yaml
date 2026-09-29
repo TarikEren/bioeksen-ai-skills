@@ -119,8 +119,7 @@ paths:
           description: >-
             The emitting service, app or process. Defaults to every app.
           schema:
-            type: string
-            minLength: 1
+            $ref: "#/components/schemas/SoftwareId"
         - name: code
           in: query
           required: false
@@ -346,6 +345,8 @@ components:
       $ref: "../../sds-api-design/references/openapi.yaml#/components/schemas/LogType"
     ErrorCode:
       $ref: "../../sds-api-design/references/openapi.yaml#/components/schemas/ErrorCode"
+    SoftwareId:
+      $ref: "../../sds-api-design/references/openapi.yaml#/components/schemas/SoftwareId"
     Error:
       $ref: "../../sds-api-design/references/openapi.yaml#/components/schemas/Error"
 

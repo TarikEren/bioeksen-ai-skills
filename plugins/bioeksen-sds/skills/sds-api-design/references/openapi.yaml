@@ -174,8 +174,7 @@ paths:
           required: false
           description: Owner ID of the log — the service, app or process that emitted it.
           schema:
-            type: string
-            minLength: 1
+            $ref: "#/components/schemas/SoftwareId"
         - name: code
           in: query
           required: false
@@ -445,6 +444,20 @@ components:
         a UUID, or 16 hex characters. Examples in these documents shorten it
         for readability.
 
+    # The emitting app's id, which is also the {software-id} half of a change
+    # identifier. Allocated, never derived — see
+    # sds-logging/references/log-record.md. Referenced wherever an id appears,
+    # never copied, so the format is stated in exactly one place a validator
+    # reads.
+    SoftwareId:
+      type: string
+      minLength: 1
+      maxLength: 63
+      pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+      description: >-
+        Lowercase letters and digits in hyphen-separated words, at most 63
+        characters, e.g. auth-service.
+
     Severity:
       type: string
       enum: [DEBUG, INFO, WARNING, ERROR, FATAL]
@@ -554,13 +567,16 @@ components:
     # StoredRecord adds recordId — can compose this rather than copy it. It
     # deliberately constrains nothing about extra properties; the schemas that
     # compose it do that.
+    #
+    # The rules sds-logging/references/log-record.md states for these fields
+    # are enforced here, not only described there: this schema wins where the
+    # two disagree, so a rule it omitted would be a rule it overrode.
     LogFields:
       type: object
       required: [id, timestamp, severity, type, code, message]
       properties:
         id:
-          type: string
-          minLength: 1
+          $ref: "#/components/schemas/SoftwareId"
           description: >-
             The emitting service, app or process. Allocated per
             sds-logging/references/log-record.md: supplied to the app, never
@@ -568,6 +584,9 @@ components:
         timestamp:
           type: string
           format: date-time
+          # format checks RFC 3339; the pattern adds the millisecond minimum,
+          # which RFC 3339 leaves optional.
+          pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3,}(Z|[+-]\d{2}:\d{2})$'
           description: >-
             RFC 3339 with offset and at least millisecond precision, e.g.
             2026-09-03T14:05:00.123Z. The time the event occurred, not the time
@@ -585,8 +604,21 @@ components:
             non-null when severity is ERROR or FATAL.
         message:
           type: string
+          maxLength: 8192
+          pattern: '^[^\r\n]*$'
           description: >-
-            Prose followed by a logfmt tail. Never repeats the error code.
+            Prose followed by a logfmt tail, on one line and at most 8192
+            characters. Never repeats the error code.
+      # A record describing a failure names it: ERROR and FATAL carry a code.
+      if:
+        required: [severity]
+        properties:
+          severity:
+            enum: [ERROR, FATAL]
+      then:
+        properties:
+          code:
+            $ref: "#/components/schemas/ErrorCode"
 
     # A record as emitted and as this endpoint returns it: the six fields and
     # nothing else. unevaluatedProperties rather than additionalProperties,
@@ -634,7 +666,9 @@ components:
               minimum: 1
               maximum: 200
             id:
-              type: [string, "null"]
+              oneOf:
+                - $ref: "#/components/schemas/SoftwareId"
+                - type: "null"
             code:
               oneOf:
                 - $ref: "#/components/schemas/ErrorCode"

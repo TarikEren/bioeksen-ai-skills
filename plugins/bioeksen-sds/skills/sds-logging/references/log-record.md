@@ -8,7 +8,7 @@ aggregator endpoints that carry these records are in `aggregator-api.md`.
 
 | Field | Type | Rules |
 |-------|------|-------|
-| `id` | string | The emitting service, app or process. Stable across restarts and deployments. Lowercase, `-` separated, e.g. `auth-service` |
+| `id` | string | The emitting service, app or process. Stable across restarts and deployments. Lowercase, `-` separated, at most 63 characters, e.g. `auth-service` — see **Allocating an id** |
 | `timestamp` | string | RFC 3339 with offset and at least millisecond precision, e.g. `2026-09-03T14:05:00.123Z`. MUST be the time the event occurred, not the time it was submitted |
 | `severity` | enum | See below |
 | `type` | enum | See below |
@@ -35,7 +35,10 @@ This is the normative rule for the value, which `sds-commit` reuses as the
   name, or anything else at the point of use.
 - When it has not been supplied, **ask for it**. An assistant or generator MUST
   NOT invent one, and MUST NOT fall back to a plausible-looking guess.
-- Format: `[a-z0-9-]`, lowercase, `-` separated, e.g. `auth-service`.
+- Format: lowercase letters and digits in `-` separated words, at most 63
+  characters, e.g. `auth-service`. The enforced form is `SoftwareId` in
+  `sds-api-design/references/openapi.yaml`. The length keeps an id usable as a
+  DNS label and inside an Application ID URI.
 - Once allocated it is permanent. Changing it severs every existing log record
   and release-note entry from the service that produced them.
 
@@ -82,6 +85,8 @@ to become unusable. It MUST:
 - Carry all varying values in a structured tail, so the prose prefix stays
   constant and greppable — see below
 - Contain no newlines. The rendered form is one line per record
+- Be at most 8192 characters. A message longer than that is carrying a body or
+  a dump, which the forbidden list in `SKILL.md` already rules out
 - Not repeat the error code. It has its own field precisely so that filtering
   never depends on parsing free text
 - Contain nothing from the forbidden list in `SKILL.md`
