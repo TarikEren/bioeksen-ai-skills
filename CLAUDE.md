@@ -34,7 +34,9 @@ implement. Treat a change here as an API change, not a docs tweak.
 
 Skills cross-reference each other by paths relative to `skills/`, e.g.
 `sds-logging/references/log-record.md`. Keep that form: it resolves the same
-way whether the plugin is installed or the repository is read directly.
+way whether the plugin is installed or the repository is read directly. Every
+`SKILL.md` states the convention itself, because this file and `README.md` sit
+outside the plugin directory and are not part of an installed copy.
 
 ## Which file wins
 

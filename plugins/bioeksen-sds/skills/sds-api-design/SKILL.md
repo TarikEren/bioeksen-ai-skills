@@ -29,6 +29,10 @@ All four MUST be served with `Cache-Control: no-store`. The principal column is
 - `references/service-calls.md` — the calling side: deadlines, timeouts, what
   may be retried, circuit breakers and idempotency.
 
+Paths such as `sds-logging/references/log-record.md` name a file in another
+skill of this plugin, relative to the plugin's skills directory: the parent
+of `${CLAUDE_SKILL_DIR}`, which is this skill's own directory.
+
 ## Specialized Endpoints
 
 App-specific endpoints have no shared schema, but MUST follow

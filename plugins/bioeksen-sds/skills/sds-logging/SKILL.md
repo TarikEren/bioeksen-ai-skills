@@ -19,6 +19,10 @@ The keywords MUST, SHOULD and MAY are used as in RFC 2119.
   Codes are taken from here verbatim, never invented.
 - `references/aggregator-api.md` — the aggregator's own endpoints.
 
+Paths such as `sds-logging/references/log-record.md` name a file in another
+skill of this plugin, relative to the plugin's skills directory: the parent
+of `${CLAUDE_SKILL_DIR}`, which is this skill's own directory.
+
 ## What to log
 
 Log an event when it would help answer "what happened?" after the fact:
