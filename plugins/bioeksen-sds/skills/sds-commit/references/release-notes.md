@@ -41,11 +41,18 @@ wins:
 | If any commit in the release... | Increment |
 |---------------------------------|-----------|
 | Carries `!` in its subject, or a `BREAKING CHANGE:` footer | Major |
-| Is `feat` or `fix` | Minor |
+| Is `feat` | Minor |
 | Otherwise | Patch |
 
 Incrementing a component resets the ones below it to zero: a major bump from
 `2.4.3` gives `3.0.0`, a minor bump gives `2.5.0`.
+
+A `fix` is a patch, as SemVer and the conventional-commit release tools define
+it. A fix restores behaviour a caller was already promised, so it tells a
+reader nothing new about the interface; a minor bump says the interface grew.
+Keeping the tools' definition also means semantic-release, release-please or
+a commitlint preset computes the same version this table does, with no
+configuration to drift from it.
 
 The version is a consequence of the commits, not a decision taken at release
 time. If the release deserves a different number, the disagreement is with a

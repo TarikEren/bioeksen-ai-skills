@@ -63,10 +63,10 @@ The footer should contain the change identifier, issue references and informatio
   - For a multi line description add two new lines after `BREAKING CHANGE:`
 
 ## Versioning
-If your next release contains commit with...
-- Breaking Changes incremented the major version
-- API relevant changes (feat or fix) incremented the minor version
-- Else increment the patch version
+The next release's version follows from the commits it contains, as in SemVer:
+- Any breaking change increments the major version
+- Otherwise, any `feat` increments the minor version
+- Otherwise — `fix` and every other type — increment the patch version
 - Below `1.0.0` these shift down one place: a breaking change increments the minor version, everything else the patch version
 - Refer to [release-notes](references/release-notes.md) for more information on versioning and release notes.
 
