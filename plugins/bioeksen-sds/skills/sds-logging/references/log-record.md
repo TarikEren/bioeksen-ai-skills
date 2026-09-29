@@ -184,14 +184,43 @@ is already answered whenever storage or tooling changes.
   is recorded there and written to stderr — together, the app's local error
   channel.
 - Submission MUST NOT block the request path. Emit asynchronously.
-- When the aggregator returns 503, or is unreachable, the app SHOULD buffer
-  records and retry on the background-class terms in
-  `sds-api-design/references/service-calls.md` — including its circuit breaker,
-  so a down aggregator is not called on every record. It MUST bound the buffer
-  and drop oldest-first when full, rather than growing without limit.
-- When the aggregator returns 400, the record is malformed. It MUST NOT be
-  retried unchanged; retrying a malformed record loops forever.
+- Every submission MUST carry an `Idempotency-Key`: the same value on every
+  retry of that submission, and a fresh one for any submission whose body
+  differs. The same key is what stops a retry after a timeout storing a record
+  twice; a fresh key is what stops a corrected resubmission being refused as a
+  replay. The aggregator honours the key, per
+  `sds-api-design/references/service-calls.md`, but does not require it, so
+  this rule is the emitter's to keep.
 - `DEBUG` records MUST NOT be submitted from production by default.
+
+### Handling the aggregator's response
+
+What an app does next is decided by the status alone:
+
+| Response | Means | The app |
+|----------|-------|---------|
+| 201 | Stored | Nothing further |
+| 503, or no response | The aggregator or its database is unavailable | SHOULD buffer and retry on the background-class terms in `sds-api-design/references/service-calls.md`, including its circuit breaker, so a down aggregator is not called on every record |
+| 429 | Over the app's allowance | Waits the `Retry-After` interval, then retries |
+| 401 | The app's credential was refused | Refreshes it once and retries. If the fresh credential is refused too, it MUST NOT retry again |
+| 400 | The record is malformed | MUST NOT retry it unchanged; retrying a malformed record loops forever |
+| 409 | The idempotency key was already spent on a different body | MUST NOT retry. The app is minting keys wrongly |
+| 403, 500, any other 4xx | Refused, or the write failed in a way a retry will not change | MUST NOT retry |
+
+A 500 is not retried because it is outside the range
+`sds-api-design/references/service-calls.md` retries: the aggregator answers 500 only when its database rejected the
+write, and an unreachable database is a 503.
+
+Whatever the app does not retry stays in its local store only, and the app
+records that failure there: `LOG-4000` for a 4xx, `LOG-5000` for a 500, and
+`LOG-5500` once retries exhaust their budget or the circuit stays open. The
+buffer MUST be bounded and drop oldest-first when full, rather than growing
+without limit.
+
+The two sets of codes belong to different apps. The aggregator answers a
+malformed record with the `VAL-` code the selection procedure gives it, as any
+app answers any request. The `LOG-` codes are the emitting app's, for the
+records it writes about its own submissions.
 
 A record dropped from a full buffer, or rejected as malformed, never reaches
 the archive. It exists only in the app's own store, and only for that store's

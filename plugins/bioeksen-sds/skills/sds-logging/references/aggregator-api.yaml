@@ -61,6 +61,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
         "429":
           $ref: "#/components/responses/RateLimited"
         "500":
@@ -299,10 +301,23 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+    Conflict:
+      description: >-
+        RES-4301. The Idempotency-Key is already spent on a different body, or
+        the original request is still in flight when the deadline runs out.
+        Not retryable: a changed resubmission needs a fresh key.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
     InternalError:
       description: >-
-        Stored nowhere, or the query failed. Retryable on the terms in
-        sds-api-design/references/service-calls.md.
+        Stored nowhere because the database rejected the write, or the query
+        failed. Not retryable: 500 is outside the range
+        sds-api-design/references/service-calls.md retries.
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestId"
@@ -312,7 +327,8 @@ components:
             $ref: "#/components/schemas/Error"
     NotReady:
       description: >-
-        The aggregator is not ready to accept or serve records. Retryable.
+        The aggregator is not ready to accept or serve records, or its
+        database is unreachable. Retryable.
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestId"

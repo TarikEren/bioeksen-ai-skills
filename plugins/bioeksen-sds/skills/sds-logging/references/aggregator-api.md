@@ -62,12 +62,14 @@ All six fields MUST be present; `code` MAY be `null`. Validation rules:
 | 400 | Schema validation failed. `details` lists the offending fields |
 | 401 | No app credential, or one that does not validate |
 | 403 | Authenticated, but not an app — an operator credential does not satisfy this endpoint |
+| 409 | The `Idempotency-Key` is already spent on a different body — `RES-4301` |
 | 429 | Over the caller's allowance — `RATE-4400`, carrying `Retry-After` |
-| 500 | Stored nowhere — the database rejected the write or was unreachable |
-| 503 | The aggregator is not ready to accept records |
+| 500 | Stored nowhere — the database rejected the write, `DB-5001` |
+| 503 | The aggregator is not ready to accept records, or its database is unreachable |
 
-A 400 means the record is malformed and MUST NOT be retried unchanged. A 500
-or 503 is retryable — see the emission rules in `log-record.md`.
+A 503 is retryable; a 400, 403, 409 or 500 is not. What an emitting app does
+with each is the table under **Handling the aggregator's response** in
+`log-record.md`.
 
 ## `GET HOST/api/v1/logs`
 
