@@ -1,0 +1,5 @@
+# check_invariants.py needs only PyYAML. openapi-spec-validator checks both
+# OpenAPI files against the 3.1 specification itself, following their
+# cross-file $refs, which the invariant checker does not attempt.
+pyyaml==6.0.3
+openapi-spec-validator==0.9.0

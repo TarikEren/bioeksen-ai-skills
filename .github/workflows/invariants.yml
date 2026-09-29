@@ -15,8 +15,13 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install PyYAML
-        run: pip install pyyaml
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
 
       - name: Check cross-file invariants
         run: python scripts/check_invariants.py
+
+      - name: Validate both schemas against OpenAPI 3.1
+        run: |
+          openapi-spec-validator plugins/bioeksen-sds/skills/sds-api-design/references/openapi.yaml
+          openapi-spec-validator plugins/bioeksen-sds/skills/sds-logging/references/aggregator-api.yaml

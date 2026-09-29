@@ -13,6 +13,10 @@ Run it before committing any change to a skill:
 python scripts/check_invariants.py
 ```
 
+CI additionally validates both OpenAPI files against the 3.1 specification.
+To run that locally, `pip install -r scripts/requirements.txt` and pass each
+file to `openapi-spec-validator`.
+
 Editing a skill changes a contract that services in other repositories already
 implement. Treat a change here as an API change, not a docs tweak.
 
@@ -25,7 +29,8 @@ implement. Treat a change here as an API change, not a docs tweak.
 - `plugins/bioeksen-sds/skills/<skill>/references/` — the detail
 - `release-notes/{version}.md` — one per release, per the Releases section below
 - `scripts/check_invariants.py` — the invariant checker
-- `.github/workflows/invariants.yml` — runs it on every push and pull request
+- `scripts/requirements.txt` — pinned dependencies for it and for CI
+- `.github/workflows/invariants.yml` — runs both on every push and pull request
 
 Skills cross-reference each other by paths relative to `skills/`, e.g.
 `sds-logging/references/log-record.md`. Keep that form: it resolves the same
