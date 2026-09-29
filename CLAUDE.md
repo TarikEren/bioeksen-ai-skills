@@ -28,6 +28,7 @@ implement. Treat a change here as an API change, not a docs tweak.
   `name` + `description` frontmatter that decides when the skill loads
 - `plugins/bioeksen-sds/skills/<skill>/references/` — the detail
 - `release-notes/{version}.md` — one per release, per the Releases section below
+- `.bioeksen/software-id` — this repository's own software id, `bioeksen-sds`
 - `scripts/check_invariants.py` — the invariant checker
 - `scripts/requirements.txt` — pinned dependencies for it and for CI
 - `.github/workflows/invariants.yml` — runs both on every push and pull request
@@ -131,7 +132,9 @@ the mandatory `Change-Id:` footer trailer.
 
 Mint the identifier as `bioeksen-sds-<UTC timestamp>-<4+ random chars>`, e.g.
 `bioeksen-sds-20260917T101500Z-4c1e`. The software id is `bioeksen-sds`, the
-plugin that gets versioned and released. Commits made before 2026-09-17 predate
+plugin that gets versioned and released, and it is stored in
+`.bioeksen/software-id` like any project's, per
+`sds-logging/references/log-record.md`. Commits made before 2026-09-17 predate
 the trailer and do not carry one.
 
 ## Releases

@@ -162,8 +162,9 @@ estate, or is a model with only the text in front of it.
 ### When the software id is unknown
 
 The software id is supplied by the project, or by the id-issuing service once
-one exists, and is allocated per the rule in
-`sds-logging/references/log-record.md`, which is normative for it.
+one exists, is allocated per the rule in
+`sds-logging/references/log-record.md`, which is normative for it, and is read
+from the `.bioeksen/software-id` file that rule names.
 
 When it has not been supplied, the identifier MUST NOT be written with a guess:
 ask for it, or emit the literal placeholder `<software-id>` for a person to
@@ -187,6 +188,13 @@ written, recorded there as a mandatory `Change-Id:` footer trailer per the
 footer rules in `SKILL.md`, and copied verbatim into the note. That trailer is
 what lets `git log --grep` take an entry back to the change that produced it,
 and what keeps the note verifiable once the subject lines have been forgotten.
+
+Minting is local: the identifier is built from the stored software id, the
+clock and a random tail, and MUST NOT require a network call. A commit that
+depended on a service being reachable would either stop when the service is
+down or have the rule bypassed under pressure, leaving gaps in the history
+that look exactly like commits predating the rule. The random tail is what
+makes a locally minted identifier collision-resistant without coordination.
 
 ## Which commits appear
 
