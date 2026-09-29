@@ -180,7 +180,9 @@ is already answered whenever storage or tooling changes.
 ## Emission rules
 
 - Logging MUST NOT fail the operation being logged. A failed submission is
-  swallowed and reported through the app's own local error channel.
+  swallowed. The record still exists in the app's local store, and the failure
+  is recorded there and written to stderr — together, the app's local error
+  channel.
 - Submission MUST NOT block the request path. Emit asynchronously.
 - When the aggregator returns 503, or is unreachable, the app SHOULD buffer
   records and retry on the background-class terms in

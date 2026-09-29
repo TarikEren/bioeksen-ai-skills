@@ -101,8 +101,20 @@ be added to a record after it is written. Emit both from the first version.
 
 ## Transport
 
-Apps emit to the log aggregator and to nothing else. An app MUST NOT write
-directly to a log store, a hosted logging service, or any other backend.
+The aggregator is the only remote destination for an app's log records. An
+app MUST NOT write to a shared log store, a hosted logging service, or any
+other remote backend.
+
+Two local destinations sit beside it, and neither is an integration point:
+
+- An app MUST keep its own records in a local store for its retention window.
+  That store is what `GET /api/admin/logs` reads, per
+  `sds-api-design/references/standard-api-endpoints.md`, and what an operator
+  falls back on when the aggregator is unreachable or its records are in doubt.
+- An app MAY also write its records to stdout or stderr, as the JSON record or
+  in the rendered form `references/log-record.md` defines, for a container
+  runtime or a developer to read. Nothing in the estate consumes that output,
+  and no alert or dashboard may depend on it.
 
 The aggregator is the single integration point. It can change storage, gain a
 forwarder, or grow a query layer without any app, in any language, changing a
