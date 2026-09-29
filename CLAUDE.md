@@ -31,6 +31,7 @@ implement. Treat a change here as an API change, not a docs tweak.
   `name` + `description` frontmatter that decides when the skill loads
 - `plugins/bioeksen-sds/skills/<skill>/references/` — the detail
 - `release-notes/{version}.md` — one per release, per the Releases section below
+- `ROADMAP.md` — decisions taken and work not yet done; not a contract
 - `.bioeksen/software-id` — this repository's own software id, `bioeksen-sds`
 - `project-kit/` — what a project generator copies into a new service, and the
   commit, release note and conformance tools those services run; see its
