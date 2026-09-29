@@ -131,6 +131,15 @@ language, the binding MUST:
 - Emit records matching `references/log-record.md`
 - Never let a logging failure fail the operation being logged
 - Never block the request path on the aggregator being reachable
+- Map `FATAL` to a call that logs and returns, never to one that ends the
+  process
+
+`FATAL` means a person must act now while the app is still running — a pool
+exhausted for over a minute, an app past its startup budget. Several libraries
+give their fatal level a different meaning: in Go, `log.Fatal`,
+`logrus.Fatal` and `zap`'s `Fatal` log and then call `os.Exit(1)`. Bound to
+one of those, the severity that should page someone instead kills the process
+that was about to recover, and turns a degraded app into a restart loop.
 
 Split this section into `sds-<language>` skills once a second language is in
 use; the contract above stays here.
