@@ -13,9 +13,12 @@ Run it before committing any change to a skill:
 python scripts/check_invariants.py
 ```
 
-CI additionally validates both OpenAPI files against the 3.1 specification.
-To run that locally, `pip install -r scripts/requirements.txt` and pass each
-file to `openapi-spec-validator`.
+CI additionally validates both OpenAPI files against the 3.1 specification,
+runs the conformance self-test, and checks every commit and release note with
+the tools in `project-kit/`. To run the first two locally,
+`pip install -r scripts/requirements.txt -r project-kit/requirements.txt`, pass
+each OpenAPI file to `openapi-spec-validator`, and run
+`python project-kit/conformance/check_service.py --self-test`.
 
 Editing a skill changes a contract that services in other repositories already
 implement. Treat a change here as an API change, not a docs tweak.
@@ -128,6 +131,9 @@ same set, which invariant 4 checks. The prose writes a path parameter as
   nothing flags it — see `sds-logging/references/log-record.md`.
 - State each fact once. Where it must be restated, name the normative source in
   the restating document.
+- A change to what a record holds or what a standard endpoint returns updates
+  the fixtures in `project-kit/conformance/fixtures/` in the same commit, with
+  a case the old rule accepted and the new one rejects, or the reverse.
 - MUST, SHOULD and MAY carry RFC 2119 meanings. Use them deliberately.
 - Keep the rationale. These documents explain *why* each rule exists; a rule
   stripped of its reason gets re-argued in six months.

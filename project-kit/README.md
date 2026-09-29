@@ -70,3 +70,5 @@ If this repository is private:
 | `tools/check_release_note.py VERSION` | Checks a release note against its range, after its commit and before the tag | The standard library |
 | `conformance/check_service.py --base-url URL` | Checks a running instance's standard endpoints against `openapi.yaml` | `requirements.txt` |
 | `conformance/check_service.py --self-test` | Checks the fixtures against the schemas, and every check against `stub_service.py` | `requirements.txt` |
+
+This repository runs every one of them against itself in CI.

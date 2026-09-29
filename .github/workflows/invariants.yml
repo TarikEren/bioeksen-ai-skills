@@ -3,6 +3,7 @@ name: invariants
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
 
 jobs:
@@ -10,13 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The commit and release note checks read history, not just the tip.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -r scripts/requirements.txt
+        run: pip install -r scripts/requirements.txt -r project-kit/requirements.txt
 
       - name: Check cross-file invariants
         run: python scripts/check_invariants.py
@@ -25,3 +29,24 @@ jobs:
         run: |
           openapi-spec-validator plugins/bioeksen-sds/skills/sds-api-design/references/openapi.yaml
           openapi-spec-validator plugins/bioeksen-sds/skills/sds-logging/references/aggregator-api.yaml
+
+      - name: Check the fixtures, and the conformance check against its stub
+        run: python project-kit/conformance/check_service.py --self-test
+
+      - name: Check this pull request's commits
+        if: github.event_name == 'pull_request'
+        run: >-
+          python project-kit/tools/commit_msg.py
+          --range "origin/${{ github.base_ref }}..${{ github.event.pull_request.head.sha }}"
+
+      - name: Check the commits this push adds
+        if: >-
+          github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+          github.event.before != '0000000000000000000000000000000000000000'
+        run: >-
+          python project-kit/tools/commit_msg.py
+          --range "${{ github.event.before }}..${{ github.sha }}"
+
+      - name: Check the release note
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: python project-kit/tools/check_release_note.py "${GITHUB_REF_NAME#v}"

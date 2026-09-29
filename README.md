@@ -74,6 +74,14 @@ Run:
 in your claude code instance or using the gui add `https://github.com/TarikEren/bioeksen-ai-skills` as a marketplace.
 
 Adding the marketplace only makes the plugin available; the second command is
-what installs it. Once installed, the skills load on demand — each one's
+what installs it.
+
+## Using in a new project
+
+A project generator does not copy the skills: a copy is a second contract that
+drifts from the first. It copies `project-kit/template/` — a settings file
+enabling this plugin pinned to a release, a project `CLAUDE.md`, a CI workflow
+and a commit hook — and asks for the project's software id. See
+[project-kit/README.md](project-kit/README.md). Once installed, the skills load on demand — each one's
 `description` says when it applies, so an assistant picks them up without being
 told which to read.
