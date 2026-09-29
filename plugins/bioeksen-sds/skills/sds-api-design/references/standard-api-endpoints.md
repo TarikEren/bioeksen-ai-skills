@@ -307,10 +307,11 @@ All are optional.
 | `id` | string | all | Owner ID of the log — the service, app or process that emitted it |
 | `code` | string | all | Exact error code, e.g. `DB-5001` |
 | `page` | integer | `1` | 1-based |
-| `limit` | integer | `50` | Max `200`; values above are rejected with 400 |
+| `limit` | integer | `50` | `1` to `200`; values outside are rejected with 400 |
 
-An unknown `severity` or `type` value, an unparseable date, `page` < 1, or
-`endDate` earlier than `startDate` MUST return 400 with the error envelope.
+An unknown `severity` or `type` value, an unparseable date, `page` < 1,
+`limit` outside 1 to 200, or `endDate` earlier than `startDate` MUST return 400
+with the error envelope.
 
 ### Retention
 

@@ -61,7 +61,8 @@ selection guidance:
 Rules:
 
 - A handled, expected condition is not an `ERROR`. A rejected 400 request is
-  `WARNING` at most; it means the client misbehaved, not the app.
+  `WARNING`, which its code fixes per **Derived attributes** in
+  `references/code-prefixes.md`; it means the client misbehaved, not the app.
 - A 5xx response MUST be logged at `ERROR` or higher.
 - `FATAL` MUST correspond to something a person should act on now. If
   nothing can be done about it, it is an `ERROR`.

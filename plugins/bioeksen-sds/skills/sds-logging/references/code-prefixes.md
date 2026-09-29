@@ -59,7 +59,7 @@ entries under that one code. See the rule in `error-codes.md`.
 | 15 | Field present, value outside its enumeration | `VAL-4002` |
 | 16 | Query parameter present but unparseable | `VAL-4003` |
 | 17 | `endDate` earlier than `startDate` | `VAL-4004` |
-| 18 | `page` below 1, or `limit` above its maximum | `VAL-4005` |
+| 18 | `page` below 1, or `limit` outside 1 to its maximum | `VAL-4005` |
 | 19 | Field or query parameter parses; value invalid for its type, format or range | `VAL-4006` |
 | 20 | Body carries a field the endpoint does not define | `VAL-4007` |
 | 21 | Named resource does not exist | `RES-4200` |
