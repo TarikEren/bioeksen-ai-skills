@@ -60,7 +60,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
-          $ref: "#/components/responses/Forbidden"
+          $ref: "#/components/responses/SubmitForbidden"
         "409":
           $ref: "#/components/responses/Conflict"
         "429":
@@ -273,6 +273,18 @@ components:
             $ref: "#/components/schemas/Error"
     Forbidden:
       description: Authenticated, but not the principal this endpoint requires.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    SubmitForbidden:
+      description: >-
+        PERM-4150 when the caller is not an app, or its azp resolves to no
+        known app; PERM-4152 when the record's id is not the submitting app's.
+        An operator credential never satisfies this endpoint.
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestId"

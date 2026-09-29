@@ -29,10 +29,18 @@ system that is hardest to get right and easiest to forget.
 | Signing keys | `https://login.microsoftonline.com/{tenantId}/discovery/v2.0/keys` |
 | `aud` | The receiving app's Application ID URI, e.g. `api://logs-aggregator` |
 
-Every app is registered once, with an Application ID URI. A caller asks for a
-token for the app it is about to call, using the client credentials grant and
-the scope `api://{that app}/.default`. That is what makes `aud` name the
-receiving app, as the claims table requires, without any app arranging it.
+Every app is registered once, with the Application ID URI `api://{software-id}`
+— its software id, allocated per `sds-logging/references/log-record.md`. A
+caller asks for a token for the app it is about to call, using the client
+credentials grant and the scope `api://{that app}/.default`. That is what makes
+`aud` name the receiving app, as the claims table requires, without any app
+arranging it.
+
+Naming the URI after the software id makes `aud` readable as an app's id, and
+lets anything with read access to the directory derive which client id
+belongs to which software id. The aggregator needs exactly that mapping to
+refuse a record submitted under another app's `id` — see
+`sds-logging/references/aggregator-api.md`.
 
 ### Principal type
 
@@ -80,6 +88,7 @@ literal `typ` claim from a protocol mapper instead of being derived.
 |-------|---------|------|
 | `iss` | Issuer | MUST match the configured issuer exactly |
 | `sub` | The principal | App id for an app, stable user id for an operator |
+| `azp` | The calling client | MUST be present. The client id of the application the token was issued to — for an app principal, the calling app itself |
 | `aud` | Intended audience | MUST name the receiving app; a token for one service MUST NOT be accepted by another |
 | `exp` | Expiry | MUST be present; see lifetimes |
 | `iat` | Issued at | MUST NOT be in the future beyond the skew allowance |
@@ -218,19 +227,20 @@ Every value below arrives as environment configuration. This is the concrete
 list `CFG-5000` and `CFG-5001` refer to: a missing one is `CFG-5000` at
 startup, a present but unusable one is `CFG-5001`.
 
-| Value | Purpose |
-|-------|---------|
-| Tenant id | The Entra tenant, checked against `tid` |
-| Issuer | The exact `iss` string to compare against |
-| JWKS URI | Where signing keys are fetched |
-| JWKS cache max age | How long keys are held before an unconditional refresh |
-| Audience | This app's Application ID URI — the value `aud` must equal |
-| Client id | This app's own identity, used when it calls another app |
-| Client credential | The certificate or secret backing that identity |
-| Operator scope | The `scp` value marking a delegated token as an operator |
-| Clock skew | 60 seconds, per **Validation** |
+| Value | Required of | Purpose |
+|-------|-------------|---------|
+| Tenant id | Every app | The Entra tenant, checked against `tid` |
+| Issuer | Every app | The exact `iss` string to compare against |
+| JWKS URI | Every app | Where signing keys are fetched |
+| JWKS cache max age | Every app | How long keys are held before an unconditional refresh |
+| Audience | Every app | This app's Application ID URI — the value `aud` must equal |
+| Client id | Every app | This app's own identity, used when it calls another app |
+| Client credential | Every app | The certificate or secret backing that identity |
+| Operator scope | Every app | The `scp` value marking a delegated token as an operator |
+| Clock skew | Every app | 60 seconds, per **Validation** |
+| Client id to software id | The aggregator | Resolves a submitting app's `azp` to the software id its records must carry |
 
-An app MUST fail to start when any of these is missing, rather than starting
-and rejecting every request it receives. A service that is up but can
+An app MUST fail to start when any value required of it is missing, rather
+than starting and rejecting every request it receives. A service that is up but can
 authenticate nobody is harder to diagnose than one that never came up, and it
 stays in the load balancer's rotation while it does it.

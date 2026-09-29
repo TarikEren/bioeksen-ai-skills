@@ -64,7 +64,7 @@ one of which the schema enforces:
 | 201 | Stored. Body carries the `recordId` |
 | 400 | Schema validation failed. `details` lists the offending fields |
 | 401 | No app credential, or one that does not validate |
-| 403 | Authenticated, but not an app — an operator credential does not satisfy this endpoint |
+| 403 | Authenticated, but not an app, which an operator credential never is — `PERM-4150`; or the record's `id` is not the submitting app's — `PERM-4152` |
 | 409 | The `Idempotency-Key` is already spent on a different body — `RES-4301` |
 | 429 | Over the caller's allowance — `RATE-4400`, carrying `Retry-After` |
 | 500 | Stored nowhere — the database rejected the write, `DB-5001` |
@@ -176,7 +176,23 @@ the top of this document, not the record's `id` field.
 
 ## Authorization
 
-`POST /api/v1/logs` MUST require an app credential; any app that can reach it can
-otherwise forge records attributed to another `id`. The two read endpoints
+`POST /api/v1/logs` MUST require an app credential, and the credential MUST be
+the record's own. Requiring a credential is not enough by itself: any app
+holding one could still submit records under another app's `id`, and the
+forgery would pass every check that looks only at the credential.
+
+The aggregator therefore resolves the token's `azp` — the client id of the
+calling app — to a software id, and refuses a record whose `id` differs with
+403 `PERM-4152`. That is step 8 of the selection procedure, so it takes
+precedence over any validation fault in the same record. An `azp` that
+resolves to no app is refused with `PERM-4150`: it names nothing the estate
+knows.
+
+The resolution is the aggregator's configuration today, derivable from the
+directory by the Application ID URI convention in
+`sds-auth/references/credentials.md`, and a lookup against the id-issuing
+service once one exists.
+
+The two read endpoints
 MUST require an operator credential — the aggregator holds every app's logs,
 which makes it the highest-value read target in the estate.
