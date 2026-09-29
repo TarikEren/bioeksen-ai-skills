@@ -258,7 +258,8 @@ components:
 
   # Cross-cutting request headers. Every endpoint in the estate takes these,
   # not only the four defined here, so they are referenced rather than repeated
-  # — aggregator-api.yaml points at these same definitions.
+  # — sds-logging/references/aggregator-api.yaml points at these same
+  # definitions.
   parameters:
     RequestId:
       name: X-Request-Id
