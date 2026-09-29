@@ -220,16 +220,17 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: >-
-        App credential: a JWT from the issuer named in
-        sds-auth/references/credentials.md, carrying an app-only token's
-        claims. An operator credential does not satisfy it.
+        App credential: an app-only JWT from the issuer named in
+        sds-auth/references/credentials.md, whose roles hold logs.write. No
+        delegated token satisfies it, an operator's included.
     operatorAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
       description: >-
-        Operator credential: a JWT from the same issuer, carrying the
-        configured operator scope. An app credential does not satisfy it.
+        Operator credential: a delegated JWT from the same issuer, whose scp
+        holds the configured operator scope and whose roles hold operator. An
+        app credential never satisfies it.
 
   headers:
     NoStore:
@@ -282,8 +283,9 @@ components:
             $ref: "#/components/schemas/Error"
     SubmitForbidden:
       description: >-
-        PERM-4150 when the caller is not an app, or its azp resolves to no
-        known app; PERM-4152 when the record's id is not the submitting app's.
+        PERM-4150 when the caller is not an app, lacks logs.write, or its azp
+        resolves to no known app; PERM-4152 when the record's id is not the
+        submitting app's.
         An operator credential never satisfies this endpoint.
       headers:
         X-Request-Id:

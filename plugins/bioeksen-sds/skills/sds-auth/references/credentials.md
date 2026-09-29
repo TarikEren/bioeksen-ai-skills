@@ -50,19 +50,39 @@ from claims Entra does emit**:
 
 | Token | Principal |
 |-------|-----------|
-| `scp` present | Operator. It MUST contain the configured operator scope |
 | `scp` absent, `roles` present | App |
+| `scp` holds the configured operator scope, and `roles` holds `operator` | Operator |
+| `scp` present otherwise | A person who is not an operator. No endpoint in these specs accepts one |
 | Neither present | Rejected, `AUTH-4101` |
 
 This is the distinction the issuer itself draws between a delegated and an
 app-only token, so it cannot drift from what the issuer actually does — which a
 convention invented here could.
 
+Two claims make an operator because each answers a different question. The
+scope says the token was issued *for operator use of this app*: the person's
+tool asked for it, and the directory consented. The role says the person *is*
+an operator: the directory assigned it to them. A scope without the role is
+someone who signed in to an operator tool without being an operator; a role
+without the scope is an operator's token issued for some other purpose. Neither
+is an operator request.
+
+What an endpoint answers follows from the principal it requires:
+
+| Endpoint requires | Caller | Result |
+|-------------------|--------|--------|
+| Operator | Operator | Proceeds |
+| Operator | An app, or a person who is not an operator | `PERM-4151` |
+| App | An app holding the role the endpoint requires | Proceeds |
+| App | An app without it, or any person | `PERM-4150` |
+
 `scp` rather than `roles` is the discriminator because a delegated token can
 carry both: operator roles are app roles assigned to a person, and they arrive
-in the same `roles` claim an app-only token uses. The rule that matters is
-unchanged and still mechanically checkable: an app credential MUST NOT satisfy
-an operator requirement.
+in the same `roles` claim an app-only token uses. That is also why `operator`
+is assignable to users only, per **Roles**: an app-only token can never carry
+it, and one that somehow did would still have no `scp`. The rule that matters
+is unchanged and still mechanically checkable: an app credential MUST NOT
+satisfy an operator requirement.
 
 ### Keycloak, the documented fallback
 
@@ -105,10 +125,9 @@ requirement is identical.
 point of checking both. `iss` is a string comparison that a copied
 configuration survives intact, and `tid` is the one that fails it.
 
-Operator tokens carry `roles`, an array of strings, being the app roles the
-directory has assigned to that person. The only role these specs require is
-`operator` — see **Roles** for why there is exactly one, and what adding a
-second involves.
+`roles` is an array of strings: the app roles the directory has assigned to the
+person, or to the calling app. Which roles exist is a closed list — see
+**Roles**.
 
 ## Validation
 
@@ -188,10 +207,34 @@ and belongs to whoever runs the incident.
 
 ## Roles
 
+Roles are a closed list, like error codes, and this table is it:
+
+| Role | Assignable to | Defined on | Grants |
+|------|---------------|------------|--------|
+| `operator` | Users only | Every app's registration | Every operator endpoint in the estate: the full health report, an app's own `GET /api/admin/logs`, and the aggregator's read endpoints |
+| `logs.write` | Applications only | The aggregator's registration | Submitting log records, `POST /api/v1/logs` |
+
+"Assignable to" is the app role's allowed member type in the directory. It is
+what makes a user role unobtainable by an app, and the reverse, without any
+receiving app having to check.
+
+An app role that an app grants to its callers is named `<resource>.<action>`,
+lowercase, e.g. `logs.write`. `operator` keeps its bare name, being the one
+role that means the same thing on every app.
+
+A role is added to this table by a human, in the same commit as the spec of
+the endpoint that requires it, and only then created on the owning app's
+registration. An app MUST NOT require a role this table does not list: a role
+defined in one service is an authorization decision in a place nobody auditing
+access will look for it.
+
+An app checks for the role it requires and ignores any others present in
+`roles`. Adding a role to the directory therefore cannot break a deployed app.
+
+### One operator role
+
 There is exactly one operator role, `operator`, and that is a decision rather
-than a gap waiting to be filled. It grants every operator endpoint in the
-estate: the full health report, an app's own `GET /api/admin/logs`, and the
-aggregator's read endpoints.
+than a gap waiting to be filled.
 
 ### The gradient this accepts
 
@@ -209,17 +252,32 @@ needs the log history but has no business seeing an app's connection pool and
 disk internals. **That person arriving is the trigger**, and the reason this is
 written down rather than left to be rediscovered when they do.
 
-### Adding one
+### Adding a second operator role
 
-A second role is defined here, in this document, and assigned as an app role in
-the directory. An app MUST NOT invent a role of its own: a role defined in one
-service is an authorization decision in a place nobody auditing access will
-look for it.
+A second operator role is added to the table above on the same terms as any
+role, assignable to users only. Because an app ignores roles it does not
+check for, adding one cannot break anything deployed, which is what makes
+keeping one role today a cheap decision rather than a commitment.
 
-An app checks for the role it requires and ignores any others present in
-`roles`. Adding a role to the directory therefore cannot break a deployed app,
-which is what makes keeping one role today a cheap decision rather than a
-commitment.
+## Acting for a person
+
+A tool an operator uses — a dashboard, a CLI — calls operator endpoints for
+that person, not as itself. Its own app credential never satisfies an operator
+endpoint, so it presents the person's delegated token instead:
+
+- A tool the person signs in to directly, such as a CLI or a single-page app,
+  obtains a token for the target app with the authorization code flow and
+  PKCE, requesting that app's operator scope.
+- A server-side tool that already holds the person's token for itself exchanges
+  it for one addressed to the target app with the on-behalf-of flow, again
+  requesting the target's operator scope.
+
+Either way the token that arrives carries the person's `sub`, `scp` and
+`roles`, so the receiving app sees an operator — or refuses a person who is not
+one — exactly as if the person had called it directly. A tool MUST NOT fall
+back to its own credential when the person's is unavailable: an app credential
+able to act as an operator is the escalation the principal rule exists to
+prevent.
 
 ## Configuration
 
@@ -239,6 +297,7 @@ startup, a present but unusable one is `CFG-5001`.
 | Operator scope | Every app | The `scp` value marking a delegated token as an operator |
 | Clock skew | Every app | 60 seconds, per **Validation** |
 | Client id to software id | The aggregator | Resolves a submitting app's `azp` to the software id its records must carry |
+| Trusted proxies | Apps behind a proxy | The addresses whose `X-Forwarded-For` entries are believed when finding a request's source, per the rate limiting rule in `SKILL.md` |
 
 An app MUST fail to start when any value required of it is missing, rather
 than starting and rejecting every request it receives. A service that is up but can

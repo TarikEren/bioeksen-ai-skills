@@ -64,7 +64,7 @@ one of which the schema enforces:
 | 201 | Stored. Body carries the `recordId` |
 | 400 | Schema validation failed. `details` lists the offending fields |
 | 401 | No app credential, or one that does not validate |
-| 403 | Authenticated, but not an app, which an operator credential never is — `PERM-4150`; or the record's `id` is not the submitting app's — `PERM-4152` |
+| 403 | Authenticated, but not an app holding `logs.write`, which an operator credential never is — `PERM-4150`; or the record's `id` is not the submitting app's — `PERM-4152` |
 | 409 | The `Idempotency-Key` is already spent on a different body — `RES-4301` |
 | 429 | Over the caller's allowance — `RATE-4400`, carrying `Retry-After` |
 | 500 | Stored nowhere — the database rejected the write, `DB-5001` |
@@ -176,8 +176,9 @@ the top of this document, not the record's `id` field.
 
 ## Authorization
 
-`POST /api/v1/logs` MUST require an app credential, and the credential MUST be
-the record's own. Requiring a credential is not enough by itself: any app
+`POST /api/v1/logs` MUST require an app credential holding the `logs.write`
+role from the registry in `sds-auth/references/credentials.md`, and the
+credential MUST be the record's own. Requiring a credential is not enough by itself: any app
 holding one could still submit records under another app's `id`, and the
 forgery would pass every check that looks only at the credential.
 

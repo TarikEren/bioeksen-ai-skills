@@ -17,7 +17,10 @@ The keywords MUST, SHOULD and MAY are used as in RFC 2119.
 | Principal | Is | Used for |
 |-----------|-----|---------|
 | **App** | A service acting as itself, with no human behind the call | Service-to-service calls, and submitting log records to the aggregator |
-| **Operator** | A person, authenticated as themselves | Administrative endpoints — `GET /api/admin/logs`, the full health report, the aggregator's read endpoints |
+| **Operator** | A person holding the operator role, authenticated as themselves — directly, or through a tool acting for them | Administrative endpoints — `GET /api/admin/logs`, the full health report, the aggregator's read endpoints |
+
+How a token is told apart as one or the other, and how a tool acts for a
+person, are in `references/credentials.md`.
 
 There is no third kind. An endpoint that seems to need one is either
 misdesigned or is an end-user endpoint belonging to a specific app's own
@@ -57,7 +60,7 @@ that file wins and this one MUST be corrected.
 | 4 | Token parses, `exp` is in the past | `AUTH-4102` | 401 |
 | 5 | Token parses, unexpired, signature or claims rejected | `AUTH-4101` | 401 |
 | 6 | Verification needs the identity provider and it is unreachable | `AUTH-5500` | 503 |
-| 7 | Authenticated; endpoint requires operator, caller is an app | `PERM-4151` | 403 |
+| 7 | Authenticated; endpoint requires operator, caller is not one — an app, or a person without the operator scope and role | `PERM-4151` | 403 |
 | 8 | Authenticated; target belongs to another principal | `PERM-4152` | 403 |
 | 9 | Authenticated; not permitted for any other reason | `PERM-4150` | 403 |
 
@@ -91,7 +94,7 @@ Drawn from the endpoints already specified elsewhere:
 | `GET /api/health/ready` | None |
 | `GET /api/health` | Operator |
 | `GET /api/admin/logs` | Operator |
-| `POST HOST/api/v1/logs` | App |
+| `POST HOST/api/v1/logs` | App, holding `logs.write` |
 | `GET HOST/api/v1/logs`, `GET HOST/api/v1/logs/:recordId` | Operator |
 
 The two probe endpoints are deliberately unauthenticated: they expose nothing,
@@ -105,6 +108,13 @@ exceeded the response is `RATE-4400` / 429, which takes precedence over
 repeating the authentication failure — this is step 1 of the validation order
 above. Default rate limit is 10 failures per minute per source, but the service
 MAY choose a different limit.
+
+The source is the client's IP address. Behind a proxy or load balancer, that
+is the rightmost `X-Forwarded-For` entry not added by one of the app's
+configured trusted proxies. The connection's own address is the load
+balancer's, so limiting on it would throttle every caller at once; the
+leftmost entry is whatever the caller chose to send, so limiting on it can be
+evaded by sending a new one each time.
 
 The 429 MUST carry `Retry-After`, per the rule in
 `sds-api-design/references/standard-api-endpoints.md`. A caller hammering a bad
