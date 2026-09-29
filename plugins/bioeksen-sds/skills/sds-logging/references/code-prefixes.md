@@ -51,37 +51,43 @@ entries under that one code. See the rule in `error-codes.md`.
 | 7 | Authenticated; endpoint requires operator, caller is not | `PERM-4151` |
 | 8 | Authenticated; target belongs to another principal | `PERM-4152` |
 | 9 | Authenticated; not permitted for any other reason | `PERM-4150` |
-| 10 | Request body present but unparseable | `VAL-4000` |
-| 11 | Required field absent from body | `VAL-4001` |
-| 12 | Field present, value outside its enumeration | `VAL-4002` |
-| 13 | Query parameter present but unparseable | `VAL-4003` |
-| 14 | `endDate` earlier than `startDate` | `VAL-4004` |
-| 15 | `page` below 1, or `limit` above its maximum | `VAL-4005` |
-| 16 | Named resource does not exist | `RES-4200` |
-| 17 | Resource being created already exists | `RES-4300` |
-| 18 | Resource changed under a concurrent write | `RES-4301` |
-| 19 | Required configuration value absent at startup | `CFG-5000` |
-| 20 | Configuration value present but unusable | `CFG-5001` |
-| 21 | Database connection could not be established | `DB-5500` |
-| 22 | Connection pool exhausted before a connection was free | `DB-5501` |
-| 23 | Connection held; read statement failed | `DB-5000` |
-| 24 | Connection held; write statement failed | `DB-5001` |
-| 25 | Transaction rolled back | `DB-5002` |
-| 26 | Cache connection could not be established | `CACHE-5500` |
-| 27 | Cache reachable; operation failed | `CACHE-5000` |
-| 28 | Upstream service returned no response | `UP-5500` |
-| 29 | Upstream service exceeded the call timeout | `UP-5501` |
-| 30 | Upstream responded; body unusable or unexpected | `UP-5000` |
-| 31 | Job invoked with unusable parameters | `JOB-4000` |
-| 32 | Job exceeded its time budget | `JOB-5001` |
-| 33 | Job failed for any other reason | `JOB-5000` |
-| 34 | Log record rejected as malformed | `LOG-4000` |
-| 35 | Log aggregator could not be reached | `LOG-5500` |
-| 36 | Log submission rejected for any other reason | `LOG-5000` |
-| 37 | App not yet ready to serve | `SYS-5500` |
-| 38 | Anything else | `SYS-5000` |
+| 10 | Path exists; the method is not one it serves | `RES-4500` |
+| 11 | Request body larger than the endpoint accepts | `VAL-4550` |
+| 12 | Request body in a media type the endpoint does not accept | `VAL-4600` |
+| 13 | Request body present but unparseable | `VAL-4000` |
+| 14 | Required field absent from body | `VAL-4001` |
+| 15 | Field present, value outside its enumeration | `VAL-4002` |
+| 16 | Query parameter present but unparseable | `VAL-4003` |
+| 17 | `endDate` earlier than `startDate` | `VAL-4004` |
+| 18 | `page` below 1, or `limit` above its maximum | `VAL-4005` |
+| 19 | Field or query parameter parses; value invalid for its type, format or range | `VAL-4006` |
+| 20 | Body carries a field the endpoint does not define | `VAL-4007` |
+| 21 | Named resource does not exist | `RES-4200` |
+| 22 | Resource being created already exists | `RES-4300` |
+| 23 | Resource changed under a concurrent write | `RES-4301` |
+| 24 | Resource exists; its current state does not allow the operation | `RES-4302` |
+| 25 | Required configuration value absent at startup | `CFG-5000` |
+| 26 | Configuration value present but unusable | `CFG-5001` |
+| 27 | Database connection could not be established | `DB-5500` |
+| 28 | Connection pool exhausted before a connection was free | `DB-5501` |
+| 29 | Connection held; read statement failed | `DB-5000` |
+| 30 | Connection held; write statement failed | `DB-5001` |
+| 31 | Transaction rolled back | `DB-5002` |
+| 32 | Cache connection could not be established | `CACHE-5500` |
+| 33 | Cache reachable; operation failed | `CACHE-5000` |
+| 34 | Upstream service returned no response | `UP-5500` |
+| 35 | Upstream service exceeded the call timeout | `UP-5501` |
+| 36 | Upstream responded; body unusable or unexpected | `UP-5000` |
+| 37 | Job invoked with unusable parameters | `JOB-4000` |
+| 38 | Job exceeded its time budget | `JOB-5001` |
+| 39 | Job failed for any other reason | `JOB-5000` |
+| 40 | Log record rejected as malformed | `LOG-4000` |
+| 41 | Log aggregator could not be reached | `LOG-5500` |
+| 42 | Log submission rejected for any other reason | `LOG-5000` |
+| 43 | App not yet ready to serve | `SYS-5500` |
+| 44 | Anything else | `SYS-5000` |
 
-The order is deliberate at two points.
+The order is deliberate at three points.
 
 Rate limiting is evaluated first, so a caller past its allowance receives
 `RATE-4400` rather than a repetition of the failure it is retrying — otherwise
@@ -91,6 +97,11 @@ expired, and never that it has been throttled.
 Authentication is then evaluated before validation, so an unauthenticated
 caller MUST NOT receive an error that describes the shape of the payload —
 including `VAL-4000`, which would otherwise reveal whether the body parsed.
+
+Method, size and media type are then evaluated before the body is parsed,
+because a body the endpoint will not read cannot be validated — and still
+after authentication, so an unauthenticated caller learns neither which
+methods a path serves nor what an endpoint accepts.
 
 `sds-auth/SKILL.md` restates steps 1-9 as its validation order, for readers
 protecting an endpoint. **This table is the normative one**; where the two
@@ -187,6 +198,10 @@ is logged as `endDate earlier than startDate request=8c21`, not
 | `VAL-4003` | 400 | Query parameter malformed |
 | `VAL-4004` | 400 | endDate earlier than startDate |
 | `VAL-4005` | 400 | Pagination out of range |
+| `VAL-4006` | 400 | Field value invalid |
+| `VAL-4007` | 400 | Unknown field |
+| `VAL-4550` | 413 | Request body too large |
+| `VAL-4600` | 415 | Unsupported media type |
 
 ## RES — resource state
 
@@ -195,6 +210,8 @@ is logged as `endDate earlier than startDate request=8c21`, not
 | `RES-4200` | 404 | Resource does not exist |
 | `RES-4300` | 409 | Resource already exists |
 | `RES-4301` | 409 | Conflicting concurrent update |
+| `RES-4302` | 409 | Operation not allowed in current state |
+| `RES-4500` | 405 | Method not allowed |
 
 ## RATE — throttling
 
@@ -272,3 +289,21 @@ selection procedure above. All three, or the code is not usable.
   `error-codes.md`.
 - A new condition MUST be inserted at the position in the selection procedure
   where it is unambiguous, not appended.
+
+### Domain failures
+
+The codes above name failures every app can have. A failure only one app's
+domain can have — an order already shipped, a balance too low — is handled in
+one of two ways, and neither is inventing a code at the point of use:
+
+- **No client branches on which rule refused the request.** It is
+  `RES-4302`: the resource exists, and its current state does not allow the
+  operation. The specific rule goes in the API response's `message` and in the
+  log record's structured tail, e.g. `reason=already-shipped` — never in the
+  log record's prose, and never in a code of its own.
+- **A client must branch on it.** Then it needs a code, added here by a human
+  under a prefix naming that domain, on exactly the terms above: the table,
+  the selection procedure and the `ErrorCode` enum, in one commit.
+
+The first is the default. A domain code is justified by a client that
+behaves differently because of it, not by the failure being interesting.

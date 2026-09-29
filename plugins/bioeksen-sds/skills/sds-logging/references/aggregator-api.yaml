@@ -16,6 +16,11 @@ info:
     copy of the error codes or of the log record fields could drift from the
     first, which is the failure this repository exists to prevent.
 
+    Like every endpoint in the estate, these may also answer 405 (RES-4500),
+    and a POST 413 (VAL-4550) or 415 (VAL-4600), per
+    sds-api-design/references/standard-api-endpoints.md. Those are not
+    repeated in each operation's responses.
+
 paths:
   /api/v1/logs:
     post:

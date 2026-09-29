@@ -49,9 +49,10 @@ All six fields MUST be present; `code` MAY be `null`. Validation rules:
   the schema enforces by enumerating them, so an unlisted code fails validation
   rather than being stored
 - `code` MUST NOT be null when `severity` is `ERROR` or `FATAL`
-- A submission carrying `recordId` MUST be rejected. The aggregator assigns it
-  on write; an app that believes it chooses record identifiers should find that
-  out at once rather than have the value silently dropped
+- A submission carrying `recordId` MUST be rejected with `VAL-4007`, as any
+  field outside the six is. The aggregator assigns it on write; an app that
+  believes it chooses record identifiers should find that out at once rather
+  than have the value silently dropped
 
 ### Responses
 

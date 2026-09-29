@@ -57,7 +57,7 @@ When two disagree, the normative one is right and the other gets corrected.
 These MUST hold after any change. `scripts/check_invariants.py` enforces them,
 in CI on every push and pull request, and locally when you run it.
 
-1. The same 38 error codes appear in all three of: the per-prefix tables in
+1. The same 44 error codes appear in all three of: the per-prefix tables in
    `code-prefixes.md`, the selection procedure in the same file, and the
    `ErrorCode` enum in `sds-api-design/references/openapi.yaml`.
 2. Steps 1-9 of that selection procedure and the validation order in

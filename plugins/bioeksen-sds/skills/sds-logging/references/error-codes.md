@@ -21,7 +21,7 @@ The keywords MUST, SHOULD and MAY are used as in RFC 2119.
 
 | Range | Fault | Typical HTTP |
 |-------|-------|--------------|
-| `4000-4999` | The caller's — bad input, missing or insufficient credentials, absent resource | 400, 401, 403, 404 |
+| `4000-4999` | The caller's — bad input, missing or insufficient credentials, absent resource, a request the endpoint cannot accept | 400, 401, 403, 404, 405, 409, 413, 415, 429 |
 | `5000-5999` | The app's — a dependency failed, an invariant broke, an unhandled path | 500, 503 |
 
 Non-HTTP failures use the same ranges with the same meaning: a job that
@@ -44,6 +44,9 @@ codes share a status, which is the entire point of having codes.
 | `4200-4299` | 404 | Resource does not exist |
 | `4300-4399` | 409 | Conflict with current state |
 | `4400-4499` | 429 | Rate limited |
+| `4500-4549` | 405 | Method not served on this path |
+| `4550-4599` | 413 | Request body too large |
+| `4600-4649` | 415 | Unsupported media type |
 | `5000-5499` | 500 | Unhandled server error |
 | `5500-5999` | 503 | A required dependency is unavailable |
 
@@ -98,6 +101,8 @@ is chosen:
 - Message text MAY be reworded freely; that is why the code exists.
 - A new failure mode gets a new code rather than an existing code with a
   different message.
+- A failure only one app's domain can have is `RES-4302`, unless a client
+  must branch on it — see **Domain failures** in `code-prefixes.md`.
 
 ## Choosing between a code and a detail
 
@@ -109,9 +114,11 @@ not four codes.
 A response carries exactly one code even when several things are wrong. Which
 one is not a judgement: run the selection procedure in `code-prefixes.md` over
 every fault detected and take the first that holds. A request that is missing
-one field and has an out-of-range value in another is `VAL-4001` — step 11
-precedes step 12 — with both faults listed in `details`.
+one field and carries an unknown enumeration value in another is `VAL-4001` —
+step 14 precedes step 15 — with both faults listed in `details`.
 
 Note that `VAL-4000` is not the general validation code. It means the body did
 not parse at all, so no field-level faults exist to report; a body that parsed
-and then failed its rules is `VAL-4001` through `VAL-4005`.
+and then failed its rules is `VAL-4001` through `VAL-4007`. `VAL-4550` and
+`VAL-4600` come earlier still: they refuse a body before any attempt to parse
+it.

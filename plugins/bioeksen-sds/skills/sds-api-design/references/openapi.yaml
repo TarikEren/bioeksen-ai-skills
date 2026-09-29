@@ -10,6 +10,10 @@ info:
     in the estate, and every app-specific endpoint is served under
     /api/v{major}/ instead. See standard-api-endpoints.md for rationale.
 
+    Any endpoint may also answer 405 (RES-4500), and one that takes a body
+    413 (VAL-4550) or 415 (VAL-4600). Those apply across the estate and are
+    not repeated in each operation's responses.
+
 paths:
   /api/health:
     get:
@@ -395,9 +399,15 @@ components:
         - VAL-4003
         - VAL-4004
         - VAL-4005
+        - VAL-4006
+        - VAL-4007
+        - VAL-4550
+        - VAL-4600
         - RES-4200
         - RES-4300
         - RES-4301
+        - RES-4302
+        - RES-4500
         - RATE-4400
         - DB-5000
         - DB-5001

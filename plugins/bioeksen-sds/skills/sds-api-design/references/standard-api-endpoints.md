@@ -89,8 +89,9 @@ This applies to every endpoint an app serves, not only the standard ones.
 
 ### Error envelope
 
-Any 4xx or 5xx response that has a body MUST use the envelope below, with one
-exception: the 503 responses of the three health endpoints in this document. A
+Any 4xx or 5xx response the app produces that has a body MUST use the envelope
+below, with one exception: the 503 responses of the three health endpoints in
+this document. A
 503 from `GET /api/health`, `GET /api/health/live` or `GET /api/health/ready`
 carries the body `status` value `fail` or `not-ready` and no `code`, because
 the condition being reported is the state of the app itself rather than the
@@ -117,6 +118,19 @@ reworded at any time; clients that branch on the error MUST branch on `code`.
 
 `details` MUST be `null` unless the error is a validation error, in which case
 it is an array of `{ "field": "<name>", "issue": "<what is wrong>" }`.
+
+### Method, size and media type
+
+Any endpoint MAY answer 405 with `RES-4500` for a method it does not serve,
+and an endpoint that takes a body MAY answer 413 with `VAL-4550` or 415 with
+`VAL-4600`. These hold for every endpoint in the estate, so no endpoint's
+response list repeats them.
+
+The envelope rule above governs responses the app produces. A proxy or load
+balancer in front of the app may refuse an oversized body with a 413 of its
+own before the app ever sees the request, and that response carries no
+envelope. A client MUST handle a 413 by its status alone, and MUST NOT assume
+it carries a `code`.
 
 ### Rate limited responses
 

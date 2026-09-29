@@ -43,7 +43,7 @@ written as `sds-logging/references/log-record.md` resolves the same way whether
 the plugin is installed or the repository is being read directly.
 
 - **Error codes** — `sds-logging/references/code-prefixes.md`. The closed list
-  of all 38 codes, mirrored as an enforced enum in the OpenAPI schema.
+  of all 44 codes, mirrored as an enforced enum in the OpenAPI schema.
 - **Log record shape** — `sds-logging/references/log-record.md`.
 - **API response and error envelopes** — `sds-api-design/references/openapi.yaml`
   is normative; the markdown beside it is the rationale.
