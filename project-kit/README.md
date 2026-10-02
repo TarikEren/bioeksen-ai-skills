@@ -64,7 +64,7 @@ If this repository is private:
 
 | Tool | Does | Needs |
 |------|------|-------|
-| `tools/change_id.py` | Prints a new `Change-Id` from `.bioeksen/software-id` | The standard library |
+| `tools/change_id.py` | Prints a new `Change-Id` from `.bioeksen/software-id`, through the `sds-commit` skill's own `mint_change_id.py` | The standard library |
 | `tools/commit_msg.py --hook FILE` | Checks one message as a commit-msg hook, minting a missing `Change-Id` | The standard library |
 | `tools/commit_msg.py --range A..B` | Checks every non-merge commit in a range | The standard library |
 | `tools/check_release_note.py VERSION` | Checks a release note against its range, after its commit and before the tag | The standard library |
