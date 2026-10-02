@@ -104,9 +104,9 @@ A note is the title, the release date, and the list of changes:
 
 Released 2026-09-04.
 
-- auth-service-20260904T140512Z-a3f9 feat(api): operators cannot currently list logs without shell access
+- auth-service-20260904T170512-a3f9 feat(api): operators cannot currently list logs without shell access
   - What changed: add `GET /api/admin/logs`, paginated, operator credential required
-- auth-service-20260904T151130Z-7b0c fix(auth): expired tokens were rejected as invalid, hiding the real cause
+- auth-service-20260904T181130-7b0c fix(auth): expired tokens were rejected as invalid, hiding the real cause
   - What changed: return `AUTH-4102` instead of `AUTH-4101` when only `exp` has passed
 ```
 
@@ -147,12 +147,25 @@ Every entry is identified by:
 | Part | Rules |
 |------|-------|
 | `{software-id}` | The service the release belongs to. The same value as the `id` field of a log record, in the same format — see `sds-logging/references/log-record.md`. Constant across every entry in every note for that project |
-| `{unique string}` | A UTC timestamp followed by `-` and at least four random characters, e.g. `20260904T140512Z-a3f9` |
+| `{unique string}` | A timestamp in UTC+03:00, written `YYYYMMDDTHHMMSS` with no zone suffix, followed by `-` and at least four random characters, e.g. `20260904T170512-a3f9` |
 
-Both parts are lowercase apart from the `T` and `Z` of the timestamp, and use
-only `[a-z0-9-]`. The compact timestamp form is deliberate: RFC 3339's colons
-are illegal in Windows filenames and awkward inside an identifier, and the
-random tail keeps two entries minted in the same second distinct.
+Both parts are lowercase apart from the `T` of the timestamp, and use only
+`[a-z0-9-]`. The compact timestamp form is deliberate: RFC 3339's colons are
+illegal in Windows filenames and awkward inside an identifier, and the random
+tail keeps two entries minted in the same second distinct.
+
+The timestamp is minted in UTC+03:00, the time BioEksen works in, so an
+identifier reads as the local time its commit was written. The offset is fixed
+here rather than written into each identifier: a `+0300` suffix would add a
+character outside `[a-z0-9-]` that needs escaping wherever an identifier goes
+into a URL, and Türkiye has kept UTC+03:00 all year since 2016, so the offset
+never shifts or repeats an hour. It is a fixed offset, not a named zone, so a
+future change to the country's clocks does not change what an identifier
+means.
+
+Identifiers minted before 2026-10-02 carry a UTC time ending in `Z`, e.g.
+`20260917T101500Z-4c1e`. They stay valid and are never rewritten, like the
+notes that hold them; the `Z` is what tells the two forms apart.
 
 Reusing the log record `id` as the software part means an identifier read out
 of a release note and one read out of a log line name the same service without
@@ -171,7 +184,7 @@ ask for it, or emit the literal placeholder `<software-id>` for a person to
 replace.
 
 ```
-<software-id>-20260904T140512Z-a3f9 feat(api): ...
+<software-id>-20260904T170512-a3f9 feat(api): ...
 ```
 
 A note MUST NOT be committed with a placeholder still in it. The placeholder is

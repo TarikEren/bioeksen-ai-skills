@@ -94,7 +94,7 @@ def check(message: str, expected_id: str) -> list[str]:
         parsed = CHANGE_ID.match(value)
         if not parsed:
             problems.append(f"Change-Id {value!r} is not "
-                            "{software-id}-{YYYYMMDDTHHMMSSZ}-{random}")
+                            "{software-id}-{YYYYMMDDTHHMMSS}-{random}")
         elif parsed["software_id"] != expected_id:
             problems.append(f"Change-Id carries {parsed['software_id']!r}, but "
                             f".bioeksen/software-id holds {expected_id!r}")

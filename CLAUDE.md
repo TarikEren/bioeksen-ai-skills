@@ -151,9 +151,11 @@ This repository is subject to its own `sds-commit` skill: conventional format,
 imperative present tense, no capitalised first letter, no trailing period, and
 the mandatory `Change-Id:` footer trailer.
 
-Mint the identifier as `bioeksen-sds-<UTC timestamp>-<4+ random chars>`, e.g.
-`bioeksen-sds-20260917T101500Z-4c1e`. The software id is `bioeksen-sds`, the
-plugin that gets versioned and released, and it is stored in
+Mint the identifier with `sds-commit`'s `scripts/mint_change_id.py`, which
+writes `bioeksen-sds-<UTC+03:00 timestamp>-<4+ random chars>`, e.g.
+`bioeksen-sds-20261002T131500-4c1e`. Identifiers minted before 2026-10-02 carry
+a UTC timestamp ending in `Z` instead, and stay valid. The software id is
+`bioeksen-sds`, the plugin that gets versioned and released, and it is stored in
 `.bioeksen/software-id` like any project's, per
 `sds-logging/references/log-record.md`. Commits made before 2026-09-17 predate
 the trailer and do not carry one.

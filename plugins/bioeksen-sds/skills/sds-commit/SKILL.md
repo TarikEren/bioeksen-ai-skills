@@ -59,7 +59,7 @@ The body should include the motivation for the change and contrast this with pre
 ## Footer
 The footer should contain the change identifier, issue references and information about breaking changes
 - The footer is a mandatory part: every commit carries a `Change-Id:` trailer
-- `Change-Id:` carries the identifier its release note entry is written under, e.g. `Change-Id: auth-service-20260904T140512Z-a3f9`
+- `Change-Id:` carries the identifier its release note entry is written under, e.g. `Change-Id: auth-service-20260904T170512-a3f9`, its timestamp in UTC+03:00
   - Mint it when writing the commit and copy it verbatim into the note, so an entry resolves to the commit that produced it
   - Mint it with this skill's script, `${CLAUDE_SKILL_DIR}/scripts/mint_change_id.py`, run with Python from anywhere inside the repository the commit belongs to. It reads the software id from `.bioeksen/software-id` and prints a fresh identifier. When that file is missing or empty it exits non-zero rather than guess: ask for the id, write it there, and run the script again. Never compose an identifier by hand, and never reuse one
   - See [release-notes](references/release-notes.md) for the identifier format

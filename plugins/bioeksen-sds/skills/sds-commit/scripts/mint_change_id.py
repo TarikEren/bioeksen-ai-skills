@@ -3,10 +3,11 @@
 
     python mint_change_id.py [--root DIR]
 
-Prints {software-id}-{UTC timestamp}-{random}, e.g.
-bioeksen-sds-20260917T101500Z-4c1e, in the format
-references/release-notes.md defines. Run it from anywhere inside the
-repository the commit belongs to.
+Prints {software-id}-{timestamp}-{random}, e.g.
+bioeksen-sds-20261002T131500-4c1e, in the format
+references/release-notes.md defines. The timestamp is UTC+03:00 with no
+zone suffix. Run it from anywhere inside the repository the commit belongs
+to.
 
 The software id is read from .bioeksen/software-id at the repository root,
 the one place sds-logging/references/log-record.md says it is stored. It is
@@ -25,15 +26,21 @@ import argparse
 import re
 import secrets
 import subprocess
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # SoftwareId in sds-api-design/references/openapi.yaml.
 SOFTWARE_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 SOFTWARE_ID_MAX = 63
-# {software-id}-{YYYYMMDDTHHMMSSZ}-{four or more random characters}
+# The zone every timestamp is minted in. A fixed offset rather than a named
+# zone: Türkiye has kept UTC+03:00 all year since 2016, and an offset can
+# never shift or repeat an hour.
+MINT_ZONE = timezone(timedelta(hours=3), "UTC+03:00")
+# {software-id}-{YYYYMMDDTHHMMSS}-{four or more random characters}. The
+# optional Z accepts identifiers minted before the change to UTC+03:00, which
+# carry a UTC time and stay valid; the Z is what tells the two apart.
 CHANGE_ID = re.compile(
-    r"^(?P<software_id>[a-z0-9]+(?:-[a-z0-9]+)*)-(?P<timestamp>\d{8}T\d{6}Z)-(?P<random>[a-z0-9]{4,})$")
+    r"^(?P<software_id>[a-z0-9]+(?:-[a-z0-9]+)*)-(?P<timestamp>\d{8}T\d{6}Z?)-(?P<random>[a-z0-9]{4,})$")
 ID_FILE = Path(".bioeksen") / "software-id"
 
 
@@ -66,8 +73,9 @@ def software_id(root: Path) -> str:
 
 
 def mint(software: str, now: datetime | None = None) -> str:
-    now = now or datetime.now(timezone.utc)
-    return f"{software}-{now.strftime('%Y%m%dT%H%M%SZ')}-{secrets.token_hex(2)}"
+    """An identifier for now, or for the given aware datetime, in UTC+03:00."""
+    moment = (now or datetime.now(timezone.utc)).astimezone(MINT_ZONE)
+    return f"{software}-{moment.strftime('%Y%m%dT%H%M%S')}-{secrets.token_hex(2)}"
 
 
 def main(argv: list[str] | None = None) -> int:

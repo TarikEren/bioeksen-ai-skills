@@ -32,6 +32,7 @@ skill it names: treat landing it as an API change, per `CLAUDE.md`, and run
 | 2026-09-29 | The aggregator's 500 is not retried; a record's `id` is bound to the submitting app's `azp`; batches of up to 500 are all or nothing. Landed in `855b673`, `ec2805f` and `aeab6f5` |
 | 2026-09-29 | A repository's software id lives in `.bioeksen/software-id`. Item 11.1, landed in `55895d6` |
 | 2026-09-29 | A project generator copies `project-kit/template/` and references the plugin pinned to a release; it never copies the skills. Landed in `6184b42` |
+| 2026-10-02 | Change identifiers are minted by `sds-commit`'s own script, with the timestamp in UTC+03:00 and no zone suffix; identifiers minted earlier keep their UTC time and `Z` |
 
 ## Order of work
 
