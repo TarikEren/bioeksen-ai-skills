@@ -107,7 +107,9 @@ in CI on every push and pull request, and locally when you run it.
    from `skills/`, beside the naming file, or from the naming skill's own
    directory. A path starting with `/` or containing `{` names a file in the
    project using the skill and is exempt; a repository path (`plugins/…`)
-   always fails, because it does not exist in an installed copy.
+   always fails, because it does not exist in an installed copy. A path under
+   `${CLAUDE_SKILL_DIR}/` — a script a skill tells an assistant to run —
+   resolves from the naming skill's own directory and nowhere else.
 10. The project template pins the release it ships in: the `ref` in
     `project-kit/template/.claude/settings.json` and `BIOEKSEN_SDS_REF` in its
     workflow both equal `v{plugin version}`, the workflow checks out the

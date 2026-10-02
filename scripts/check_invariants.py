@@ -62,8 +62,11 @@ RETRY_ROW = re.compile(r"^\|\s*`(\d{4})-(\d{4})`\s*\|\s*(\d{3})\s*\|\s*(Yes|No)\
 # A fenced code block, stripped before looking for references: paths inside
 # examples name files in the project using a skill, not files in this plugin.
 FENCE = re.compile(r"^```.*?^```", re.M | re.S)
-# `sds-logging/references/log-record.md` — a file named in running text.
-TICKED_PATH = re.compile(r"`((?:[\w.-]+/)*[\w-]+\.(?:md|yaml))`")
+# `sds-logging/references/log-record.md` — a file named in running text. Under
+# `${CLAUDE_SKILL_DIR}/` it names a file in the naming skill's own directory,
+# such as a script an assistant is told to run.
+TICKED_PATH = re.compile(
+    r"`(\$\{CLAUDE_SKILL_DIR\}/)?((?:[\w.-]+/)*[\w-]+\.(?:md|yaml|py))`")
 # [text](target) — a markdown link.
 LINK = re.compile(r"\]\(([^)\s]+)\)")
 # The same paths as they appear in plain YAML description text.
@@ -290,20 +293,21 @@ def main() -> int:
         text = FENCE.sub("", read(doc))
         skill_dir = SKILLS / doc.relative_to(SKILLS).parts[0]
         if doc.suffix == ".md":
-            targets = TICKED_PATH.findall(text) + [
-                t.split("#")[0] for t in LINK.findall(text) if not t.startswith(("http", "#"))]
+            targets = [(path, bool(in_skill)) for in_skill, path in TICKED_PATH.findall(text)]
+            targets += [(t.split("#")[0], False) for t in LINK.findall(text)
+                        if not t.startswith(("http", "#"))]
         else:
-            targets = PLAIN_PATH.findall(text)
-        for target in targets:
+            targets = [(t, False) for t in PLAIN_PATH.findall(text)]
+        for target, in_skill in targets:
             if target.startswith("/") or "{" in target:
                 continue
             references += 1
             where = doc.relative_to(ROOT)
+            bases = (skill_dir,) if in_skill else (SKILLS, doc.parent, skill_dir)
             if target.startswith("plugins/"):
                 fail("invariant 9", f"{where} names {target} by a repository path, "
                                     "which does not exist once the plugin is installed")
-            elif not any((base / target).is_file()
-                         for base in (SKILLS, doc.parent, skill_dir)):
+            elif not any((base / target).is_file() for base in bases):
                 fail("invariant 9", f"{where} names {target}, which resolves nowhere")
 
     # Every skill needs the frontmatter that decides when it loads, and its
