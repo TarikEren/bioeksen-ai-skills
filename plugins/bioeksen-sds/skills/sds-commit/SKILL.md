@@ -1,6 +1,6 @@
 ---
 name: sds-commit
-description: BioEksen conventional commit format. Use when writing or amending a commit message, reviewing commit history, or deciding a release version from a set of commits.
+description: BioEksen conventional commit format. Use when writing or amending a commit message, minting its Change-Id, reviewing commit history, or deciding a release version from a set of commits.
 ---
 
 # Conventional Commits
@@ -61,6 +61,7 @@ The footer should contain the change identifier, issue references and informatio
 - The footer is a mandatory part: every commit carries a `Change-Id:` trailer
 - `Change-Id:` carries the identifier its release note entry is written under, e.g. `Change-Id: auth-service-20260904T140512Z-a3f9`
   - Mint it when writing the commit and copy it verbatim into the note, so an entry resolves to the commit that produced it
+  - Mint it with this skill's script, `${CLAUDE_SKILL_DIR}/scripts/mint_change_id.py`, run with Python from anywhere inside the repository the commit belongs to. It reads the software id from `.bioeksen/software-id` and prints a fresh identifier. When that file is missing or empty it exits non-zero rather than guess: ask for the id, write it there, and run the script again. Never compose an identifier by hand, and never reuse one
   - See [release-notes](references/release-notes.md) for the identifier format
   - Exactly one `Change-Id:` per commit: one commit is one entry
   - Gerrit uses a `Change-Id:` trailer of its own, `I` followed by 40 hex digits. The two formats cannot share one trailer, so a repository reviewed through Gerrit MUST NOT install Gerrit's commit-msg hook alongside this convention

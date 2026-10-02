@@ -206,9 +206,10 @@ makes a locally minted identifier collision-resistant without coordination.
   entry is a commit that should have been split.
 - **The commit that adds the note carries an entry for itself.** The tag sits
   on that commit, so it is inside the range the count is taken over. Mint its
-  change identifier first, write the entry with it, then commit using it as the
-  trailer. Without this the count is short by one at every release, and the
-  check stops meaning anything.
+  change identifier first, with the script **Footer** in `SKILL.md` names,
+  write the entry with it, then commit using it as the trailer. Without this
+  the count is short by one at every release, and the check stops meaning
+  anything.
 
 Listing every commit is what makes the note checkable against `git log`:
 the entry count MUST equal `git log --no-merges {previous}..{version}`.

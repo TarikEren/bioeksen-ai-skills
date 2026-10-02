@@ -30,6 +30,10 @@ implement. Treat a change here as an API change, not a docs tweak.
 - `plugins/bioeksen-sds/skills/<skill>/SKILL.md` — entry point, with the
   `name` + `description` frontmatter that decides when the skill loads
 - `plugins/bioeksen-sds/skills/<skill>/references/` — the detail
+- `plugins/bioeksen-sds/skills/<skill>/scripts/` — scripts the skill tells an
+  assistant to run, e.g. `sds-commit`'s `mint_change_id.py`. They ship with the
+  installed plugin, so they read project facts such as the software id from
+  the project, never from a value written into the script
 - `release-notes/{version}.md` — one per release, per the Releases section below
 - `ROADMAP.md` — decisions taken and work not yet done; not a contract
 - `.bioeksen/software-id` — this repository's own software id, `bioeksen-sds`
