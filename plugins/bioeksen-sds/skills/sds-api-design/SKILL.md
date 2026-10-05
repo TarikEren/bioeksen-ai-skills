@@ -45,3 +45,7 @@ They are also the versioned half of the estate: every app-specific path is
 served under `/api/v{major}/`, and the four standard endpoints above are the
 only unversioned ones. The rule, and the 90 day deprecation window a bump
 carries, are in the same document.
+
+An endpoint is written test-first, per `sds-testing/SKILL.md`: the cases its
+tests contain — the envelope, the codes, the correlation header, the list
+and method rules — are in `sds-testing/references/contract-tests.md`.

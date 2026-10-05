@@ -33,6 +33,7 @@ skill it names: treat landing it as an API change, per `CLAUDE.md`, and run
 | 2026-09-29 | A repository's software id lives in `.bioeksen/software-id`. Item 11.1, landed in `55895d6` |
 | 2026-09-29 | A project generator copies `project-kit/template/` and references the plugin pinned to a release; it never copies the skills. Landed in `6184b42` |
 | 2026-10-02 | Change identifiers are minted by `sds-commit`'s own script, with the timestamp in UTC+03:00 and no zone suffix; identifiers minted earlier keep their UTC time and `Z` |
+| 2026-10-05 | Test-first is a MUST with three named exemptions — `docs`, `config`, `generated` — and no rule against code written before its test; CI checks every `feat` and `fix` commit after `v0.4.0` for a test or a `Test-Exempt` trailer, and `sds-testing` catalogues the contract tests. Landed in `007a4ef`, `3d6de60` and `a1e3a5d` |
 
 ## Order of work
 

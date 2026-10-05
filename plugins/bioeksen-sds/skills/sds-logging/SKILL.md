@@ -145,5 +145,9 @@ give their fatal level a different meaning: in Go, `log.Fatal`,
 one of those, the severity that should page someone instead kills the process
 that was about to recover, and turns a degraded app into a restart loop.
 
+What a binding's own tests assert — no secret in any record, a code on every
+failure record, a request unharmed by a down aggregator — is the Logging table
+in `sds-testing/references/contract-tests.md`, written before the binding.
+
 Split this section into `sds-<language>` skills once a second language is in
 use; the contract above stays here.

@@ -78,6 +78,9 @@ and authentication before request validation, which keeps an unauthenticated
 caller from learning the shape of the payload — are argued where the procedure
 is normative, in `sds-logging/references/code-prefixes.md`.
 
+Each step is a test to write before the check it covers: the Auth table in
+`sds-testing/references/contract-tests.md` has a case for every one.
+
 ## What a rejection may say
 
 A 401 or 403 response MUST NOT reveal whether the target exists, which claim

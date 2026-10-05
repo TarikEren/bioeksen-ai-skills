@@ -9,7 +9,7 @@
     {
       "name": "bioeksen-sds",
       "source": "./plugins/bioeksen-sds",
-      "description": "Shared BioEksen conventions: API design, auth, logging, commits",
+      "description": "Shared BioEksen conventions: API design, auth, logging, commits, testing",
       "version": "0.4.0"
     }
   ]
