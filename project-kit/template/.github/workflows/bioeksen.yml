@@ -45,6 +45,12 @@ jobs:
           python .bioeksen-sds/project-kit/tools/commit_msg.py
           --range "origin/${{ github.base_ref }}..${{ github.event.pull_request.head.sha }}"
 
+      - name: Check that this pull request's feat and fix commits change a test
+        if: github.event_name == 'pull_request'
+        run: >-
+          python .bioeksen-sds/project-kit/tools/check_tests.py
+          --range "origin/${{ github.base_ref }}..${{ github.event.pull_request.head.sha }}"
+
       - name: Check the release note
         if: startsWith(github.ref, 'refs/tags/v')
         run: python .bioeksen-sds/project-kit/tools/check_release_note.py "${GITHUB_REF_NAME#v}"

@@ -18,11 +18,14 @@ generated project runs to stay on them.
    |------|------|
    | `.claude/settings.json` | Registers this marketplace and enables `bioeksen-sds`, pinned to a release, so the skills load for anyone who trusts the project folder |
    | `CLAUDE.md` | Tells an assistant where the id lives, which skills govern the project, and which checks to run. The project appends its own notes |
-   | `.github/workflows/bioeksen.yml` | Runs the commit and release note checks, with a marked place for the conformance check |
+   | `.github/workflows/bioeksen.yml` | Runs the commit, test and release note checks, with a marked place for the conformance check |
    | `.githooks/commit-msg` | Checks each commit message locally, and mints its `Change-Id:` |
 
 3. **Adds `.bioeksen-sds/` to the project's `.gitignore`.** That is where CI,
    and a developer who wants the local hook, check out this repository.
+4. **MAY write `.bioeksen/test-paths`**, one glob per line, when the project's
+   tests live where the test check's built-in list would not find them. A
+   project whose tests follow its language's usual layout needs no file.
 
 ## What it never copies
 
@@ -67,6 +70,7 @@ If this repository is private:
 | `tools/change_id.py` | Prints a new `Change-Id` from `.bioeksen/software-id`, through the `sds-commit` skill's own `mint_change_id.py` | The standard library |
 | `tools/commit_msg.py --hook FILE` | Checks one message as a commit-msg hook, minting a missing `Change-Id` | The standard library |
 | `tools/commit_msg.py --range A..B` | Checks every non-merge commit in a range | The standard library |
+| `tools/check_tests.py --range A..B` | Checks that every `feat` and `fix` commit in a range changes a test, or names its exemption in a `Test-Exempt:` trailer, per `sds-testing`. Test paths come from `.bioeksen/test-paths` at the checkout, or a built-in list | The standard library |
 | `tools/check_release_note.py VERSION` | Checks a release note against its range, after its commit and before the tag | The standard library |
 | `conformance/check_service.py --base-url URL` | Checks a running instance's standard endpoints against `openapi.yaml` | `requirements.txt` |
 | `conformance/check_service.py --self-test` | Checks the fixtures against the schemas, and every check against `stub_service.py` | `requirements.txt` |

@@ -1,8 +1,9 @@
 # Working in this repository
 
 This is a BioEksen service. The conventions every BioEksen service shares —
-the standard endpoints, error codes, logging, authentication, commits and
-release notes — live in the `bioeksen-sds` plugin's skills, not in this file.
+the standard endpoints, error codes, logging, authentication, commits, release
+notes and test-first development — live in the `bioeksen-sds` plugin's skills,
+not in this file.
 They load on their own when a task needs them; `.claude/settings.json`
 installs them once this folder is trusted.
 
@@ -19,6 +20,10 @@ missing or empty, ask for the id.
 
 ## Rules that are easy to break
 
+- Work test-first, per the `sds-testing` skill: no behaviour changes without a
+  test that failed before the change and passes after it. A `feat` or `fix`
+  commit that changes no test names its exemption in a `Test-Exempt:` trailer,
+  and only an exemption that skill lists counts.
 - Error codes come verbatim from the closed list in the `sds-logging` skill.
   When none fits, the code is `SYS-5000`. A new code is added to that list by a
   human, never invented in this repository.
@@ -41,7 +46,11 @@ git clone --depth 1 --branch <the pinned release> https://github.com/TarikEren/b
 Then:
 
 - `python .bioeksen-sds/project-kit/tools/commit_msg.py --range origin/main..HEAD`
-  checks this branch's commits.
+  checks this branch's commit messages.
+- `python .bioeksen-sds/project-kit/tools/check_tests.py --range origin/main..HEAD`
+  checks that each of this branch's `feat` and `fix` commits changes a test or
+  names its exemption. What counts as a test is listed in `.bioeksen/test-paths`
+  when the project declares it, and is a built-in list otherwise.
 - `python .bioeksen-sds/project-kit/tools/check_release_note.py <version>`
   checks a release note, after its commit and before the tag.
 - `python .bioeksen-sds/project-kit/conformance/check_service.py --base-url http://localhost:<port>`
