@@ -4,8 +4,10 @@ A Claude Code plugin marketplace holding one plugin, `bioeksen-sds`, whose
 skills are the shared specifications every BioEksen service is built against.
 
 There is no application code here — nothing for an LSP to navigate. It is
-Markdown plus two OpenAPI files, so grep is the right tool. The only executable
-is `scripts/check_invariants.py`, which enforces the invariants below.
+Markdown and two OpenAPI files, so grep is the right tool, with Python in three
+places: `scripts/check_invariants.py`, which enforces the invariants below; the
+scripts a skill tells an assistant to run; and the tools in `project-kit/`,
+which carry their own unit tests.
 
 Run it before committing any change to a skill:
 
@@ -14,11 +16,16 @@ python scripts/check_invariants.py
 ```
 
 CI additionally validates both OpenAPI files against the 3.1 specification,
-runs the conformance self-test, and checks every commit and release note with
-the tools in `project-kit/`. To run the first two locally,
+runs the conformance self-test and the kit tools' unit tests, and checks every
+commit's message, every `feat` and `fix` commit's test, and every release note
+with the tools in `project-kit/`. To run the first three locally,
 `pip install -r scripts/requirements.txt -r project-kit/requirements.txt`, pass
-each OpenAPI file to `openapi-spec-validator`, and run
-`python project-kit/conformance/check_service.py --self-test`.
+each OpenAPI file to `openapi-spec-validator`, and run:
+
+```bash
+python project-kit/conformance/check_service.py --self-test
+python -m unittest discover -s project-kit/tools/tests -t project-kit/tools
+```
 
 Editing a skill changes a contract that services in other repositories already
 implement. Treat a change here as an API change, not a docs tweak.

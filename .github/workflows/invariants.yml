@@ -33,19 +33,22 @@ jobs:
       - name: Check the fixtures, and the conformance check against its stub
         run: python project-kit/conformance/check_service.py --self-test
 
+      - name: Run the kit tools' unit tests
+        run: python -m unittest discover -s project-kit/tools/tests -t project-kit/tools
+
       - name: Check this pull request's commits
         if: github.event_name == 'pull_request'
-        run: >-
-          python project-kit/tools/commit_msg.py
-          --range "origin/${{ github.base_ref }}..${{ github.event.pull_request.head.sha }}"
+        run: |
+          python project-kit/tools/commit_msg.py --range "origin/${{ github.base_ref }}..${{ github.event.pull_request.head.sha }}"
+          python project-kit/tools/check_tests.py --range "origin/${{ github.base_ref }}..${{ github.event.pull_request.head.sha }}"
 
       - name: Check the commits this push adds
         if: >-
           github.event_name == 'push' && github.ref == 'refs/heads/main' &&
           github.event.before != '0000000000000000000000000000000000000000'
-        run: >-
-          python project-kit/tools/commit_msg.py
-          --range "${{ github.event.before }}..${{ github.sha }}"
+        run: |
+          python project-kit/tools/commit_msg.py --range "${{ github.event.before }}..${{ github.sha }}"
+          python project-kit/tools/check_tests.py --range "${{ github.event.before }}..${{ github.sha }}"
 
       - name: Check the release note
         if: startsWith(github.ref, 'refs/tags/v')
