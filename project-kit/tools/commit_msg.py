@@ -14,6 +14,8 @@ none, then checks the result. It checks:
     format, carrying the software id stored in .bioeksen/software-id
   - a BREAKING CHANGE: footer on every commit whose subject carries !, and
     no such footer without the !
+  - at most one Test-Exempt trailer, only on a feat or fix commit, in the
+    final paragraph, naming one of the exemptions sds-testing lists
   - no <software-id> placeholder left anywhere
 """
 from __future__ import annotations
@@ -32,6 +34,11 @@ TYPES = ("feat", "fix", "refactor", "perf", "style", "test", "docs", "build",
 SUBJECT = re.compile(
     r"^(?P<type>[a-z]+)(?:\((?P<scope>[^)]*)\))?(?P<breaking>!)?: (?P<description>.*)$")
 SCOPE = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
+# The types whose commits must change a test or name an exemption, and the
+# exemptions themselves — the table in sds-testing/SKILL.md, which invariant
+# 11 holds this tuple to.
+TESTED_TYPES = ("feat", "fix")
+TEST_EXEMPTIONS = ("docs", "config", "generated")
 TRAILER = re.compile(r"^[A-Za-z][A-Za-z0-9-]*: ")
 SCISSORS = "# ------------------------ >8 ------------------------"
 # Messages git or an autosquash workflow writes, which a hook lets through;
@@ -106,6 +113,20 @@ def check(message: str, expected_id: str) -> list[str]:
         problems.append("the subject carries ! but there is no BREAKING CHANGE: footer")
     if footer and not breaking:
         problems.append("there is a BREAKING CHANGE: footer but the subject carries no !")
+
+    exemptions = [line for line in lines if line.startswith("Test-Exempt:")]
+    if len(exemptions) > 1:
+        problems.append(f"{len(exemptions)} Test-Exempt trailers; at most one is allowed")
+    for line in exemptions[:1]:
+        value = line.partition(":")[2].strip()
+        if value not in TEST_EXEMPTIONS:
+            problems.append(f"Test-Exempt names {value!r}, which is not one of "
+                            f"{', '.join(TEST_EXEMPTIONS)} (see sds-testing)")
+        if line not in paragraphs(message)[-1]:
+            problems.append("the Test-Exempt trailer is not in the final paragraph")
+        if subject and subject["type"] not in TESTED_TYPES:
+            problems.append(f"a Test-Exempt trailer on a {subject['type']} commit, which "
+                            "needs none")
     if "<software-id>" in message:
         problems.append("the <software-id> placeholder has not been replaced")
     return problems

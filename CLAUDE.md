@@ -125,7 +125,9 @@ in CI on every push and pull request, and locally when you run it.
     `sds-auth` validation order has a case in the catalogue's Auth table; and
     every status written beside a code, as `400 \`VAL-4005\``, is that code's
     status. A test with an invented code, or a step nobody tests, fails here
-    before it reaches a service.
+    before it reaches a service. The exemptions are listed once, in the table
+    in `sds-testing/SKILL.md`, and `TEST_EXEMPTIONS` in the kit's commit
+    message tool must hold exactly those values.
 
 Every `SKILL.md` must also open with frontmatter whose `name` is its
 directory's and whose `description` is not empty — the description is what

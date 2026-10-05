@@ -79,6 +79,39 @@ class PlaceholderTest(unittest.TestCase):
         self.assertTrue(any("placeholder" in p for p in problems))
 
 
+class TestExemptTest(unittest.TestCase):
+    def problems(self, subject: str, trailers: str, *body: str) -> list[str]:
+        return check(message(subject, *body, trailers), SOFTWARE_ID)
+
+    def test_named_exemption_in_the_final_paragraph_conforms(self):
+        self.assertEqual(self.problems("feat(api): add x", CHANGE_ID + "\nTest-Exempt: docs"), [])
+
+    def test_unknown_exemption_is_a_problem(self):
+        problems = self.problems("feat(api): add x", CHANGE_ID + "\nTest-Exempt: whatever")
+        self.assertTrue(any("Test-Exempt" in p and "'whatever'" in p for p in problems), problems)
+
+    def test_two_exemptions_are_a_problem(self):
+        problems = self.problems("fix(api): mend x",
+                                 CHANGE_ID + "\nTest-Exempt: docs\nTest-Exempt: config")
+        self.assertTrue(any("2 Test-Exempt" in p for p in problems), problems)
+
+    def test_exemption_outside_the_final_paragraph_is_a_problem(self):
+        problems = self.problems("feat(api): add x", CHANGE_ID, "Test-Exempt: docs")
+        self.assertTrue(any("Test-Exempt" in p and "final paragraph" in p for p in problems),
+                        problems)
+
+    def test_exemption_on_a_commit_that_needs_none_is_a_problem(self):
+        problems = self.problems("docs: explain x", CHANGE_ID + "\nTest-Exempt: docs")
+        self.assertTrue(any("Test-Exempt" in p and "docs commit" in p for p in problems),
+                        problems)
+
+    def test_minted_change_id_goes_first_beside_an_exemption(self):
+        result = with_change_id(message("feat(api): add x", "Body.", "Test-Exempt: config"),
+                                "bioeksen-sds-20261005T120000-ab12")
+        self.assertTrue(result.endswith(CHANGE_ID + "\nTest-Exempt: config\n"), result)
+        self.assertEqual(check(clean(result), SOFTWARE_ID), [])
+
+
 class CleanTest(unittest.TestCase):
     def test_comment_lines_and_everything_below_scissors_are_dropped(self):
         raw = ("docs: x\n\n" + CHANGE_ID + "\n# a comment\n"

@@ -11,6 +11,7 @@ rather than stopping at the first.
 """
 from __future__ import annotations
 
+import ast
 import json
 import re
 import sys
@@ -37,7 +38,9 @@ STANDARD_ENDPOINTS = SKILLS / "sds-api-design" / "references" / "standard-api-en
 MARKETPLACE = ROOT / ".claude-plugin" / "marketplace.json"
 PLUGIN_MANIFEST = ROOT / "plugins" / "bioeksen-sds" / ".claude-plugin" / "plugin.json"
 TESTING = SKILLS / "sds-testing"
+TESTING_SKILL = TESTING / "SKILL.md"
 CONTRACT_TESTS = TESTING / "references" / "contract-tests.md"
+COMMIT_MSG = ROOT / "project-kit" / "tools" / "commit_msg.py"
 TEMPLATE = ROOT / "project-kit" / "template"
 TEMPLATE_SETTINGS = TEMPLATE / ".claude" / "settings.json"
 TEMPLATE_WORKFLOW = TEMPLATE / ".github" / "workflows" / "bioeksen.yml"
@@ -351,6 +354,19 @@ def main() -> int:
         if code not in expected:
             fail("invariant 11", f"contract-tests.md has no Auth case expecting {code}, "
                                  "a step of the validation order in sds-auth")
+    # The exemptions are listed once, in sds-testing's table, and the tool that
+    # validates the Test-Exempt trailer holds the same tuple.
+    listed = [ticked(cells(row)[0])[0] for row in
+              section(read(TESTING_SKILL), "Exemptions").splitlines()
+              if row.startswith("| `")] if TESTING_SKILL.is_file() else []
+    assignment = re.search(r"^TEST_EXEMPTIONS\s*=\s*(\(.*?\))\s*$", read(COMMIT_MSG),
+                           re.M | re.S)
+    coded = list(ast.literal_eval(assignment.group(1))) if assignment else None
+    if coded is None:
+        fail("invariant 11", "project-kit/tools/commit_msg.py defines no TEST_EXEMPTIONS")
+    elif listed != coded:
+        fail("invariant 11", f"sds-testing lists the exemptions {listed}, "
+                             f"commit_msg.py accepts {coded}")
 
     # Every skill needs the frontmatter that decides when it loads, and its
     # name must be its directory's.
@@ -387,7 +403,7 @@ def main() -> int:
           "standard-api-endpoints.md and the schema")
     print(f"OK - all {references} file references in the skills resolve")
     print("OK - the contract tests name only registered codes, cover every validation "
-          "step, and pair each code with its status")
+          "step, and pair each code with its status; the exemptions are listed once")
     print("OK - every skill's frontmatter names its directory and has a description")
     return 0
 
