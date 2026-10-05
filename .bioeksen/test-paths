@@ -1,0 +1,10 @@
+# Paths whose change counts as changing a test, for the kit's test check:
+# one glob per line. A pattern with a / matches a path or any /-suffix of it;
+# one without matches a file's name. See project-kit/README.md.
+#
+# This repository holds specifications, so its tests are the checks that read
+# them: the invariant checker, the conformance fixtures, and the kit tools'
+# own unit tests.
+scripts/check_invariants.py
+project-kit/conformance/fixtures/*
+project-kit/tools/tests/*

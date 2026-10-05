@@ -37,6 +37,9 @@ implement. Treat a change here as an API change, not a docs tweak.
 - `release-notes/{version}.md` — one per release, per the Releases section below
 - `ROADMAP.md` — decisions taken and work not yet done; not a contract
 - `.bioeksen/software-id` — this repository's own software id, `bioeksen-sds`
+- `.bioeksen/test-paths` — which paths count as tests here, for the kit's test
+  check: the invariant checker, the conformance fixtures and the kit tools'
+  unit tests
 - `project-kit/` — what a project generator copies into a new service, and the
   commit, release note and conformance tools those services run; see its
   `README.md`
@@ -63,6 +66,8 @@ one is normative and the other says so:
 | Standard endpoint schemas | `sds-api-design/references/openapi.yaml` — the markdown beside it is rationale |
 | Outbound call behaviour | `sds-api-design/references/service-calls.md` — timeouts, retries, breakers, idempotency |
 | Aggregator endpoint schemas | `sds-logging/references/aggregator-api.yaml` — the markdown beside it is rationale |
+| The test-first rule and its exemptions | `sds-testing/SKILL.md` — `sds-commit/SKILL.md` defines only the trailer that names an exemption |
+| Contract test cases | `sds-testing/references/contract-tests.md` — each case restates one assertion; its code, status or field stays normative in the source the case names |
 
 When two disagree, the normative one is right and the other gets corrected.
 
@@ -115,6 +120,12 @@ in CI on every push and pull request, and locally when you run it.
     workflow both equal `v{plugin version}`, the workflow checks out the
     repository `settings.json` names, and the plugin is enabled. A release
     bumps them in the same commit as the plugin version.
+11. The contract test catalogue can be trusted as a test plan. Every error code
+    named anywhere under `sds-testing/` is in the registry; every code in the
+    `sds-auth` validation order has a case in the catalogue's Auth table; and
+    every status written beside a code, as `400 \`VAL-4005\``, is that code's
+    status. A test with an invented code, or a step nobody tests, fails here
+    before it reaches a service.
 
 Every `SKILL.md` must also open with frontmatter whose `name` is its
 directory's and whose `description` is not empty — the description is what
@@ -141,6 +152,10 @@ same set, which invariant 4 checks. The prose writes a path parameter as
 - A change to what a record holds or what a standard endpoint returns updates
   the fixtures in `project-kit/conformance/fixtures/` in the same commit, with
   a case the old rule accepted and the new one rejects, or the reverse.
+- A change here starts red, as `sds-testing` asks of every service: write the
+  fixture, the invariant or the tool test first, run it, and see it fail for
+  the reason the change addresses, before editing the schema, the prose or the
+  tool it checks.
 - MUST, SHOULD and MAY carry RFC 2119 meanings. Use them deliberately.
 - Keep the rationale. These documents explain *why* each rule exists; a rule
   stripped of its reason gets re-argued in six months.
@@ -159,6 +174,12 @@ a UTC timestamp ending in `Z` instead, and stay valid. The software id is
 `.bioeksen/software-id` like any project's, per
 `sds-logging/references/log-record.md`. Commits made before 2026-09-17 predate
 the trailer and do not carry one.
+
+A `feat` or `fix` commit changes a path in `.bioeksen/test-paths` or carries a
+`Test-Exempt:` trailer, per `sds-testing`. Here, where most changes are to
+specifications, a change to prose alone is `Test-Exempt: docs`. The rule began
+after `v0.4.0`: most `feat` and `fix` commits before it touch no test path, and
+the test check is never run over a range reaching back past that tag.
 
 ## Releases
 

@@ -7,7 +7,10 @@ Everything ships as one plugin, [`bioeksen-sds`](plugins/bioeksen-sds/). Each
 skill is a directory under `plugins/bioeksen-sds/skills/` with a `SKILL.md` entry
 point and, where the detail warrants it, a `references/` folder. Conventions that
 two services must agree on live here; anything that only affects how one codebase
-is written does not.
+is written does not — with one deliberate exception. `sds-testing` is a practice
+rather than an agreement, and it is here because its contract tests are how two
+services know they keep the agreements, and test-first is what keeps those tests
+able to fail.
 
 ## Licence
 
@@ -24,6 +27,7 @@ BioEksen personnel and authorised parties.
 | [`sds-auth`](plugins/bioeksen-sds/skills/sds-auth/) | Who may call what: operator and app credentials, how they are presented and validated |
 | [`sds-logging`](plugins/bioeksen-sds/skills/sds-logging/) | Log records, severities and types, the error code registry, the log aggregator API |
 | [`sds-commit`](plugins/bioeksen-sds/skills/sds-commit/) | Conventional commit format and the release version it implies |
+| [`sds-testing`](plugins/bioeksen-sds/skills/sds-testing/) | Test-first development: no behaviour change without a test that failed first, and the contract tests every convention above requires |
 
 ## How they fit together
 
@@ -35,6 +39,10 @@ sds-api-design ──── error envelope carries a code ────┐
   sds-auth ──── auth outcomes map to AUTH-/PERM- ──► sds-logging
                                                    (code registry,
                                                     log records)
+
+sds-testing ── a contract test for each rule above, written before the code
+sds-commit ─── the test lands in its feat or fix commit, or the commit names
+               its exemption
 ```
 
 Skills cross-reference each other by paths relative to

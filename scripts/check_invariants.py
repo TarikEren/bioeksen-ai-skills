@@ -36,6 +36,8 @@ LOGGING_SKILL = SKILLS / "sds-logging" / "SKILL.md"
 STANDARD_ENDPOINTS = SKILLS / "sds-api-design" / "references" / "standard-api-endpoints.md"
 MARKETPLACE = ROOT / ".claude-plugin" / "marketplace.json"
 PLUGIN_MANIFEST = ROOT / "plugins" / "bioeksen-sds" / ".claude-plugin" / "plugin.json"
+TESTING = SKILLS / "sds-testing"
+CONTRACT_TESTS = TESTING / "references" / "contract-tests.md"
 TEMPLATE = ROOT / "project-kit" / "template"
 TEMPLATE_SETTINGS = TEMPLATE / ".claude" / "settings.json"
 TEMPLATE_WORKFLOW = TEMPLATE / ".github" / "workflows" / "bioeksen.yml"
@@ -59,6 +61,10 @@ RANGE_ROW = re.compile(r"^\|\s*`(\d{4})-(\d{4})`\s*\|\s*(\d{3})\s*\|", re.M)
 AGG_PATH = re.compile(r"^##\s+`(?:GET|POST|PUT|PATCH|DELETE)\s+HOST(/\S*?)`\s*$", re.M)
 # `| `5500-5999` | 503 | Yes |` — the retry classification.
 RETRY_ROW = re.compile(r"^\|\s*`(\d{4})-(\d{4})`\s*\|\s*(\d{3})\s*\|\s*(Yes|No)\s*\|", re.M)
+# `AUTH-4100` anywhere in running text: an error code, by its format alone.
+CODE_TOKEN = re.compile(r"\b([A-Z][A-Z0-9]{1,7}-[45][0-9]{3})\b")
+# 400 `VAL-4005` — a status and the code it is expected with.
+STATUS_CODE = re.compile(r"\b([1-5][0-9]{2})\s+`([A-Z][A-Z0-9]{1,7}-[45][0-9]{3})`")
 # A fenced code block, stripped before looking for references: paths inside
 # examples name files in the project using a skill, not files in this plugin.
 FENCE = re.compile(r"^```.*?^```", re.M | re.S)
@@ -89,6 +95,15 @@ def section(text: str, heading: str) -> str:
     """The body under a markdown heading, up to the next heading of any level."""
     match = re.search(rf"^#+\s+{re.escape(heading)}\s*$(.*?)(?=^#|\Z)", text, re.M | re.S)
     return match.group(1) if match else ""
+
+
+def table_rows(body: str) -> list[dict[str, str]]:
+    """The data rows of the first markdown table in body, keyed by header."""
+    rows = [cells(line) for line in body.splitlines() if line.startswith("|")]
+    if len(rows) < 2:
+        return []
+    header = rows[0]
+    return [dict(zip(header, row)) for row in rows[2:]]
 
 failures: list[str] = []
 
@@ -310,6 +325,33 @@ def main() -> int:
             elif not any((base / target).is_file() for base in bases):
                 fail("invariant 9", f"{where} names {target}, which resolves nowhere")
 
+    # 11. The contract test catalogue can be trusted as a test plan: it names
+    # no code the registry lacks, covers every step of the validation order
+    # sds-auth restates, and pairs each code with the status it carries.
+    catalogue = read(CONTRACT_TESTS) if CONTRACT_TESTS.is_file() else ""
+    if not catalogue:
+        fail("invariant 11", "sds-testing/references/contract-tests.md does not exist")
+    for doc in sorted(TESTING.rglob("*.md")) if TESTING.is_dir() else []:
+        for code in sorted(set(CODE_TOKEN.findall(read(doc))) - set(table)):
+            fail("invariant 11", f"{doc.relative_to(ROOT)} names {code}, which is not a "
+                                 "registered error code")
+    groups = re.findall(r"^##\s+(.+?)\s*$", catalogue, re.M)
+    expected = []
+    for group in groups:
+        for row in table_rows(section(catalogue, group)):
+            then = row.get("Then", "")
+            for status, code in STATUS_CODE.findall(then):
+                if code in table and int(status) != table[code]:
+                    fail("invariant 11", f"contract-tests.md {group}: {row.get('Case')!r} "
+                                         f"expects {status} with {code}, which is "
+                                         f"{table[code]}")
+            if group == "Auth":
+                expected += CODE_TOKEN.findall(then)
+    for code in auth:
+        if code not in expected:
+            fail("invariant 11", f"contract-tests.md has no Auth case expecting {code}, "
+                                 "a step of the validation order in sds-auth")
+
     # Every skill needs the frontmatter that decides when it loads, and its
     # name must be its directory's.
     for skill in sorted(SKILLS.glob("*/SKILL.md")):
@@ -344,6 +386,8 @@ def main() -> int:
     print("OK - severity and type values agree across log-record.md, sds-logging, "
           "standard-api-endpoints.md and the schema")
     print(f"OK - all {references} file references in the skills resolve")
+    print("OK - the contract tests name only registered codes, cover every validation "
+          "step, and pair each code with its status")
     print("OK - every skill's frontmatter names its directory and has a description")
     return 0
 

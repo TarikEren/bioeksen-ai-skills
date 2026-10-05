@@ -28,7 +28,7 @@ of `${CLAUDE_SKILL_DIR}`, which is this skill's own directory.
 | refactor | Commits that rewrite or restructure code without altering API or UI behavior |
 | perf | Refactor commits whose purpose is to improve performance |
 | style | Commits that address code style (e.g., white-space, formatting, missing semi-colons) and do not affect application behavior |
-| test | Commits that add missing tests or correct existing ones |
+| test | Commits that add missing tests to behaviour that already exists, or correct existing tests. A test for new or changed behaviour lands in that behaviour's own `feat` or `fix` commit, per `sds-testing/SKILL.md` |
 | docs | Commits that exclusively affect documentation |
 | build | Commits that affect build-related components such as build tools, dependencies, project version etc. |
 | ops | Commits that affect operational aspects like infrastructure (IaC), deployment scripts, CI/CD pipelines, backups, monitoring, or recovery procedures |
@@ -65,6 +65,9 @@ The footer should contain the change identifier, issue references and informatio
   - See [release-notes](references/release-notes.md) for the identifier format
   - Exactly one `Change-Id:` per commit: one commit is one entry
   - Gerrit uses a `Change-Id:` trailer of its own, `I` followed by 40 hex digits. The two formats cannot share one trailer, so a repository reviewed through Gerrit MUST NOT install Gerrit's commit-msg hook alongside this convention
+- A `feat` or `fix` commit that changes no test MUST carry a `Test-Exempt:` trailer naming the exemption it relies on, a value from the exemptions table in `sds-testing/SKILL.md`, e.g. `Test-Exempt: docs`
+  - At most one per commit, in the final trailer paragraph beside `Change-Id:`. Any other commit carries none
+  - The trailer makes the claim visible in review and checkable in CI; a commit that changes a test needs no trailer
 - Optionally reference issue identifiers (e.g., Closes #123, Fixes JIRA-456)
 - Breaking changes must start with the phrase `BREAKING CHANGE:`
   - For a single line description just add a space after `BREAKING CHANGE:`
