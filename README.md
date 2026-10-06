@@ -7,10 +7,13 @@ Everything ships as one plugin, [`bioeksen-sds`](plugins/bioeksen-sds/). Each
 skill is a directory under `plugins/bioeksen-sds/skills/` with a `SKILL.md` entry
 point and, where the detail warrants it, a `references/` folder. Conventions that
 two services must agree on live here; anything that only affects how one codebase
-is written does not — with one deliberate exception. `sds-testing` is a practice
+is written does not — with two deliberate exceptions. `sds-testing` is a practice
 rather than an agreement, and it is here because its contract tests are how two
 services know they keep the agreements, and test-first is what keeps those tests
-able to fail.
+able to fail. `sds-config` is here because an app that reports ready on a
+configuration it cannot use breaks the promise every load balancer relies on,
+and a secret leaked from one app's configuration is the whole estate's
+incident.
 
 ## Licence
 
@@ -26,6 +29,7 @@ BioEksen personnel and authorised parties.
 | [`sds-api-design`](plugins/bioeksen-sds/skills/sds-api-design/) | HTTP API conventions, both sides of a call: the standard health and admin endpoints, response envelopes, error shape, pagination and status codes — and, for a caller, deadlines, timeouts, retries, circuit breaking and idempotency |
 | [`sds-auth`](plugins/bioeksen-sds/skills/sds-auth/) | Who may call what: operator and app credentials, how they are presented and validated |
 | [`sds-logging`](plugins/bioeksen-sds/skills/sds-logging/) | Log records, severities and types, the error code registry, the log aggregator API |
+| [`sds-config`](plugins/bioeksen-sds/skills/sds-config/) | Configuration: one validated module, checked before the app reports ready, every value declared, secrets kept out of logs, commits and clients |
 | [`sds-commit`](plugins/bioeksen-sds/skills/sds-commit/) | Conventional commit format and the release version it implies |
 | [`sds-testing`](plugins/bioeksen-sds/skills/sds-testing/) | Test-first development: no behaviour change without a test that failed first, and the contract tests every convention above requires |
 
@@ -40,6 +44,7 @@ sds-api-design ──── error envelope carries a code ────┐
                                                    (code registry,
                                                     log records)
 
+sds-config ─── every value validated before the app reports ready, as CFG- codes
 sds-testing ── a contract test for each rule above, written before the code
 sds-commit ─── the test lands in its feat or fix commit, or the commit names
                its exemption

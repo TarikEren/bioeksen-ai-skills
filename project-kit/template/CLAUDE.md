@@ -1,8 +1,8 @@
 # Working in this repository
 
 This is a BioEksen service. The conventions every BioEksen service shares —
-the standard endpoints, error codes, logging, authentication, commits, release
-notes and test-first development — live in the `bioeksen-sds` plugin's skills,
+the standard endpoints, error codes, logging, authentication, configuration,
+commits, release notes and test-first development — live in the `bioeksen-sds` plugin's skills,
 not in this file.
 They load on their own when a task needs them; `.claude/settings.json`
 installs them once this folder is trusted.

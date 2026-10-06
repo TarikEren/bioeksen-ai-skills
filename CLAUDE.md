@@ -74,6 +74,7 @@ one is normative and the other says so:
 | Outbound call behaviour | `sds-api-design/references/service-calls.md` — timeouts, retries, breakers, idempotency |
 | Aggregator endpoint schemas | `sds-logging/references/aggregator-api.yaml` — the markdown beside it is rationale |
 | The test-first rule and its exemptions | `sds-testing/SKILL.md` — `sds-commit/SKILL.md` defines only the trailer that names an exemption |
+| Configuration: one module, validation before ready, declared values, secrets | `sds-config/SKILL.md` — `sds-logging/SKILL.md` names `LOG_LEVEL`, and `sds-logging/references/log-record.md` keeps the software id out of configuration |
 | Contract test cases | `sds-testing/references/contract-tests.md` — each case restates one assertion; its code, status or field stays normative in the source the case names |
 
 When two disagree, the normative one is right and the other gets corrected.
@@ -137,6 +138,10 @@ in CI on every push and pull request, and locally when you run it.
     before it reaches a service. The exemptions are listed once, in the table
     in `sds-testing/SKILL.md`, and `TEST_EXEMPTIONS` in the kit's commit
     message tool must hold exactly those values.
+12. `README.md`'s Skills table lists exactly the skills: a row for every
+    directory under `skills/` with a `SKILL.md`, and none for anything else. It
+    is the list a reader decides from, so a skill missing from it is a skill
+    nobody installs on purpose.
 
 Every `SKILL.md` must also open with frontmatter whose `name` is its
 directory's and whose `description` is not empty — the description is what

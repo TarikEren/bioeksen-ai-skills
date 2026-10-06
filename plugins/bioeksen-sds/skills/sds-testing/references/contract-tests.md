@@ -127,6 +127,16 @@ it logs and what it calls.
 | Aggregator unavailable | An aggregator that answers 503 | Records keep coming | They are buffered and retried behind the breaker, the oldest dropped first when the buffer is full | `sds-logging/references/log-record.md` |
 | Batch rejected | A batch answered 400 naming two records | The app resubmits | Without those two, under a new `Idempotency-Key` | `sds-logging/references/aggregator-api.md` |
 
+## Configuration
+
+| Case | Given | When | Then | Source |
+|------|-------|------|------|--------|
+| Missing value | A required value unset | The app starts | It does not report ready, and writes a `FATAL` record carrying `CFG-5000` | `sds-config/SKILL.md` |
+| Unusable value | A value its schema refuses | The app starts | It does not report ready, and writes a `FATAL` record carrying `CFG-5001` | `sds-config/SKILL.md` |
+| Checked at startup | A required value unset | The app starts, before any request arrives | `GET /api/health/ready` already answers 503, not only after a request needs the value | `sds-config/SKILL.md` |
+| Value not echoed | An unusable secret | The failure is logged | The record names the variable and never contains its value | `sds-config/SKILL.md` |
+| Test seam refused | A production deployment with a test seam's setting | The app starts | It does not report ready, with `CFG-5001`, and accepts no test credential | `sds-config/SKILL.md` |
+
 ## Health
 
 | Case | Given | When | Then | Source |

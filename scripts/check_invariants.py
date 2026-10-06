@@ -24,6 +24,7 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parent.parent
 SKILLS = ROOT / "plugins" / "bioeksen-sds" / "skills"
+README = ROOT / "README.md"
 CODE_PREFIXES = SKILLS / "sds-logging" / "references" / "code-prefixes.md"
 ERROR_CODES = SKILLS / "sds-logging" / "references" / "error-codes.md"
 AUTH_SKILL = SKILLS / "sds-auth" / "SKILL.md"
@@ -379,6 +380,16 @@ def main() -> int:
         fail("invariant 11", f"sds-testing lists the exemptions {listed}, "
                              f"commit_msg.py accepts {coded}")
 
+    # 12. README's Skills table is the one list of the skills a reader sees:
+    # it names every skill directory, and nothing else.
+    skill_dirs = {s.parent.name for s in SKILLS.glob("*/SKILL.md")}
+    readme_skills = {(ticked(row.get("Skill", "")) or [""])[0]
+                     for row in table_rows(section(read(README), "Skills"))}
+    for missing in sorted(skill_dirs - readme_skills):
+        fail("invariant 12", f"README.md's Skills table has no row for {missing}")
+    for stray in sorted(readme_skills - skill_dirs):
+        fail("invariant 12", f"README.md's Skills table names {stray!r}, which is not a skill")
+
     # Every skill needs the frontmatter that decides when it loads, and its
     # name must be its directory's.
     for skill in sorted(SKILLS.glob("*/SKILL.md")):
@@ -416,6 +427,7 @@ def main() -> int:
     print(f"OK - all {references} file references in the skills resolve")
     print("OK - the contract tests name only registered codes, cover every validation "
           "step, and pair each code with its status; the exemptions are listed once")
+    print(f"OK - README.md's Skills table lists exactly the {len(skill_dirs)} skills")
     print("OK - every skill's frontmatter names its directory and has a description")
     return 0
 
