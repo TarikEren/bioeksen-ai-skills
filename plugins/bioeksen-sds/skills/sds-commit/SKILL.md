@@ -68,6 +68,9 @@ The footer should contain the change identifier, issue references and informatio
 - A `feat` or `fix` commit that changes no test MUST carry a `Test-Exempt:` trailer naming the exemption it relies on, a value from the exemptions table in `sds-testing/SKILL.md`, e.g. `Test-Exempt: docs`
   - At most one per commit, in the final trailer paragraph beside `Change-Id:`. Any other commit carries none
   - The trailer makes the claim visible in review and checkable in CI; a commit that changes a test needs no trailer
+- A `fix` commit SHOULD name each aggregator record of the failure it fixes with a `Fixes-Log:` trailer carrying the record's `recordId`, e.g. `Fixes-Log: 01J9Z4K7XQ2M8N`
+  - One trailer per record, in the final trailer paragraph beside `Change-Id:`. Any other type carries none: only a fix resolves a failure
+  - When the pull request carrying the commit is merged, the git service stores the commit's Change-Id on each record it names, and the aggregator deletes the record 30 days later, per `sds-logging/references/aggregator-api.md`. A record no fix names stays until its issue is closed, or its own window ends
 - Optionally reference issue identifiers (e.g., Closes #123, Fixes JIRA-456)
 - Breaking changes must start with the phrase `BREAKING CHANGE:`
   - For a single line description just add a space after `BREAKING CHANGE:`

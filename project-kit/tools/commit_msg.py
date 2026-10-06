@@ -16,6 +16,8 @@ none, then checks the result. It checks:
     no such footer without the !
   - at most one Test-Exempt trailer, only on a feat or fix commit, in the
     final paragraph, naming one of the exemptions sds-testing lists
+  - Fixes-Log trailers only on a fix commit, in the final paragraph, each
+    naming one aggregator recordId
   - no <software-id> placeholder left anywhere
 """
 from __future__ import annotations
@@ -127,6 +129,16 @@ def check(message: str, expected_id: str) -> list[str]:
         if subject and subject["type"] not in TESTED_TYPES:
             problems.append(f"a Test-Exempt trailer on a {subject['type']} commit, which "
                             "needs none")
+    fixes = [line for line in lines if line.startswith("Fixes-Log:")]
+    for line in fixes:
+        value = line.partition(":")[2].strip()
+        if not value or any(character.isspace() for character in value):
+            problems.append(f"Fixes-Log {value!r} does not name one recordId")
+        if line not in paragraphs(message)[-1]:
+            problems.append("a Fixes-Log trailer is not in the final paragraph")
+    if fixes and subject and subject["type"] != "fix":
+        problems.append(f"a Fixes-Log trailer on a {subject['type']} commit; only a fix "
+                        "resolves a log record")
     if "<software-id>" in message:
         problems.append("the <software-id> placeholder has not been replaced")
     return problems
