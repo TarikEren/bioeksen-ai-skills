@@ -29,6 +29,8 @@ it logs and what it calls.
 | Unknown body field | A body carrying a field the endpoint does not define | It is submitted | 400 `VAL-4007` | `sds-api-design/references/app-endpoints.md` |
 | Dangling reference | A body field naming a related record that does not exist | It is submitted | 400 `VAL-4006`, with that field in `details` | `sds-logging/references/code-prefixes.md` |
 | Unserved method | A path that exists | It is called with a method it does not serve | 405 `RES-4500` | `sds-logging/references/code-prefixes.md` |
+| Body too large | A body one byte over the endpoint's limit: 1 MiB, unless the app records another | It is submitted | 413 `VAL-4550` | `sds-api-design/references/standard-api-endpoints.md` |
+| Understated length | A body over the limit sent chunked, or under a `Content-Length` that understates it | It is submitted | 413 `VAL-4550`, refused before it is read whole | `sds-api-design/references/standard-api-endpoints.md` |
 | Missing resource | An id no resource has | It is requested | 404 `RES-4200` | `sds-logging/references/code-prefixes.md` |
 | Duplicate key | A write setting a unique key another record already holds | It is submitted | 409 `RES-4300` | `sds-logging/references/code-prefixes.md` |
 | Still referenced | A record other records refer to | It is deleted | 409 `RES-4302` | `sds-logging/references/code-prefixes.md` |

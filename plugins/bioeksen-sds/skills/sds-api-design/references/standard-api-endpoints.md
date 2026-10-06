@@ -143,9 +143,22 @@ it is an array of `{ "field": "<name>", "issue": "<what is wrong>" }`.
 ### Method, size and media type
 
 Any endpoint MAY answer 405 with `RES-4500` for a method it does not serve,
-and an endpoint that takes a body MAY answer 413 with `VAL-4550` or 415 with
-`VAL-4600`. These hold for every endpoint in the estate, so no endpoint's
-response list repeats them.
+and an endpoint that takes a body MAY answer 415 with `VAL-4600`, and MUST
+answer 413 with `VAL-4550` for a body over its limit, below. These hold for
+every endpoint in the estate, so no endpoint's response list repeats them.
+
+An endpoint's body limit is **1 MiB** (1,048,576 bytes) unless the app sets
+another for that endpoint. A different limit is an empirical value in the
+sense of `sds-api-design/references/service-calls.md`: the app MAY set it and
+MUST record that it has. One default across the estate lets a caller size a
+request without reading each app's code, and it is the aggregator's own batch
+limit, so the service every app writes to accepts whatever an app's default
+accepts.
+
+The limit is counted on the bytes as they arrive, never taken from
+`Content-Length` alone. A chunked body carries no `Content-Length`, and a
+sender can understate one, so an app that trusts the header can read an
+unbounded body into memory before it ever compares a size.
 
 The envelope rule above governs responses the app produces. A proxy or load
 balancer in front of the app may refuse an oversized body with a 413 of its
