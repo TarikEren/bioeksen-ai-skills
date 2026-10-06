@@ -10,7 +10,7 @@
       "name": "bioeksen-sds",
       "source": "./plugins/bioeksen-sds",
       "description": "Shared BioEksen conventions: API design, auth, logging, configuration, commits, testing",
-      "version": "0.5.0"
+      "version": "0.6.0"
     }
   ]
 }

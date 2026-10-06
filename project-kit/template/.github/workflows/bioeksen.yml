@@ -12,7 +12,7 @@ on:
 
 env:
   BIOEKSEN_SDS_REPO: TarikEren/bioeksen-ai-skills
-  BIOEKSEN_SDS_REF: v0.5.0
+  BIOEKSEN_SDS_REF: v0.6.0
 
 jobs:
   conventions:
