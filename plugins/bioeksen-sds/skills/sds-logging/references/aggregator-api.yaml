@@ -96,8 +96,10 @@ paths:
           in: query
           required: false
           description: >-
-            Inclusive lower bound on timestamp. Defaults to the start of the
-            retention window, and is clamped to it when earlier.
+            Inclusive lower bound on timestamp. Defaults to 90 days before
+            now, and is never clamped: how long the aggregator keeps a record
+            depends on its type and severity, so an earlier startDate returns
+            whatever is still kept.
           schema:
             type: string
             format: date-time
@@ -428,8 +430,16 @@ components:
     # recordId is assigned on write, so a submission carrying one is rejected
     # rather than silently ignored — an app that thinks it chooses record
     # identifiers should find out immediately.
+    # A DEBUG record never leaves the app that wrote it (log-record.md), so a
+    # submitted one fails here and is refused with VAL-4006.
     LogSubmission:
-      $ref: "../../sds-api-design/references/openapi.yaml#/components/schemas/LogRecord"
+      allOf:
+        - $ref: "../../sds-api-design/references/openapi.yaml#/components/schemas/LogRecord"
+        - not:
+            required: [severity]
+            properties:
+              severity:
+                const: DEBUG
 
     RecordId:
       type: string

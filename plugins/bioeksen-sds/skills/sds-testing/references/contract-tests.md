@@ -122,6 +122,8 @@ it logs and what it calls.
 | Own text in the tail | A failure whose error says more than its code's meaning | It is logged | The prose is the code's meaning, and the error's text is under `error=` | `sds-logging/references/log-record.md` |
 | Redacted cause | A driver error quoting a connection string with a password | It is logged | The password appears in no record | `sds-logging/references/log-record.md` |
 | Level from LOG_LEVEL | `LOG_LEVEL` set to `WARNING` | An `INFO` event happens | No record of it is written | `sds-logging/SKILL.md` |
+| DEBUG stays local | `LOG_LEVEL` set to `DEBUG` | A `DEBUG` event happens | It is in the app's own store, and is never submitted | `sds-logging/references/log-record.md` |
+| AUDIT outlasts a full buffer | An unreachable aggregator, and a full buffer holding an `AUDIT` record | Records keep coming | Other records are dropped first, and the `AUDIT` record is kept until the aggregator stores it | `sds-logging/references/log-record.md` |
 | Aggregator down | An unreachable aggregator | A request is handled | It succeeds, and no slower than with the aggregator up | `sds-logging/references/log-record.md` |
 | Malformed record | An aggregator that answers 400 | The submission is handled | It is not retried, and the app records `LOG-4000` locally | `sds-logging/references/log-record.md` |
 | Aggregator unavailable | An aggregator that answers 503 | Records keep coming | They are buffered and retried behind the breaker, the oldest dropped first when the buffer is full | `sds-logging/references/log-record.md` |
@@ -136,6 +138,20 @@ it logs and what it calls.
 | Checked at startup | A required value unset | The app starts, before any request arrives | `GET /api/health/ready` already answers 503, not only after a request needs the value | `sds-config/SKILL.md` |
 | Value not echoed | An unusable secret | The failure is logged | The record names the variable and never contains its value | `sds-config/SKILL.md` |
 | Test seam refused | A production deployment with a test seam's setting | The app starts | It does not report ready, with `CFG-5001`, and accepts no test credential | `sds-config/SKILL.md` |
+
+## Retention
+
+For the aggregator. Time passes on an injected clock.
+
+| Case | Given | When | Then | Source |
+|------|-------|------|------|--------|
+| INFO window | An `APP` `INFO` record | 30 days pass | It is deleted | `sds-logging/references/aggregator-api.md` |
+| ACCESS window | An `ACCESS` `INFO` record | 14 days pass | It is deleted | `sds-logging/references/aggregator-api.md` |
+| Unnamed failure | An `ERROR` record no issue names | 90 days pass | It is deleted | `sds-logging/references/aggregator-api.md` |
+| Security year | A `SECURITY` `WARNING` record | 90 days pass | It is still kept, until a year after its `timestamp` | `sds-logging/references/aggregator-api.md` |
+| Audit forever | An `AUDIT` record | Any time passes | It is never deleted | `sds-logging/references/aggregator-api.md` |
+| DEBUG refused | A `DEBUG` record | It is submitted | 400 `VAL-4006`, and nothing is stored | `sds-logging/references/aggregator-api.md` |
+| Not clamped | Records older than 90 days still kept | `GET /api/v1/logs` is called with a `startDate` a year ago | Every record kept since then is returned, and `filterParams` echoes that `startDate` | `sds-logging/references/aggregator-api.md` |
 
 ## Health
 

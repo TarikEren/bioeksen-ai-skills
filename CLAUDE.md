@@ -70,6 +70,7 @@ one is normative and the other says so:
 | The error code list | `sds-logging/references/code-prefixes.md` |
 | Error code selection order | `sds-logging/references/code-prefixes.md` — `sds-auth/SKILL.md` restates steps 1-9, and its own **Database failures** table restates the steps a driver's failures meet |
 | The log record contract | `sds-logging/references/log-record.md` |
+| Log retention | `sds-logging/references/aggregator-api.md`, its **Retention** table — `sds-api-design/references/standard-api-endpoints.md` keeps only an app's own window |
 | Standard endpoint schemas | `sds-api-design/references/openapi.yaml` — the markdown beside it is rationale |
 | Outbound call behaviour | `sds-api-design/references/service-calls.md` — timeouts, retries, breakers, idempotency |
 | Aggregator endpoint schemas | `sds-logging/references/aggregator-api.yaml` — the markdown beside it is rationale |
@@ -117,7 +118,9 @@ in CI on every push and pull request, and locally when you run it.
    the two selection tables in `sds-logging/SKILL.md`, the query parameter
    table in `standard-api-endpoints.md`, and the `Severity` and `LogType`
    enums in `openapi.yaml`. Both sets are closed and restated four times, so a
-   rename has to land in every copy in one commit.
+   rename has to land in every copy in one commit. The **Retention** table in
+   `aggregator-api.md` groups them: it names every type once down its first
+   column, and every severity but `DEBUG` once across its header.
 9. Every file a skill document names resolves once the plugin is installed:
    from `skills/`, beside the naming file, or from the naming skill's own
    directory. A path starting with `/` or containing `{` names a file in the

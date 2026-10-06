@@ -39,7 +39,9 @@ already visible in the `ACCESS` log.
 ## What MUST NOT be logged
 
 The aggregator is shared across apps and retained. A secret written to it is
-leaked to every operator and every backup.
+leaked to every operator and every backup. `SECURITY` records are kept for a
+year and `AUDIT` records forever, so a secret written into one outlives every
+rotation of it.
 
 - Passwords, tokens, API keys, session IDs, or `Authorization` header contents
 - Full payment or identity numbers
@@ -56,7 +58,7 @@ selection guidance:
 
 | Severity | Use when | Wakes someone |
 |----------|----------|---------------|
-| `DEBUG` | Detail useful only while diagnosing. MUST be disabled in production by default | No |
+| `DEBUG` | Detail useful only while diagnosing. MUST be disabled in production by default, and never leaves the app: the aggregator keeps none | No |
 | `INFO` | A normal, noteworthy event: startup, job completed, resource created | No |
 | `WARNING` | Degraded but handled: retry succeeded, fell back to a default, approaching a limit | No |
 | `ERROR` | One operation failed and a user or job is affected. The app keeps running | Not immediately |
@@ -77,7 +79,7 @@ Rules:
 |------|---------|
 | `APP` | General application behavior; the default when nothing else fits |
 | `SECURITY` | Authentication, authorization, credential changes, suspected abuse |
-| `AUDIT` | Deliberate record of who changed what, kept for accountability |
+| `AUDIT` | Deliberate record of who changed what, kept for accountability: forever, so never at `DEBUG` |
 | `ACCESS` | Request-level records: method, path, status, duration |
 | `JOB` | Scheduled and background work |
 
@@ -85,6 +87,9 @@ Rules:
 *whether access was granted*, and `AUDIT` when it is *what was changed*. A
 failed login is `SECURITY`; a successful role change is both, and SHOULD be
 logged twice rather than compromising on one.
+
+How long the aggregator keeps each type at each severity is the **Retention**
+table in `references/aggregator-api.md`.
 
 ## Correlation
 

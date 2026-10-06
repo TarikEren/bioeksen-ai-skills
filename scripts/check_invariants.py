@@ -313,6 +313,23 @@ def main() -> int:
             if got != expected:
                 fail("invariant 8", f"{where} lists {name} values {got}, "
                                     f"openapi.yaml {schema} has {expected}")
+    # The aggregator's retention table groups the same values: every type once
+    # down its first column, and every severity but DEBUG, which never reaches
+    # the aggregator, once across its header.
+    retention = [cells(row) for row in section(read(AGGREGATOR), "Retention").splitlines()
+                 if row.startswith("|")]
+    retained = {
+        "type": ([value for row in retention[2:] for value in ticked(row[0])],
+                 spec["components"]["schemas"]["LogType"]["enum"]),
+        "severity": ([value for cell in (retention[0][1:] if retention else [])
+                      for value in ticked(cell)],
+                     [s for s in spec["components"]["schemas"]["Severity"]["enum"]
+                      if s != "DEBUG"]),
+    }
+    for name, (got, expected) in retained.items():
+        if sorted(got) != sorted(expected) or len(got) != len(set(got)):
+            fail("invariant 8", f"aggregator-api.md's Retention table covers {name} "
+                                f"values {got}; it must name each of {expected} once")
 
     # 9. Every file one skill document names resolves once the plugin is
     # installed: from the skills root, beside the naming file, or from the

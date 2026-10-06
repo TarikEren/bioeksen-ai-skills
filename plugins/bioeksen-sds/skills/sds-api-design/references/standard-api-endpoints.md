@@ -368,10 +368,17 @@ An app MUST keep its own records for at least **7 days**, which is what this
 endpoint reads. That is a working week: long enough to debug an app directly
 when the aggregator is unreachable or when its records are in doubt.
 
-The archive is the aggregator, which keeps **90 days** — see
-`sds-logging/references/aggregator-api.md`. The two windows are deliberately
-different, and an operator comparing them will find records here that the
-aggregator no longer holds, and far more there than here. Neither gap is loss.
+The archive is the aggregator, which keeps each record for as long as its
+type and severity call for, from 14 days to forever — the **Retention** table
+in `sds-logging/references/aggregator-api.md`. The two windows are
+deliberately different, and an operator comparing them will find records here
+that the aggregator no longer holds, and far more there than here. Neither gap
+is loss.
+
+This store is also the only one that keeps `DEBUG` records, which never reach
+the aggregator. And an `AUDIT` record the aggregator has not yet stored stays
+here past the window until it has, per
+`sds-logging/references/log-record.md`.
 
 A `startDate` earlier than the window MUST be clamped to the start of it rather
 than rejected, and `filterParams` MUST echo the clamped value. A 400 would make

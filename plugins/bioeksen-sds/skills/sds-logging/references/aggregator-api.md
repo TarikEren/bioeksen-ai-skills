@@ -52,6 +52,8 @@ one of which the schema enforces:
   the schema enforces by enumerating them, so an unlisted code fails validation
   rather than being stored
 - `code` MUST NOT be null when `severity` is `ERROR` or `FATAL`
+- `severity` MUST NOT be `DEBUG`: a `DEBUG` record never leaves the app that
+  wrote it, per `log-record.md`, so one submitted is refused with `VAL-4006`
 - A submission carrying `recordId` MUST be rejected with `VAL-4007`, as any
   field outside the six is. The aggregator assigns it on write; an app that
   believes it chooses record identifiers should find that out at once rather
@@ -137,11 +139,12 @@ The query parameters, their defaults, the pagination rules, the response fields
 and the error envelope are the ones defined for an app's own
 `GET /api/admin/logs` in
 `sds-api-design/references/standard-api-endpoints.md`, which is normative for
-them. One parameter differs:
+them. Two parameters differ:
 
 | Parameter | Type | Default | Notes |
 |-----------|------|---------|-------|
 | `id` | string | all | The emitting service, app or process. On an app's own endpoint every record has the same value; here it selects between apps |
+| `startDate` | RFC 3339 | 90 days before now | Inclusive lower bound on `timestamp`. Never clamped — see **Retention** |
 
 Results MUST be sorted by `timestamp` descending, tie-broken by `recordId`
 ascending so paging is stable — `recordId` being the store-assigned identifier
@@ -159,25 +162,6 @@ it, so a listing can be followed to a single record.
 | 429 | Over the caller's allowance — `RATE-4400`, carrying `Retry-After` |
 | 500 | The query failed |
 | 503 | Not ready |
-
-### Retention
-
-The aggregator keeps records for **90 days**. It is the estate's archive: the
-90 days is what makes a quarterly incident review possible and what any
-"when did this start?" investigation reads.
-
-`startDate` defaults to the start of that window, and a `startDate` earlier
-than it is clamped rather than rejected, per the rule in
-`sds-api-design/references/standard-api-endpoints.md`. `filterParams` echoes
-the clamped value, so a caller asking for a year sees what it actually got.
-
-Records older than the window are removed. Nothing in these specs promises an
-archival tier beyond it, so a record that must outlive 90 days — an `AUDIT`
-record kept for a compliance obligation, say — needs somewhere else to live,
-and that is a decision for whoever has the obligation.
-
-An app's own `GET /api/admin/logs` reads a different store with a shorter
-window. The two disagreeing is expected, not data loss.
 
 ### Response
 
@@ -228,6 +212,59 @@ the top of this document, not the record's `id` field.
 | 429 | Over the caller's allowance — `RATE-4400`, carrying `Retry-After` |
 | 500 | Query failed |
 | 503 | Not ready |
+
+## Retention
+
+The aggregator is the estate's archive, and how long it keeps a record depends
+on what the record is:
+
+| Type | `INFO` | `WARNING` | `ERROR`, `FATAL` |
+|------|--------|-----------|------------------|
+| `APP`, `JOB` | 30 days | 90 days | Until its issue is resolved or closed, plus 30 days; 90 days when no issue names it |
+| `ACCESS` | 14 days | 90 days | As for `APP` |
+| `SECURITY` | 1 year | 1 year | As for `APP`, and never less than 1 year |
+| `AUDIT` | Forever | Forever | Forever |
+
+- A window runs from the record's `timestamp`. The 30 days after an issue run
+  from the moment the issue was resolved or closed.
+- A record an open issue names is never deleted, however old it is.
+- `DEBUG` is not in the table. A `DEBUG` record never reaches the aggregator,
+  per `log-record.md`, which refuses one with `VAL-4006`.
+- Forever means never deleted, never sampled, never capped by a storage
+  quota, and never summarised. Every other record is kept whole until its
+  window ends, then deleted. A store MAY keep counts of what it deleted, but
+  nothing replaces an `AUDIT` record.
+
+Each row answers the question its records are read for, for as long as that
+question is asked:
+
+- **`INFO`** is the volume: an `ACCESS` record per request, an `APP` record per
+  state change. A month answers "what happened before this failed". `ACCESS`
+  records are the most numerous, and who called what is asked within days, so
+  they get two weeks.
+- **`WARNING`** is a handled but degraded condition, and what matters is its
+  pattern over time. A quarter is what a quarterly review reads, which is why
+  the whole archive used to keep 90 days.
+- **`SECURITY`** is kept a year at every severity. An intrusion is often found
+  months after it began, and the investigation needs every failed sign-in
+  since; a year is also what an audit of access commonly asks for.
+- **`ERROR` and `FATAL`** are the evidence a fix is written from. Deleted on a
+  fixed date, they can vanish while the fix is still being written; kept
+  forever, the noise stays forever too. So a failure's records are kept for as
+  long as an issue tracks them, and 30 days beyond, for a regression to be
+  compared against; a failure nobody opened an issue for is kept a quarter, so
+  it is still there for the quarterly review.
+- **`AUDIT`** is kept forever, because accountability does not expire: who
+  changed what is asked years later, and a count cannot answer it.
+
+`startDate` on `GET HOST/api/v1/logs` defaults to 90 days before now, the
+window most records share. It is never clamped, unlike an app's own: no single
+lower bound exists when each record has its own window, so an earlier
+`startDate` returns whatever is still kept, `AUDIT` records from years ago
+included, and `filterParams` echoes the value as requested.
+
+An app's own `GET /api/admin/logs` reads a different store with a shorter
+window. The two disagreeing is expected, not data loss.
 
 ## Authorization
 

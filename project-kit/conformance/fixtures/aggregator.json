@@ -12,6 +12,24 @@
     "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21"}
   },
   {
+    "name": "a DEBUG submission, which never reaches the aggregator",
+    "schema": "aggregator-api.yaml#/components/schemas/LogSubmission",
+    "valid": false,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "DEBUG", "type": "APP", "code": null, "message": "cache warmed entries=120"}
+  },
+  {
+    "name": "an AUDIT submission at INFO",
+    "schema": "aggregator-api.yaml#/components/schemas/LogSubmission",
+    "valid": true,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "INFO", "type": "AUDIT", "code": null, "message": "role granted user=3f9a role=operator request=8c21"}
+  },
+  {
+    "name": "a batch carrying one DEBUG record",
+    "schema": "aggregator-api.yaml#/components/schemas/LogBatch",
+    "valid": false,
+    "instance": {"records": [{"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "DEBUG", "type": "APP", "code": null, "message": "cache warmed entries=120"}]}
+  },
+  {
     "name": "a batch of one",
     "schema": "aggregator-api.yaml#/components/schemas/LogBatch",
     "valid": true,

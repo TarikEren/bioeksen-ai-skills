@@ -246,7 +246,13 @@ is already answered whenever storage or tooling changes.
   replay. The aggregator honours the key, per
   `sds-api-design/references/service-calls.md`, but does not require it, so
   this rule is the emitter's to keep.
-- `DEBUG` records MUST NOT be submitted from production by default.
+- A `DEBUG` record MUST NOT be submitted, from any environment. It stays in
+  the app's own store, which the app's own `GET /api/admin/logs` reads; the
+  aggregator keeps no `DEBUG` record and refuses one with `VAL-4006`, per
+  `aggregator-api.md`.
+- An `AUDIT` record is never `DEBUG`. The aggregator keeps `AUDIT` forever and
+  never sees `DEBUG`, so an `AUDIT` record at `DEBUG` would be an
+  accountability record nobody keeps.
 
 ### Handling the aggregator's response
 
@@ -269,8 +275,11 @@ write, and an unreachable database is a 503.
 Whatever the app does not retry stays in its local store only, and the app
 records that failure there: `LOG-4000` for a 4xx, `LOG-5000` for a 500, and
 `LOG-5500` once retries exhaust their budget or the circuit stays open. The
-buffer MUST be bounded and drop oldest-first when full, rather than growing
-without limit.
+buffer MUST be bounded and, when full, drop its oldest record that is not
+`AUDIT`, rather than growing without limit. An `AUDIT` record is never
+dropped: it stays in the app's local store, past that store's own window,
+until the aggregator has answered 201 for it. The archive keeps `AUDIT`
+forever, and a record lost on its way there defeats that.
 
 Two failures happen before anything is submitted. A record the app's own
 check refuses, because it would not match this contract, is `LOG-4000`: the
