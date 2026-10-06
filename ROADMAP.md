@@ -40,6 +40,8 @@ skill it names: treat landing it as an API change, per `CLAUDE.md`, and run
 | 2026-10-06 | No stack in a log record; `error` and `cause` are reserved tail keys; the lowest severity is `LOG_LEVEL`; a build MAY carry the software id compiled in, held equal to the file. Landed in `f6cfc17` and `b3cd696` |
 | 2026-10-06 | Configuration gets its own skill, `sds-config`: validated at startup before the app reports ready, declared, secrets kept out. Landed in `d5ceaf0` |
 | 2026-10-06 | `sds-testing` adds known defects as strict expected failures, no weakened tests, flaky and not-run reporting, guarded test databases and seams that fail closed. These rulings were taken from create-bioeksen-app, which had settled them first. Landed in `d09c906` |
+| 2026-10-07 | Aggregator retention is by type and severity: `AUDIT` forever, `SECURITY` a year, `ERROR` and `FATAL` until their issue is resolved or closed plus 30 days (90 days when no issue names them), `WARNING` 90 days, `INFO` 30 days and `ACCESS` `INFO` 14. `DEBUG` never leaves the app. Item 3, landed in `be8a36a` |
+| 2026-10-07 | The local git service links a record to its issue and, on merging a fix whose `Fixes-Log:` trailer names it, stores the fix's Change-Id on it, as an app holding `logs.resolve`. Landed in `5b47190` and `409b530` |
 
 ## Order of work
 
@@ -118,20 +120,28 @@ mechanism nothing has specified and nobody owns.
 
 ## 3. Log retention window — done
 
-Landed 2026-09-17 in `91c6c37`, closing the open decision.
+Landed 2026-09-17 in `91c6c37`, and replaced 2026-10-07 in `be8a36a` and `5b47190`.
 
-The aggregator keeps **90 days** and is the archive. An app keeps **7 days** of
-its own records, which is what `GET /api/admin/logs` reads. The two windows
-differ on purpose, and both documents say so, so an operator comparing them
-does not read the gap as data loss.
+The aggregator is the archive, and keeps a record for as long as its type and
+severity call for: the **Retention** table in `aggregator-api.md`, from 14
+days for `ACCESS` `INFO` to forever for `AUDIT`. `ERROR` and `FATAL` records
+are kept while an issue names them and for 30 days after it is resolved or
+closed, and 90 days when none ever does; the local git service records both
+through `PUT HOST/api/v1/logs/:recordId/issue`. `DEBUG` never reaches the
+aggregator.
 
-A `startDate` earlier than the window is clamped rather than rejected, and
-`filterParams` echoes the clamped value.
+An app keeps **7 days** of its own records, which is what
+`GET /api/admin/logs` reads, and the only store that keeps `DEBUG`. The
+windows differ on purpose, and both documents say so, so an operator comparing
+them does not read the gap as data loss.
 
-**Still open, deliberately.** Nothing promises an archival tier beyond 90 days.
-An `AUDIT` record that must outlive it — a compliance obligation, say — needs
-somewhere else to live, and `aggregator-api.md` says so rather than implying
-the aggregator is that place.
+An app's own `startDate` earlier than its window is clamped, and
+`filterParams` echoes the clamped value. The aggregator's is never clamped,
+since its records have no single window.
+
+The 90-day flat window this replaced left `AUDIT` with no archive at all. The
+table answers that: `AUDIT` is kept forever, never sampled, capped or
+summarised.
 
 ---
 
