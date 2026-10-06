@@ -175,6 +175,17 @@ def main() -> int:
                             f"expected {AUTH_STEPS}")
     elif auth != selection[:AUTH_STEPS]:
         fail("invariant 2", f"sds-auth order {auth} != selection procedure {selection[:AUTH_STEPS]}")
+    # The database failures table restates steps by number: each row's code is
+    # the code of the step it names, so a renumbered procedure fails it loudly.
+    db_rows = table_rows(section(cp, "Database failures"))
+    if not db_rows:
+        fail("invariant 2", "no Database failures table found in code-prefixes.md")
+    for row in db_rows:
+        step, codes = row.get("Step", ""), ticked(row.get("Code", ""))
+        named = selection[int(step) - 1] if step.isdigit() and 0 < int(step) <= len(selection)             else None
+        if codes[:1] != [named] or named is None:
+            fail("invariant 2", f"database failure {row.get('Database condition')!r} pairs "
+                                f"step {step} with {codes}, but that step is {named}")
 
     # 3. Every code's HTTP status matches the range table in error-codes.md.
     ranges = [(int(a), int(b), int(h)) for a, b, h in RANGE_ROW.findall(read(ERROR_CODES))]
@@ -391,7 +402,8 @@ def main() -> int:
 
     print(f"OK - {len(table)} error codes consistent across "
           f"code-prefixes.md, its selection procedure and the ErrorCode enum")
-    print(f"OK - sds-auth restates steps 1-{len(auth)} in the same order")
+    print(f"OK - sds-auth restates steps 1-{len(auth)} in the same order, and the "
+          f"{len(db_rows)} database failures name each step's own code")
     print("OK - every code's HTTP status matches the range table")
     print(f"OK - the {len(STANDARD_PATHS)} standard endpoints are unversioned and "
           f"the {len(documented_paths)} aggregator paths are not")

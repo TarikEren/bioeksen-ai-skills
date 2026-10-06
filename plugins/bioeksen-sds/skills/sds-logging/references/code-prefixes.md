@@ -60,10 +60,10 @@ entries under that one code. See the rule in `error-codes.md`.
 | 16 | Query parameter present but unparseable | `VAL-4003` |
 | 17 | `endDate` earlier than `startDate` | `VAL-4004` |
 | 18 | `page` below 1, or `limit` outside 1 to its maximum | `VAL-4005` |
-| 19 | Field or query parameter parses; value invalid for its type, format or range | `VAL-4006` |
+| 19 | Field or query parameter parses; value invalid for its type, format or range, or names a related record that does not exist | `VAL-4006` |
 | 20 | Body carries a field the endpoint does not define | `VAL-4007` |
-| 21 | Named resource does not exist | `RES-4200` |
-| 22 | Resource being created already exists | `RES-4300` |
+| 21 | Resource the request addresses does not exist | `RES-4200` |
+| 22 | Resource being created, or a unique key a write sets, already exists | `RES-4300` |
 | 23 | Resource changed under a concurrent write | `RES-4301` |
 | 24 | Resource exists; its current state does not allow the operation | `RES-4302` |
 | 25 | Required configuration value absent at startup | `CFG-5000` |
@@ -107,6 +107,40 @@ methods a path serves nor what an endpoint accepts.
 protecting an endpoint. **This table is the normative one**; where the two
 disagree, this file wins and `sds-auth/SKILL.md` MUST be corrected. Changing a
 condition here means changing it there in the same commit.
+
+## Database failures
+
+A database driver reports a failure in its own terms — a SQLSTATE, an ORM's
+error class — and the code is still the first condition above that holds. This
+table restates which condition each usual driver failure meets, so two apps on
+different drivers answer the same failure with the same code. It names steps
+by number; where it and the procedure disagree, the procedure wins.
+
+| Database condition | Step | Code |
+|--------------------|------|------|
+| A unique or primary key violation | 22 | `RES-4300` |
+| The row an update or delete addresses does not exist | 21 | `RES-4200` |
+| A foreign key names a record that does not exist | 19 | `VAL-4006` |
+| A delete refused because other rows still reference the row | 24 | `RES-4302` |
+| A serialization failure, or an optimistic version that no longer matches | 23 | `RES-4301` |
+| A transaction rolled back for any other reason | 31 | `DB-5002` |
+| No pooled connection free within the pool's timeout | 28 | `DB-5501` |
+| The database refused or dropped the connection | 27 | `DB-5500` |
+| A check or not-null constraint violated | 30 | `DB-5001` |
+| Any other failed read | 29 | `DB-5000` |
+| Any other failed write | 30 | `DB-5001` |
+
+A foreign key is a field's value, not the resource the request addresses.
+`POST /api/v1/widgets` naming a `siteId` no site has addresses a collection
+that exists, so a 404 would tell the caller the endpoint is missing. The field
+is what is wrong: step 19 holds, before step 21 is reached, and `details` names
+the field. A referenced record that exists but belongs to another principal is
+step 8, `PERM-4152`, earlier still.
+
+A check or not-null violation reaching the database means the app wrote a
+value its own validation should have refused with `VAL-4001` or `VAL-4006`.
+The fault is the app's, so the code is `DB-5001`, and the fix is the missing
+validation rather than a 400 mapped from the driver's error.
 
 ## Derived attributes
 
@@ -307,3 +341,16 @@ one of two ways, and neither is inventing a code at the point of use:
 
 The first is the default. A domain code is justified by a client that
 behaves differently because of it, not by the failure being interesting.
+
+### Not implemented
+
+An operation the contract names but no code implements yet — a stub written so
+that its tests can be seen failing first, per `sds-testing/SKILL.md` — is
+`SYS-5000`, answered 500. No earlier condition in the procedure holds, so step
+44 decides.
+
+It is never 501. No range in `error-codes.md` maps to 501, and a code added
+for a state every operation leaves before it ships would stay in the registry
+forever, since codes are never retired from it. The response's `message` MAY
+say the operation is not implemented, as `message` is written for people; the
+log record's prose stays the code's own, `unhandled error`.

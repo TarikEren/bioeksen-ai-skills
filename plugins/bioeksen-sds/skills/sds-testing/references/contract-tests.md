@@ -27,10 +27,23 @@ it logs and what it calls.
 | First fault wins | A body missing one field and carrying an unknown enumeration value in another | It is submitted | 400 `VAL-4001`, with both faults in `details` | `sds-logging/references/error-codes.md` |
 | Invalid field value | A body field of the wrong type, format or range | It is submitted | 400 `VAL-4006` | `sds-logging/references/code-prefixes.md` |
 | Unknown body field | A body carrying a field the endpoint does not define | It is submitted | 400 `VAL-4007` | `sds-api-design/references/app-endpoints.md` |
+| Dangling reference | A body field naming a related record that does not exist | It is submitted | 400 `VAL-4006`, with that field in `details` | `sds-logging/references/code-prefixes.md` |
 | Unserved method | A path that exists | It is called with a method it does not serve | 405 `RES-4500` | `sds-logging/references/code-prefixes.md` |
 | Missing resource | An id no resource has | It is requested | 404 `RES-4200` | `sds-logging/references/code-prefixes.md` |
+| Duplicate key | A write setting a unique key another record already holds | It is submitted | 409 `RES-4300` | `sds-logging/references/code-prefixes.md` |
+| Still referenced | A record other records refer to | It is deleted | 409 `RES-4302` | `sds-logging/references/code-prefixes.md` |
 | Domain rule | A resource whose current state forbids an operation | The operation is requested | 409 `RES-4302`, the rule named in `message` | `sds-logging/references/code-prefixes.md` |
 | Unhandled | A failure nothing handles | It reaches the edge | 500 `SYS-5000`, with no stack trace in the body | `sds-logging/references/code-prefixes.md` |
+| Not implemented | An operation the contract names that no code implements yet | It is called | 500 `SYS-5000`, never a 501 | `sds-logging/references/code-prefixes.md` |
+
+## Database
+
+| Case | Given | When | Then | Source |
+|------|-------|------|------|--------|
+| Concurrent write | Two writes to one record, the second made from a version that is no longer current | The second is submitted | 409 `RES-4301` | `sds-logging/references/code-prefixes.md` |
+| Pool exhausted | No pooled connection free within the pool's timeout | A request needs one | 503 `DB-5501` | `sds-logging/references/code-prefixes.md` |
+| Database down | A database that refuses connections | A request needs it | 503 `DB-5500` | `sds-logging/references/code-prefixes.md` |
+| Constraint validated first | A value a database check constraint would refuse | It is submitted | 400 `VAL-4006` from validation, before the database sees it | `sds-logging/references/code-prefixes.md` |
 
 ## Correlation
 

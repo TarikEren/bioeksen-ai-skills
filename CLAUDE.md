@@ -68,7 +68,7 @@ one is normative and the other says so:
 | Fact | Normative in |
 |------|--------------|
 | The error code list | `sds-logging/references/code-prefixes.md` |
-| Error code selection order | `sds-logging/references/code-prefixes.md` — `sds-auth/SKILL.md` restates steps 1-9 |
+| Error code selection order | `sds-logging/references/code-prefixes.md` — `sds-auth/SKILL.md` restates steps 1-9, and its own **Database failures** table restates the steps a driver's failures meet |
 | The log record contract | `sds-logging/references/log-record.md` |
 | Standard endpoint schemas | `sds-api-design/references/openapi.yaml` — the markdown beside it is rationale |
 | Outbound call behaviour | `sds-api-design/references/service-calls.md` — timeouts, retries, breakers, idempotency |
@@ -89,7 +89,9 @@ in CI on every push and pull request, and locally when you run it.
 2. Steps 1-9 of that selection procedure and the validation order in
    `sds-auth/SKILL.md` list the same codes in the same order. Compare the
    **codes**, not the prose — the conditions deliberately differ in wording,
-   one being credential-agnostic and the other JWT-specific.
+   one being credential-agnostic and the other JWT-specific. The
+   **Database failures** table in `code-prefixes.md` also names steps, by
+   number, and each of its rows carries the code of the step it names.
 3. Every code's HTTP status matches the range table in `error-codes.md`.
 4. The four standard endpoints in `openapi.yaml` are exactly `/api/health`,
    `/api/health/live`, `/api/health/ready` and `/api/admin/logs`, unversioned;
