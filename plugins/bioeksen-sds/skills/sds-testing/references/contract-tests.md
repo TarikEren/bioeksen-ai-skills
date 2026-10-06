@@ -117,6 +117,10 @@ it logs and what it calls.
 | No secrets | A request carrying a bearer token | It is handled and logged | The token appears in no record | `sds-logging/SKILL.md` |
 | Code on failure | An `ERROR` or `FATAL` record | It is written | Its `code` is not null | `sds-logging/references/log-record.md` |
 | One line | A failure whose context contains a newline | It is logged | The record's `message` is a single line | `sds-logging/references/log-record.md` |
+| No stack | A failure that carries a stack trace | It is logged | The record's `message` holds no stack; a stack, if kept, goes to stderr with the same `code` and `request=` | `sds-logging/references/log-record.md` |
+| Own text in the tail | A failure whose error says more than its code's meaning | It is logged | The prose is the code's meaning, and the error's text is under `error=` | `sds-logging/references/log-record.md` |
+| Redacted cause | A driver error quoting a connection string with a password | It is logged | The password appears in no record | `sds-logging/references/log-record.md` |
+| Level from LOG_LEVEL | `LOG_LEVEL` set to `WARNING` | An `INFO` event happens | No record of it is written | `sds-logging/SKILL.md` |
 | Aggregator down | An unreachable aggregator | A request is handled | It succeeds, and no slower than with the aggregator up | `sds-logging/references/log-record.md` |
 | Malformed record | An aggregator that answers 400 | The submission is handled | It is not retried, and the app records `LOG-4000` locally | `sds-logging/references/log-record.md` |
 | Aggregator unavailable | An aggregator that answers 503 | Records keep coming | They are buffered and retried behind the breaker, the oldest dropped first when the buffer is full | `sds-logging/references/log-record.md` |

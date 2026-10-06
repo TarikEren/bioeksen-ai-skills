@@ -103,6 +103,15 @@ to become unusable. It MUST:
 - Not repeat the error code. It has its own field precisely so that filtering
   never depends on parsing free text
 - Contain nothing from the forbidden list in `SKILL.md`
+- Carry no stack trace, not even one flattened onto a single line
+
+A stack is for the person debugging one instance, not for every operator
+filtering the estate: it is unbounded, it names the app's internals, and
+flattened into the message it buries the constant prefix records are grouped
+by. An app that keeps stacks SHOULD write each to its local error channel,
+stderr, as one line carrying the failure's `code` and the same `request=` or
+`job=` value as its record, so a person can join the two. A stack never
+reaches the aggregator.
 
 ## Structured tail
 
@@ -121,6 +130,26 @@ Rules:
   with `"` and `\` backslash-escaped inside
 - An empty value is written `key=""`
 - Pairs MUST come last; no prose after the first pair
+
+### Reserved keys
+
+A record that carries one of these values MUST carry it under this key, so a
+dashboard or a runbook can rely on the name. Any other key is the app's own.
+
+| Key | Carries |
+|-----|---------|
+| `request` | The request's identifier, per **Correlation** below |
+| `job` | A background run's identifier, in place of `request` |
+| `attempt` | Which attempt of a retried outbound call this is, counting from 1 |
+| `error` | A failure's own text where it says more than its code's meaning: an exception's message, a driver's error |
+| `cause` | The errors beneath that one, outermost first, each written `Name: message` and joined by ` <- ` |
+
+`error` and `cause` are where an unhandled failure says what actually broke:
+`SYS-5000`'s prose, `unhandled error`, deliberately says nothing.
+
+Text taken from a library or a driver MUST be redacted before it is written.
+A driver quoting its connection string puts a password into `cause`, and the
+forbidden list in `SKILL.md` covers the tail as much as the prose.
 
 The point of the format is that the constant part of every occurrence is
 identical, so records group by prefix, and the variable part is machine
@@ -237,6 +266,15 @@ records that failure there: `LOG-4000` for a 4xx, `LOG-5000` for a 500, and
 `LOG-5500` once retries exhaust their budget or the circuit stays open. The
 buffer MUST be bounded and drop oldest-first when full, rather than growing
 without limit.
+
+Two failures happen before anything is submitted. A record the app's own
+check refuses, because it would not match this contract, is `LOG-4000`: the
+same malformed record the aggregator would have refused, so the same code. A
+record the local store fails to write is that store's own failure, `DB-5001`
+for a database and `SYS-5000` for any other store, not a `LOG-` code. Both
+are written to stderr, since the store that would have held them is either
+not trusted with the record or is the thing that failed. `LOG-5000` stays the
+code for a submission the aggregator refused.
 
 The two sets of codes belong to different apps. The aggregator answers a
 malformed record with the `VAL-` code the selection procedure gives it, as any

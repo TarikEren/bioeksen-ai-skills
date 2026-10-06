@@ -137,6 +137,10 @@ language, the binding MUST:
 - Never block the request path on the aggregator being reachable
 - Map `FATAL` to a call that logs and returns, never to one that ends the
   process
+- Take the lowest severity it emits from `LOG_LEVEL`, one of the severities in
+  `references/log-record.md`, and use `INFO` when it is unset. One name across
+  the estate lets an operator turn up an app's detail during an incident
+  without first finding out what that app calls the setting
 
 `FATAL` means a person must act now while the app is still running — a pool
 exhausted for over a minute, an app past its startup budget. Several libraries
