@@ -115,6 +115,7 @@ it logs and what it calls.
 | Case | Given | When | Then | Source |
 |------|-------|------|------|--------|
 | No secrets | A request carrying a bearer token | It is handled and logged | The token appears in no record | `sds-logging/SKILL.md` |
+| Id from the file | An app built from its repository | It writes a record | The record's `id` is the content of `.bioeksen/software-id` | `sds-logging/references/log-record.md` |
 | Code on failure | An `ERROR` or `FATAL` record | It is written | Its `code` is not null | `sds-logging/references/log-record.md` |
 | One line | A failure whose context contains a newline | It is logged | The record's `message` is a single line | `sds-logging/references/log-record.md` |
 | No stack | A failure that carries a stack trace | It is logged | The record's `message` holds no stack; a stack, if kept, goes to stderr with the same `code` and `request=` | `sds-logging/references/log-record.md` |

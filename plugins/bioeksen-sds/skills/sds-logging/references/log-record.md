@@ -41,6 +41,11 @@ This is the normative rule for the value, which `sds-commit` reuses as the
   logging configuration, a hook minting a change identifier, an assistant
   writing a release note. A project generator asks for the id once, at
   creation, and writes the file.
+- An app whose runtime cannot read that file — a bundled, standalone or
+  serverless build that ships without the repository — MAY carry the id
+  compiled in. The copy is generated from the file at build time, or
+  committed beside it with a test that fails whenever the two differ, and it
+  is never edited by hand. The file stays the one place the id is set.
 - A missing or empty file means the id has not been supplied, and the rule
   above applies: ask.
 - Format: lowercase letters and digits in `-` separated words, at most 63
