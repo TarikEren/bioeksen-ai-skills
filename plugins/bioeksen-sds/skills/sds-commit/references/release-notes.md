@@ -77,6 +77,19 @@ this rule the first rename in a new project ships `1.0.0`, the next one ships
 `2.0.0`, and the major version stops meaning anything before the service is
 even stable.
 
+### The first release
+
+A new service starts at `0.1.0`. Its first release is `0.1.0` whatever its
+commits are, because there is no earlier version for them to increment, and
+it covers every commit from the repository's root. The root commit is
+`chore: initial commit`, with a `Change-Id:` like any other, so it is the
+first release's first `chore` entry.
+
+Starting below `1.0.0` puts a new service under the rule above from its first
+commit. Starting at `0.0.1`, as a patch from nothing, would be just as
+arbitrary and would say less: the first release is the one that introduced
+the interface, which is what a minor increment means.
+
 ### Pre-release labels
 
 A release that is not yet ready for general use MAY carry a pre-release suffix:
@@ -215,6 +228,8 @@ makes a locally minted identifier collision-resistant without coordination.
   MUST have an entry, whatever its type. `docs`, `style` and `chore` commits
   are listed like any other.
 - Merge commits are not listed. The commits they bring in are.
+- A first release has no previous tag. Its range is every commit from the
+  root, so the initial commit has an entry too.
 - One commit is one entry. A commit whose change cannot be stated as a single
   entry is a commit that should have been split.
 - **The commit that adds the note carries an entry for itself.** The tag sits

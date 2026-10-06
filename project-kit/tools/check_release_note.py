@@ -9,11 +9,12 @@ the count is one short. On a tag push HEAD is that same commit. It checks:
 
   - release-notes/{VERSION}.md exists, titled and dated
   - one entry per non-merge commit in {previous}..{head}, matched by Change-Id,
-    each with the commit's own type, scope and breaking marker
+    each with the commit's own type, scope and breaking marker; a first
+    release, with no earlier tag, covers every commit up to {head}
   - breaking entries first, then the type order, and every breaking entry
     carrying its BREAKING CHANGE: text
   - no <software-id> placeholder
-  - VERSION is the one the commits imply
+  - VERSION is the one the commits imply, and 0.1.0 for a first release
 """
 from __future__ import annotations
 
@@ -28,6 +29,8 @@ from commit_msg import SUBJECT, TYPES
 ENTRY = re.compile(r"^- (?P<id>\S+) (?P<type>[a-z]+(?:\([^)]*\))?!?): (?P<reason>.+)$")
 CHANGES = re.compile(r"^  - What changed: .+$")
 VERSION = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:-[0-9A-Za-z.-]+)?$")
+# A new service's first release, whatever its commits, per release-notes.md.
+FIRST_VERSION = "0.1.0"
 
 
 def git(root: Path, *args: str) -> str:
@@ -35,16 +38,17 @@ def git(root: Path, *args: str) -> str:
                           check=True).stdout
 
 
-def previous_tag(root: Path, head: str, version: str) -> str:
+def previous_tag(root: Path, head: str, version: str) -> str | None:
+    """The latest earlier v* tag reachable from head, or None for a first release."""
     tags = git(root, "tag", "--merged", head, "--list", "v*", "--sort=-v:refname").split()
     earlier = [t for t in tags if t != f"v{version}"]
-    if not earlier:
-        raise SystemExit(f"no earlier v* tag is reachable from {head}; pass --previous")
-    return earlier[0]
+    return earlier[0] if earlier else None
 
 
-def implied(previous: str, commits: list[dict]) -> str:
+def implied(previous: str | None, commits: list[dict]) -> str:
     """The version the commits imply, per the Version section of release-notes.md."""
+    if previous is None:
+        return FIRST_VERSION
     parsed = VERSION.match(previous.lstrip("v"))
     if not parsed:
         raise SystemExit(f"the previous tag {previous!r} does not name a version")
@@ -96,8 +100,8 @@ def main(argv: list[str] | None = None) -> int:
             problems.append(f"entry {match['id']} has no '  - What changed:' line after it")
 
     previous = args.previous or previous_tag(root, args.head, args.version)
-    log = git(root, "log", "--no-merges", "--reverse", "--format=%H%x00%B%x1e",
-              f"{previous}..{args.head}")
+    span = f"{previous}..{args.head}" if previous else args.head
+    log = git(root, "log", "--no-merges", "--reverse", "--format=%H%x00%B%x1e", span)
     commits = []
     for record in filter(str.strip, log.split("\x1e")):
         sha, _, body = record.strip("\n").partition("\x00")
@@ -111,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if len(entries) != len(commits):
         problems.append(f"{len(entries)} entries, but {len(commits)} non-merge commits in "
-                        f"{previous}..{args.head}")
+                        f"{span}")
     by_id = {c["id"]: c for c in commits if c["id"]}
     for c in commits:
         if not c["id"]:
@@ -140,14 +144,17 @@ def main(argv: list[str] | None = None) -> int:
 
     expected = implied(previous, commits)
     core = args.version.split("-")[0]
-    declared_stable = core == "1.0.0" and previous.lstrip("v").startswith("0.")
-    if core != expected and not declared_stable:
+    declared_stable = (previous is not None and core == "1.0.0"
+                       and previous.lstrip("v").startswith("0."))
+    if previous is None and core != expected:
+        problems.append(f"a first release is {expected}, not {args.version}")
+    elif core != expected and not declared_stable:
         problems.append(f"the commits since {previous} imply {expected}, not {args.version}")
 
     for problem in problems:
         print(f"  - {problem}")
     print(f"{note_path.name}: {len(entries)} entries against {len(commits)} commits in "
-          f"{previous}..{args.head}: {'FAILED' if problems else 'OK'}")
+          f"{span}: {'FAILED' if problems else 'OK'}")
     return 1 if problems else 0
 
 

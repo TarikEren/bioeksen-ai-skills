@@ -99,6 +99,7 @@ The next release's version follows from the commits it contains, as in SemVer:
 - Otherwise, any `feat` increments the minor version
 - Otherwise — `fix` and every other type — increment the patch version
 - Below `1.0.0` these shift down one place: a breaking change increments the minor version, everything else the patch version
+- A new service starts at `0.1.0`: its first release is `0.1.0` whatever its commits, and its root commit is `chore: initial commit`
 - Refer to [release-notes](references/release-notes.md) for more information on versioning and release notes.
 
 ## Rules
