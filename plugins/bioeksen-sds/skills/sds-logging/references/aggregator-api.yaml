@@ -17,7 +17,7 @@ info:
     first, which is the failure this repository exists to prevent.
 
     Like every endpoint in the estate, these may also answer 405 (RES-4500),
-    and a POST 413 (VAL-4550) or 415 (VAL-4600), per
+    and a POST or PUT 413 (VAL-4550) or 415 (VAL-4600), per
     sds-api-design/references/standard-api-endpoints.md. Those are not
     repeated in each operation's responses.
 
@@ -275,6 +275,63 @@ paths:
         "503":
           $ref: "#/components/responses/NotReady"
 
+  /api/v1/logs/{recordId}/issue:
+    put:
+      summary: Record the issue that names a record, and the fix that resolves it
+      description: >-
+        Called by the git service's integration: open when an issue naming
+        the record opens, resolved with the fixing commit's Change-Id when a
+        pull request bringing a commit whose Fixes-Log trailer names the
+        record is merged, and closed when the issue closes without a fix. A
+        resolved record stays resolved. How long the record is then kept is
+        the Retention table in aggregator-api.md.
+      operationId: linkIssue
+      tags: [logs]
+      security:
+        - resolverAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RequestId"
+        - $ref: "#/components/parameters/RequestDeadline"
+        - name: recordId
+          in: path
+          required: true
+          description: The identifier assigned on write.
+          schema:
+            type: string
+            minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IssueLink"
+      responses:
+        "200":
+          description: The record, carrying its link.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoredRecord"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/ResolveForbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/NotReady"
+
 components:
   securitySchemes:
     appAuth:
@@ -293,6 +350,14 @@ components:
         Operator credential: a delegated JWT from the same issuer, whose scp
         holds the configured operator scope and whose roles hold operator. An
         app credential never satisfies it.
+    resolverAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >-
+        App credential whose roles hold logs.resolve: the git service's
+        integration, which opens and closes the issues records are linked to.
+        No delegated token satisfies it, an operator's included.
 
   headers:
     NoStore:
@@ -356,8 +421,20 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+    ResolveForbidden:
+      description: >-
+        PERM-4150 when the caller is not an app holding logs.resolve. An
+        operator credential never satisfies this endpoint: a record's link
+        follows its issue, which is changed in the git service.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
     NotFound:
-      description: No record with that recordId.
+      description: No record with that recordId, or one already deleted.
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestId"
@@ -448,17 +525,77 @@ components:
         Assigned by the aggregator on write. Not part of a submitted record,
         and not the record's id field, which names the emitting app.
 
-    # The six fields plus the assigned identifier. Composed from LogFields
-    # rather than restating it, with unevaluatedProperties because
-    # additionalProperties cannot see through allOf.
+    # The six fields plus what the aggregator adds: the assigned identifier,
+    # and the link to the issue that names the record, null when none does.
+    # Composed from LogFields rather than restating it, with
+    # unevaluatedProperties because additionalProperties cannot see through
+    # allOf.
     StoredRecord:
       allOf:
         - $ref: "../../sds-api-design/references/openapi.yaml#/components/schemas/LogFields"
         - type: object
-          required: [recordId]
+          required: [recordId, issue]
           properties:
             recordId:
               $ref: "#/components/schemas/RecordId"
+            issue:
+              anyOf:
+                - $ref: "#/components/schemas/StoredIssue"
+                - type: "null"
+      unevaluatedProperties: false
+
+    # The Change-Id format of sds-commit/references/release-notes.md, as
+    # sds-commit's mint_change_id.py mints it: invariant 13 keeps this pattern
+    # equal to that script's, so the two cannot drift.
+    ChangeId:
+      type: string
+      pattern: '^([a-z0-9]+(?:-[a-z0-9]+)*)-(\d{8}T\d{6}Z?)-([a-z0-9]{4,})$'
+
+    # What the git service sends, shared by the request and the stored link.
+    # resolvedBy is the Change-Id of the commit whose Fixes-Log trailer named
+    # the record, and is carried exactly when a fix resolved it.
+    IssueLinkFields:
+      type: object
+      required: [ref, state]
+      properties:
+        ref:
+          type: string
+          minLength: 1
+          maxLength: 512
+          description: >-
+            The issue as the git service names it, its URL or its key; for a
+            fix no issue tracked, the pull request.
+        state:
+          type: string
+          enum: [open, resolved, closed]
+        resolvedBy:
+          $ref: "#/components/schemas/ChangeId"
+      if:
+        properties:
+          state:
+            const: resolved
+      then:
+        required: [resolvedBy]
+      else:
+        not:
+          required: [resolvedBy]
+
+    IssueLink:
+      allOf:
+        - $ref: "#/components/schemas/IssueLinkFields"
+      unevaluatedProperties: false
+
+    # The link as stored: what the git service sent, and when its state last
+    # changed, from which the 30 days after an issue run.
+    StoredIssue:
+      allOf:
+        - $ref: "#/components/schemas/IssueLinkFields"
+        - type: object
+          required: [changedAt]
+          properties:
+            changedAt:
+              type: string
+              format: date-time
       unevaluatedProperties: false
 
     SubmitResult:

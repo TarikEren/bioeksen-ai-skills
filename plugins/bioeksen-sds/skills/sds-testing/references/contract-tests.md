@@ -148,6 +148,12 @@ For the aggregator. Time passes on an injected clock.
 | INFO window | An `APP` `INFO` record | 30 days pass | It is deleted | `sds-logging/references/aggregator-api.md` |
 | ACCESS window | An `ACCESS` `INFO` record | 14 days pass | It is deleted | `sds-logging/references/aggregator-api.md` |
 | Unnamed failure | An `ERROR` record no issue names | 90 days pass | It is deleted | `sds-logging/references/aggregator-api.md` |
+| Open issue | An `ERROR` record an open issue names | 90 days pass | It is still kept | `sds-logging/references/aggregator-api.md` |
+| Resolved by a fix | A record a merged fix resolved | 30 days pass after the merge | It is deleted, and until then carries the fix's Change-Id as `resolvedBy` | `sds-logging/references/aggregator-api.md` |
+| Security floor | A `SECURITY` `ERROR` record resolved a month after its `timestamp` | 30 days pass | It is still kept, until a year after its `timestamp` | `sds-logging/references/aggregator-api.md` |
+| Resolved stays resolved | A resolved record | The git service sends `closed` for its issue | 200, and the record is still `resolved` | `sds-logging/references/aggregator-api.md` |
+| Link without the role | An app credential without `logs.resolve`, or an operator's | It links a record to an issue | 403 `PERM-4150` | `sds-auth/references/credentials.md` |
+| Link too late | A record whose window has ended | An issue naming it opens | 404 `RES-4200` | `sds-logging/references/aggregator-api.md` |
 | Security year | A `SECURITY` `WARNING` record | 90 days pass | It is still kept, until a year after its `timestamp` | `sds-logging/references/aggregator-api.md` |
 | Audit forever | An `AUDIT` record | Any time passes | It is never deleted | `sds-logging/references/aggregator-api.md` |
 | DEBUG refused | A `DEBUG` record | It is submitted | 400 `VAL-4006`, and nothing is stored | `sds-logging/references/aggregator-api.md` |

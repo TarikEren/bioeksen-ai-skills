@@ -103,6 +103,7 @@ Drawn from the endpoints already specified elsewhere:
 | `GET /api/admin/logs` | Operator |
 | `POST HOST/api/v1/logs`, `POST HOST/api/v1/logs/batch` | App, holding `logs.write` |
 | `GET HOST/api/v1/logs`, `GET HOST/api/v1/logs/:recordId` | Operator |
+| `PUT HOST/api/v1/logs/:recordId/issue` | App, holding `logs.resolve` |
 
 The two probe endpoints are deliberately unauthenticated: they expose nothing,
 and a probe that can fail on credential expiry is a probe that will eventually

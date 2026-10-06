@@ -12,6 +12,7 @@ rather than stopping at the first.
 from __future__ import annotations
 
 import ast
+import importlib.util
 import json
 import re
 import sys
@@ -25,6 +26,7 @@ except ImportError:
 ROOT = Path(__file__).resolve().parent.parent
 SKILLS = ROOT / "plugins" / "bioeksen-sds" / "skills"
 README = ROOT / "README.md"
+MINT_SCRIPT = SKILLS / "sds-commit" / "scripts" / "mint_change_id.py"
 CODE_PREFIXES = SKILLS / "sds-logging" / "references" / "code-prefixes.md"
 ERROR_CODES = SKILLS / "sds-logging" / "references" / "error-codes.md"
 AUTH_SKILL = SKILLS / "sds-auth" / "SKILL.md"
@@ -407,6 +409,18 @@ def main() -> int:
     for stray in sorted(readme_skills - skill_dirs):
         fail("invariant 12", f"README.md's Skills table names {stray!r}, which is not a skill")
 
+    # 13. The Change-Id format is written once in code, in the script that
+    # mints it. The aggregator's ChangeId pattern restates it for validators,
+    # so the two are compared, Python's named groups aside.
+    loader = importlib.util.spec_from_file_location("mint_change_id", MINT_SCRIPT)
+    minting = importlib.util.module_from_spec(loader)
+    loader.loader.exec_module(minting)
+    minted = re.sub(r"\(\?P<\w+>", "(", minting.CHANGE_ID.pattern)
+    stated = agg["components"]["schemas"].get("ChangeId", {}).get("pattern")
+    if stated != minted:
+        fail("invariant 13", f"aggregator-api.yaml's ChangeId pattern is {stated!r}; "
+                             f"mint_change_id.py mints {minted!r}")
+
     # Every skill needs the frontmatter that decides when it loads, and its
     # name must be its directory's.
     for skill in sorted(SKILLS.glob("*/SKILL.md")):
@@ -445,6 +459,7 @@ def main() -> int:
     print("OK - the contract tests name only registered codes, cover every validation "
           "step, and pair each code with its status; the exemptions are listed once")
     print(f"OK - README.md's Skills table lists exactly the {len(skill_dirs)} skills")
+    print("OK - the aggregator's ChangeId pattern is the one mint_change_id.py mints")
     print("OK - every skill's frontmatter names its directory and has a description")
     return 0
 

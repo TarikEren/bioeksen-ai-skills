@@ -1,9 +1,81 @@
 [
   {
-    "name": "a stored record",
+    "name": "a stored record no issue names",
     "schema": "aggregator-api.yaml#/components/schemas/StoredRecord",
     "valid": true,
+    "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21", "issue": null}
+  },
+  {
+    "name": "a stored record without its issue field",
+    "schema": "aggregator-api.yaml#/components/schemas/StoredRecord",
+    "valid": false,
     "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21"}
+  },
+  {
+    "name": "a stored record an open issue names",
+    "schema": "aggregator-api.yaml#/components/schemas/StoredRecord",
+    "valid": true,
+    "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21", "issue": {"ref": "bio-inventory#42", "state": "open", "changedAt": "2026-10-07T07:15:00.000Z"}}
+  },
+  {
+    "name": "a stored record a fix resolved",
+    "schema": "aggregator-api.yaml#/components/schemas/StoredRecord",
+    "valid": true,
+    "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21", "issue": {"ref": "bio-inventory#42", "state": "resolved", "resolvedBy": "auth-service-20261007T101500-a3f9", "changedAt": "2026-10-09T12:00:00.000Z"}}
+  },
+  {
+    "name": "a stored issue without the time its state changed",
+    "schema": "aggregator-api.yaml#/components/schemas/StoredRecord",
+    "valid": false,
+    "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21", "issue": {"ref": "bio-inventory#42", "state": "open"}}
+  },
+  {
+    "name": "an issue link as an issue opens",
+    "schema": "aggregator-api.yaml#/components/schemas/IssueLink",
+    "valid": true,
+    "instance": {"ref": "bio-inventory#42", "state": "open"}
+  },
+  {
+    "name": "an issue link resolved by a fix",
+    "schema": "aggregator-api.yaml#/components/schemas/IssueLink",
+    "valid": true,
+    "instance": {"ref": "bio-inventory#42", "state": "resolved", "resolvedBy": "auth-service-20261007T101500-a3f9"}
+  },
+  {
+    "name": "an issue link resolved by an identifier minted before UTC+03:00",
+    "schema": "aggregator-api.yaml#/components/schemas/IssueLink",
+    "valid": true,
+    "instance": {"ref": "bio-inventory#42", "state": "resolved", "resolvedBy": "auth-service-20260929T132418Z-e830"}
+  },
+  {
+    "name": "a resolved issue link without the fix's Change-Id",
+    "schema": "aggregator-api.yaml#/components/schemas/IssueLink",
+    "valid": false,
+    "instance": {"ref": "bio-inventory#42", "state": "resolved"}
+  },
+  {
+    "name": "an open issue link carrying a Change-Id",
+    "schema": "aggregator-api.yaml#/components/schemas/IssueLink",
+    "valid": false,
+    "instance": {"ref": "bio-inventory#42", "state": "open", "resolvedBy": "auth-service-20261007T101500-a3f9"}
+  },
+  {
+    "name": "an issue link resolved by a hand-written identifier",
+    "schema": "aggregator-api.yaml#/components/schemas/IssueLink",
+    "valid": false,
+    "instance": {"ref": "bio-inventory#42", "state": "resolved", "resolvedBy": "fixed in PR 42"}
+  },
+  {
+    "name": "an issue link in a state that does not exist",
+    "schema": "aggregator-api.yaml#/components/schemas/IssueLink",
+    "valid": false,
+    "instance": {"ref": "bio-inventory#42", "state": "wontfix"}
+  },
+  {
+    "name": "an issue link setting the time its state changed, which the aggregator assigns",
+    "schema": "aggregator-api.yaml#/components/schemas/IssueLink",
+    "valid": false,
+    "instance": {"ref": "bio-inventory#42", "state": "open", "changedAt": "2026-10-07T07:15:00.000Z"}
   },
   {
     "name": "a stored record without its recordId",
@@ -57,6 +129,6 @@
     "name": "a page of stored records",
     "schema": "aggregator-api.yaml#/components/schemas/StoredLogPage",
     "valid": true,
-    "instance": {"status": "ok", "page": 1, "count": 1, "totalCount": 137, "logs": [{"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21"}], "filterParams": {"id": null, "severity": null, "type": null, "code": null, "startDate": "2026-06-05T00:00:00Z", "endDate": "2026-09-03T23:59:59Z", "page": 1, "limit": 50}}
+    "instance": {"status": "ok", "page": 1, "count": 1, "totalCount": 137, "logs": [{"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21", "issue": null}], "filterParams": {"id": null, "severity": null, "type": null, "code": null, "startDate": "2026-06-05T00:00:00Z", "endDate": "2026-09-03T23:59:59Z", "page": 1, "limit": 50}}
   }
 ]

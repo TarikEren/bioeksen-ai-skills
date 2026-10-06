@@ -19,10 +19,12 @@ below at `/api/v1/`, on the terms that document sets, including the 90 day
 window during which a superseded version stays served.
 
 Record fields and their rules are defined in `log-record.md`. The aggregator
-adds one value of its own: `recordId`, the identifier it assigns to a stored row
-on write. It is not part of a submitted record, and it is not the record's `id`
-field, which names the emitting app. It is returned by every endpoint below and
-is what `GET HOST/api/v1/logs/:recordId` takes.
+adds two values of its own. `recordId` is the identifier it assigns to a stored
+row on write. It is not part of a submitted record, and it is not the record's
+`id` field, which names the emitting app. It is returned by every endpoint
+below and is what `GET HOST/api/v1/logs/:recordId` takes. `issue` is the link
+to the issue that names the record, `null` until one does, set through
+`PUT HOST/api/v1/logs/:recordId/issue`.
 
 ## `POST HOST/api/v1/logs`
 
@@ -54,10 +56,10 @@ one of which the schema enforces:
 - `code` MUST NOT be null when `severity` is `ERROR` or `FATAL`
 - `severity` MUST NOT be `DEBUG`: a `DEBUG` record never leaves the app that
   wrote it, per `log-record.md`, so one submitted is refused with `VAL-4006`
-- A submission carrying `recordId` MUST be rejected with `VAL-4007`, as any
-  field outside the six is. The aggregator assigns it on write; an app that
-  believes it chooses record identifiers should find that out at once rather
-  than have the value silently dropped
+- A submission carrying `recordId` or `issue` MUST be rejected with
+  `VAL-4007`, as any field outside the six is. The aggregator assigns both; an
+  app that believes it chooses them should find that out at once rather than
+  have the value silently dropped
 
 ### Responses
 
@@ -179,7 +181,8 @@ it, so a listing can be followed to a single record.
             "severity": "ERROR",
             "type": "APP",
             "code": "DB-5001",
-            "message": "write failed request=8c21"
+            "message": "write failed request=8c21",
+            "issue": null
         }
     ],
     "filterParams": {
@@ -213,6 +216,58 @@ the top of this document, not the record's `id` field.
 | 500 | Query failed |
 | 503 | Not ready |
 
+## `PUT HOST/api/v1/logs/:recordId/issue`
+
+Records which issue names a record, and which fix resolved it. How long the
+record is kept from then on follows from that link, per **Retention**.
+
+The aggregator is connected to the local git service, whose integration calls
+this endpoint as an app holding `logs.resolve`:
+
+| When, in the git service | Body |
+|--------------------------|------|
+| An issue naming the record by its `recordId` opens | `{"ref": "<the issue>", "state": "open"}` |
+| A pull request is merged, bringing a commit whose `Fixes-Log:` trailer names the record | `{"ref": "<the issue>", "state": "resolved", "resolvedBy": "<that commit's Change-Id>"}` |
+| The issue closes without a merged fix | `{"ref": "<the issue>", "state": "closed"}` |
+
+- `ref` names the issue as the git service does, by its URL or its key. For a
+  fix no issue tracked, it names the pull request.
+- `resolvedBy` is the Change-Id of the commit whose trailer named the record,
+  per `sds-commit/SKILL.md`. It is present exactly when the state is
+  `resolved`, and ties the record to the change that fixed it, as that
+  change's release-note entry ties it to its commit.
+- A PUT replaces the record's link, and the aggregator stamps it with
+  `changedAt`, the moment its state last changed.
+- A `resolved` record stays resolved. The git service closes an issue when its
+  fixing pull request merges, so a `closed` arriving after `resolved` for the
+  same issue leaves the record unchanged, and is answered 200 with the record
+  as it is.
+- Nothing else about a stored record changes. Its six fields and its
+  `recordId` are fixed when it is written; only its link moves.
+
+### Request
+
+```json
+{
+    "ref": "https://git.bioeksen.local/bio-inventory/issues/42",
+    "state": "resolved",
+    "resolvedBy": "bio-inventory-20261007T101500-a3f9"
+}
+```
+
+### Responses
+
+| HTTP | When |
+|------|------|
+| 200 | The record, carrying its link |
+| 400 | The link failed validation; `details` names the field |
+| 401 | No app credential, or one that does not validate |
+| 403 | Authenticated, but not an app holding `logs.resolve` — `PERM-4150`, which an operator credential never is |
+| 404 | No record with that `recordId`, or one already deleted — `RES-4200` |
+| 429 | Over the caller's allowance — `RATE-4400`, carrying `Retry-After` |
+| 500 | The write failed — `DB-5001` |
+| 503 | Not ready |
+
 ## Retention
 
 The aggregator is the estate's archive, and how long it keeps a record depends
@@ -226,8 +281,12 @@ on what the record is:
 | `AUDIT` | Forever | Forever | Forever |
 
 - A window runs from the record's `timestamp`. The 30 days after an issue run
-  from the moment the issue was resolved or closed.
-- A record an open issue names is never deleted, however old it is.
+  from the moment the issue was resolved or closed, the link's `changedAt`.
+- A record an open issue names is never deleted, however old it is. The issue
+  has to name it while it is still kept: an issue opened after a record's
+  window has ended finds it gone, and its link is answered 404.
+- Whether an issue names a record, and whether a fix resolved it, is what
+  `PUT HOST/api/v1/logs/:recordId/issue` records.
 - `DEBUG` is not in the table. A `DEBUG` record never reaches the aggregator,
   per `log-record.md`, which refuses one with `VAL-4006`.
 - Forever means never deleted, never sampled, never capped by a storage
@@ -289,3 +348,9 @@ service once one exists.
 The two read endpoints
 MUST require an operator credential — the aggregator holds every app's logs,
 which makes it the highest-value read target in the estate.
+
+`PUT HOST/api/v1/logs/:recordId/issue` MUST require an app credential holding
+`logs.resolve`, which only the git service's integration holds. An operator
+credential never satisfies it: a record's link follows its issue, so the place
+to change it is the issue, in the git service, where the change is recorded
+with the rest of the issue's history.
