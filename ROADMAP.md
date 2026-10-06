@@ -34,6 +34,12 @@ skill it names: treat landing it as an API change, per `CLAUDE.md`, and run
 | 2026-09-29 | A project generator copies `project-kit/template/` and references the plugin pinned to a release; it never copies the skills. Landed in `6184b42` |
 | 2026-10-02 | Change identifiers are minted by `sds-commit`'s own script, with the timestamp in UTC+03:00 and no zone suffix; identifiers minted earlier keep their UTC time and `Z` |
 | 2026-10-05 | Test-first is a MUST with three named exemptions — `docs`, `config`, `generated` — and no rule against code written before its test; CI checks every `feat` and `fix` commit after `v0.4.0` for a test or a `Test-Exempt` trailer, and `sds-testing` catalogues the contract tests. Landed in `007a4ef`, `3d6de60` and `a1e3a5d` |
+| 2026-10-06 | A new service starts at `0.1.0`, and its first release covers every commit from the root. Landed in `1672eed` |
+| 2026-10-06 | A database failure takes the code of the selection step it meets: a foreign key naming a missing record is `VAL-4006`, a unique key `RES-4300`, a still-referenced delete `RES-4302`. An operation not implemented yet is `SYS-5000`, never 501. Landed in `7ffdfde` |
+| 2026-10-06 | A request body is limited to 1 MiB unless an app records otherwise, counted on the bytes received. Landed in `8485563` |
+| 2026-10-06 | No stack in a log record; `error` and `cause` are reserved tail keys; the lowest severity is `LOG_LEVEL`; a build MAY carry the software id compiled in, held equal to the file. Landed in `f6cfc17` and `b3cd696` |
+| 2026-10-06 | Configuration gets its own skill, `sds-config`: validated at startup before the app reports ready, declared, secrets kept out. Landed in `d5ceaf0` |
+| 2026-10-06 | `sds-testing` adds known defects as strict expected failures, no weakened tests, flaky and not-run reporting, guarded test databases and seams that fail closed. These rulings were taken from create-bioeksen-app, which had settled them first. Landed in `d09c906` |
 
 ## Order of work
 
