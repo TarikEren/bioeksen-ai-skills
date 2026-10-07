@@ -32,6 +32,7 @@ BioEksen personnel and authorised parties.
 | [`sds-config`](plugins/bioeksen-sds/skills/sds-config/) | Configuration: one validated module, checked before the app reports ready, every value declared, secrets kept out of logs, commits and clients |
 | [`sds-commit`](plugins/bioeksen-sds/skills/sds-commit/) | Conventional commit format and the release version it implies |
 | [`sds-testing`](plugins/bioeksen-sds/skills/sds-testing/) | Test-first development: no behaviour change without a test that failed first, and the contract tests every convention above requires |
+| [`sds-database`](plugins/bioeksen-sds/skills/sds-database/) | Schemas and migrations: one source of truth, constraints that enforce the specification, forward-only migrations safe on a live database, transactions, parameterised and indexed queries, and disposable databases only |
 | [`sds-ci`](plugins/bioeksen-sds/skills/sds-ci/) | CI, runners and AI tasks: where workflows live and who changes them, which runner runs what and holds which secret, how a release is verified and deployed, and how a model's work is kept to its branch |
 
 ## How they fit together
