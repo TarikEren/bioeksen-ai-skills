@@ -1,6 +1,6 @@
 # Generics Reference
 
-> **Load when:** User asks about generics, mapped types, conditional types, template literal types, or reusable type patterns.
+> **Load when:** the code needs generics, mapped types, conditional types, template literal types, or reusable type patterns.
 
 Advanced generics and type-level programming patterns.
 
@@ -152,22 +152,23 @@ function process<T extends Printable & Loggable>(item: T): void {
 ### Default Type Parameters
 
 ```typescript
-interface ApiResponse<T = unknown, E = Error> {
-  data?: T;
-  error?: E;
-  status: number;
+interface Paged<T = unknown, F = Record<string, string>> {
+  items: T[];
+  filterParams?: F;
+  totalCount: number;
 }
 
 // Uses defaults
-const response1: ApiResponse = { status: 200 };
+const page1: Paged = { items: [], totalCount: 0 };
 
-// Override data type only
-const response2: ApiResponse<User> = { data: user, status: 200 };
+// Override the item type only
+const page2: Paged<User> = { items: [user], totalCount: 1 };
 
 // Override both
-const response3: ApiResponse<User, ValidationError> = {
-  error: new ValidationError(),
-  status: 400
+const page3: Paged<User, UserFilter> = {
+  items: [user],
+  filterParams: { role: "admin" },
+  totalCount: 1
 };
 ```
 
@@ -318,16 +319,16 @@ type First = FirstParam<(name: string, age: number) => void>; // string
 ### Practical Conditional Types
 
 ```typescript
-// API response helper
-type ApiResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+// API result helper: the envelopes sds-api-design defines
+type ApiResult<T extends object> =
+  | ({ status: "ok" } & T)
+  | { status: "fail"; code: string; message: string; details: unknown };
 
-// Extract data type from result
-type ExtractData<T> = T extends { success: true; data: infer D } ? D : never;
+// Extract the payload type from a result
+type Payload<R> = R extends { status: "ok" } ? Omit<R, "status"> : never;
 
-type UserResult = ApiResult<User>;
-type UserData = ExtractData<UserResult>; // User
+type UserResult = ApiResult<{ user: User }>;
+type UserPayload = Payload<UserResult>; // { user: User }
 
 // Type-safe event handlers
 type EventHandler<T> = T extends `on${infer Event}`

@@ -4,7 +4,7 @@ Build enterprise-grade, type-safe applications with TypeScript 5.9+.
 
 > **Compatibility:** TypeScript 5.9+, Zod 4, Node.js 22 LTS or later
 
-## When to Use This Skill
+## When to use this reference
 
 Use when:
 - Designing and creating an enterprise-grade backend using Typescript
@@ -132,17 +132,27 @@ interface ApiResponse<T> {
 }
 
 // `response.json()` is untyped. Parse it with the schema of what you expect,
-// so a changed or hostile upstream fails here instead of deep in the caller.
+// so a changed or hostile upstream fails here instead of deep in the caller,
+// as `UP-5000`. The call carries the request's id and what is left of its
+// deadline, and waits no longer than the configured per-attempt timeout
+// (sds-api-design's service-calls.md).
 async function fetchJson<S extends z.ZodType>(
   url: string,
   schema: S,
+  context: ServiceContext,
 ): Promise<ApiResponse<z.infer<S>>> {
-  const response = await fetch(url, { signal: AbortSignal.timeout(5_000) });
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(config.calls.attemptTimeoutMs),
+    headers: {
+      "X-Request-Id": context.requestId,
+      "X-Request-Deadline-Ms": String(context.remainingMs()),
+    },
+  });
   const data = schema.parse(await response.json());
   return { data, status: response.status, timestamp: new Date() };
 }
 
-const user = await fetchJson(`https://users.internal/api/users/${id}`, UserSchema);
+const user = await fetchJson(`${config.users.baseUrl}/api/v1/users/${id}`, UserSchema, context);
 ```
 
 ## Utility Types Reference
@@ -208,7 +218,7 @@ const CreateUserSchema = z.strictObject({
   name: z.string().trim().min(1).max(100),
   email: z.email(),                      // Zod 4: top-level format, not z.string().email()
   role: z.enum(["user", "admin", "moderator"]),
-  startsOn: z.iso.date(),                // "2026-09-28"
+  startsAt: z.iso.datetime({ offset: true }), // "2026-09-28T09:00:00+03:00"
 });
 
 type CreateUser = z.infer<typeof CreateUserSchema>;
@@ -217,12 +227,16 @@ type CreateUser = z.infer<typeof CreateUserSchema>;
 // explicitly. Use the key type the database defines; do not assume UUIDs.
 const IdParam = z.coerce.bigint().positive();
 
-// At a boundary: safeParse, then turn issues into field errors for the caller.
+// At a boundary: safeParse, then turn each issue into a `details` entry of the
+// error envelope sds-api-design defines, under the code the selection procedure
+// gives the first fault (VAL-4001, VAL-4002, VAL-4006 or VAL-4007).
 const result = CreateUserSchema.safeParse(input);
 if (!result.success) {
-  const { fieldErrors } = z.flattenError(result.error);
-  // → { email?: string[]; role?: string[]; … }
-  return { ok: false, code: "VALIDATION", fields: fieldErrors } as const;
+  const details = result.error.issues.map((issue) => ({
+    field: issue.path.join("."),
+    issue: issue.message,
+  }));
+  return { status: "fail", code: validationCode(result.error), message: "Invalid input", details } as const;
 }
 const user: CreateUser = result.data; // typed from here on
 

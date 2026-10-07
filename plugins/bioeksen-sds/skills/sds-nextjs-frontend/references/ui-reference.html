@@ -2,7 +2,9 @@
 <!--
   UI reference for the `frontend` skill.
 
-  Open this file in a browser from inside a project. It loads:
+  Open this file in a browser with ?app= and the URL of the app's root, e.g.
+  ui-reference.html?app=file:///home/me/my-app/, or from a copy inside the
+  project's .claude/skills/frontend/references/. It loads:
     1. HeroUI v3's compiled stylesheet: the project's installed copy, else the CDN;
     2. a reference palette and token mapping (below), so the page works on its own;
     3. the project's app/globals.css, which overrides (2) when present. The
@@ -139,6 +141,19 @@
 </style>
 
 <link id="project-css" rel="stylesheet" href="../../../../app/globals.css">
+
+<script>
+  // Opened from the bioeksen-sds plugin, the relative paths above find no
+  // project. ?app=<the app's root URL> points both stylesheets at it; HeroUI's
+  // still falls back to the CDN.
+  (function () {
+    var app = new URLSearchParams(location.search).get("app");
+    if (!app) return;
+    if (app.slice(-1) !== "/") app += "/";
+    document.getElementById("heroui-css").href = app + "node_modules/@heroui/styles/dist/heroui.min.css";
+    document.getElementById("project-css").href = app + "app/globals.css";
+  })();
+</script>
 
 <style>
   /* Page chrome for this reference only. Tokens, never literals. */
@@ -326,7 +341,7 @@
     In the snippets, <code>t</code> is the dictionary, <code>getI18n()</code> / <code>useI18n()</code> read it
     on the server and client, <code>fmt()</code> fills <code>{name}</code> placeholders and
     <code>errorMessage()</code> turns an error code into a sentence. They stand in for whatever the
-    project's own i18n layer calls them; the project's <code>AGENTS.md</code> says where it lives.
+    project's own i18n layer calls them; the project's conventions say where it lives.
   </p>
 
   <h3 class="sub">Button</h3>

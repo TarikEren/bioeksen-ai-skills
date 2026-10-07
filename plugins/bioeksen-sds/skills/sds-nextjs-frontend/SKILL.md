@@ -14,10 +14,11 @@ UI code must be **type-safe, secure and modular**. These three rank above
 speed, brevity and cleverness. When a task cannot be done without giving up one
 of them, stop and say so instead of shipping the compromise.
 
-The project's own `/AGENTS.md` adds the specifics this skill leaves open: where
-the dictionaries live, which files to copy from, and any exceptions. Where the
-two disagree, `/AGENTS.md` wins. **The `sds-*` skills are required, and outrank
-both this skill and `/AGENTS.md`.**
+The project's own conventions add the specifics this skill leaves open: where
+the dictionaries live, which files to copy from, and any exceptions. This
+skill outranks them, as every `sds-*` skill does, and **every other `sds-*`
+skill outranks this one**: it is how a Next.js app carries them out, never the
+source of their rules.
 
 ## Read first
 
@@ -27,16 +28,22 @@ both this skill and `/AGENTS.md`.**
      `04-linking-and-navigating`, `05-server-and-client-components`,
      `07-mutating-data`, `10-error-handling` and `11-css`;
    - `02-guides/`: `data-security` and `server-and-client-boundary`.
-2. **The HeroUI v3 docs for every component you use**, before writing it:
+2. **The HeroUI v3 docs for every component you use**, before writing it,
+   through the `heroui-react` skill's scripts, wherever the project keeps it:
 
    ```bash
    node .claude/skills/heroui-react/scripts/get_component_docs.mjs Select ListBox
    ```
 
-   `list_components.mjs` in the same folder gives the names.
+   `list_components.mjs` in the same folder gives the names. The scripts
+   fetch from HeroUI's servers. Where the network refuses them, as the egress
+   allowlist in `sds-ci/SKILL.md` does in an AI task sandbox, work from the
+   installed package's types and the reference page, and say so in the
+   report.
 3. **[`references/ui-reference.html`](references/ui-reference.html).** Open it
-   in a browser from inside the project. It reads the project's
-   `app/globals.css` and HeroUI's installed CSS, and shows:
+   in a browser with `?app=` and the URL of the app's root, e.g.
+   `ui-reference.html?app=file:///home/me/my-app/`. It reads the app's
+   `app/globals.css` and HeroUI's installed CSS from there, and shows:
    - the palette,
    - every semantic token and its utility,
    - a live contrast table for light, dark and a scoped region,
@@ -84,7 +91,7 @@ both this skill and `/AGENTS.md`.**
   privileged data. Mark every module that touches secrets, the database or
   `next/headers` with `import "server-only"`, so a client import fails the
   build.
-- **Secrets never reach the browser.** Only `NEXT_PUBLIC_*` variables do.
+- **Secrets never reach the browser** (`sds-config/SKILL.md`). Only `NEXT_PUBLIC_*` variables do.
   Next.js inlines them into the JavaScript bundle at build time, so nothing
   secret belongs in them.
 
@@ -103,8 +110,8 @@ both this skill and `/AGENTS.md`.**
   and the UI only reflects them.
 - **Page-level checks do not protect actions.** A server action is a public
   POST endpoint, whether or not the page renders its form.
-- **Server actions and route handlers are backend code.** They follow the
-  backend conventions: authentication, authorisation for the specific record,
+- **Server actions and route handlers are backend code.** They follow
+  `sds-nextjs-backend`: authentication, authorisation for the specific record,
   validation and DTO returns. UI code only calls them.
 - **No mutation during render.** A page never sets cookies, writes data or
   revalidates while rendering. Mutations go through server actions.
@@ -279,7 +286,7 @@ outside the scale, so Avatar and Badge stay round.
     needs the header comment.
 - **v3 is compound**: `<Card><Card.Header><Card.Title>`, not flat props. There
   is no `HeroUIProvider` and no `framer-motion`. The only provider is the
-  project's `I18nProvider` (`/AGENTS.md` § Copy and languages), set once at the
+  project's own locale provider, such as an `I18nProvider`, set once at the
   root with the request's locale: it gives client components their dictionary
   and HeroUI's own `I18nProvider` the same locale, so server and client format
   numbers and dates alike and hydrate without a mismatch.
@@ -297,14 +304,14 @@ outside the scale, so Avatar and Badge stay round.
   - for a whole table row, set `href` on `Table.Row`.
 
   Never copy button classes onto an `<a>` by hand.
-- **Icons are inline SVG** unless `/AGENTS.md` names an icon package. Give the
+- **Icons are inline SVG** unless the project names an icon package. Give the
   SVG `aria-hidden="true"`, colour it with `currentColor` so the token decides,
   and put the accessible name on the control around it.
 
 ## 6. Copy and language
 
 - **No inline copy.** Everything a user reads comes from the project's
-  dictionaries (`/AGENTS.md` says where): headings, labels, buttons,
+  dictionaries (the project says where): headings, labels, buttons,
   placeholders, `aria-label`s, empty states, error text and the page title. When
   the dictionaries are typed against a source language, a missing key fails the
   build, so add every key to every language in the same change.
@@ -322,7 +329,7 @@ outside the scale, so Avatar and Badge stay round.
   columns get `tabular-nums`.
 - **Record content is data, not copy.** Names stored in the database, seed and
   mock records, and record codes stay out of the dictionaries.
-- **Tests read labels from the dictionaries**, never from string literals, so a
+- **Tests read labels from the dictionaries** (`sds-testing/SKILL.md`, **Writing tests**), never from string literals, so a
   copy change touches only the dictionary.
 
 ## 7. Server and client components
@@ -347,8 +354,9 @@ outside the scale, so Avatar and Badge stay round.
   from a server component goes through a small client wrapper that takes column
   and row *data*. The pattern is in the reference page.
 - **Mutations are server actions**, each a thin shell over a service, written
-  to the backend conventions (§ 2). The UI receives a result union
-  (`{ ok: true, … } | { ok: false, code, message, fields }`) and renders it.
+  to `sds-nextjs-backend`. The UI receives the envelope `sds-api-design`
+  requires of every API (`{ status: "ok", … } | { status: "fail", code,
+  message, details }`) and renders it.
 
 ### Forms
 
@@ -372,7 +380,7 @@ bug:
    action runs, so a rejected submission wipes what the user typed. Outside a
    transition, `pending` never turns true.
 4. **Show server errors through `validationErrors`.**
-   - Pass the result's `fields` (errors keyed by field name) to
+   - Key the result's `details` entries by `field`, and pass them to
      `<Form validationErrors={…}>`, and give each field an empty
      `<FieldError />`. Each error appears under its field and clears when the
      user edits that field.
@@ -386,12 +394,12 @@ bug:
 6. **Reset after success by changing a `key`** that comes from the action
    state (a success counter). `form.reset()` misses state held inside child
    components.
-7. **Files never pass through a server action**, which has a 1 MB body limit.
+7. **Files never pass through a server action**, which has a 1 MiB body limit.
    Upload them to a route handler first, and put only the handle in the form.
 8. Disable the submit `Button` while `pending` and show a "saving" label.
    Cancel is navigation, not a submit.
-9. **Tests click the submit `Button`.** `fireEvent.submit` skips the
-   browser's own validation, so it cannot catch a form that refuses to submit.
+9. **Tests click the submit `Button`**, per **Writing tests** in
+   `sds-testing/SKILL.md`.
 10. **Announce the result.** HeroUI's `Alert` renders a plain `div` with no
     role, so a screen reader hears nothing (WCAG 2.1, 4.1.3).
     - **A rejection:** `<Alert status="danger" role="alert">`, which is read
@@ -451,11 +459,11 @@ for the right reason. A UI skeleton holds:
   final copy, because the tests take their labels from the dictionaries.
 
 No behaviour, and no guessing: every name, prop and key is the contract's. A
-difference is a change to the contract, and goes back to the planner.
+difference is a change to the contract, and goes back to whoever runs the loop.
 
 ## 10. Before handing back
 
-Run the checks `/AGENTS.md` lists. At least:
+Run the checks the project lists. At least:
 
 ```bash
 pnpm run typecheck
@@ -469,10 +477,11 @@ pnpm run lint
 pnpm run build
 ```
 
-Also run the component tests that cover the change, through `test:results`.
+Also run the component tests that cover the change, through the project's
+results-only interface.
 Add tests for new client behaviour, reading labels from the dictionaries: in
 the test-first loop these are your own tests, beside the code
-(`app/**/*.test.tsx`), while the acceptance tests are the tester's and hidden
+(e.g. `app/**/*.test.tsx`), while the acceptance tests are the tester's and hidden
 from you. How to write them is in [`../sds-testing/SKILL.md`](../sds-testing/SKILL.md).
 
 Then review the diff against § 2:

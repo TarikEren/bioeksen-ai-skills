@@ -61,10 +61,10 @@ Document what a caller cannot see from the signature:
  *
  * Authorises `actor` against the document's ACL before reading anything.
  *
- * @throws AppError `FORBIDDEN` when the actor may not publish this document.
- * @throws AppError `NOT_FOUND` when the document or revision does not exist.
- * @throws AppError `CONFLICT` when another publish won the race.
- * (Use the codes from the project's error registry.)
+ * @throws AppError `PERM-4150` when the actor may not publish this document.
+ * @throws AppError `RES-4200` when the document or revision does not exist.
+ * @throws AppError `RES-4301` when another publish won the race.
+ * (The codes are the registry's, in sds-logging's code-prefixes.md.)
  */
 export async function publish(
   actor: Actor,

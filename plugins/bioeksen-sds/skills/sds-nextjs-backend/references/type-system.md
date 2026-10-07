@@ -1,6 +1,6 @@
 # TypeScript Type System Reference
 
-> **Load when:** User asks about type annotations, interfaces vs types, unions, intersections, or type system fundamentals.
+> **Load when:** the code needs type annotations, interfaces vs types, unions, intersections, or type system fundamentals.
 
 Complete guide to TypeScript's structural type system.
 
