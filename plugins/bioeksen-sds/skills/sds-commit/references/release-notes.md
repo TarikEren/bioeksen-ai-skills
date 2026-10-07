@@ -7,9 +7,9 @@ written in. The commit format the entries are derived from is in `SKILL.md`.
 - Each release MUST come with its own release note in `/release-notes/{version}.md`.
 
 The audience is developers and language models reading the history of a
-service, and the note is part of the project's change record. Both readings
-require the same thing: a complete list, in a fixed shape, with no editorial
-selection applied.
+service or library, and the note is part of the project's change record. Both
+readings require the same thing: a complete list, in a fixed shape, with no
+editorial selection applied.
 
 ## Location and naming
 
@@ -30,9 +30,12 @@ only corrected for factual error, never rewritten to reflect later releases.
 
 ## Version
 
-These versions name releases of a deployed service, not of a published
-library. Nothing resolves them as a dependency range, so the version exists to
-tell a reader what kind of change they are about to receive.
+These versions name releases of a deployed service or of a published
+library. For a service, nothing resolves them as a dependency range, so the
+version tells a reader what kind of change they are about to receive. For a
+library, dependents do resolve them, so the same rules are also its
+compatibility promise: a change that breaks any caller of its public exports
+is breaking, whether or not the library's own tests changed.
 
 The version is the one the release's commits imply, per the versioning rules in
 `SKILL.md`. Applied to the whole set of commits in the release, highest match
@@ -60,8 +63,8 @@ commit's type, and that is where it gets fixed.
 
 ### Before 1.0.0
 
-While the major version is `0`, the service carries no compatibility promise
-and the increments shift down one place:
+While the major version is `0`, the service or library carries no
+compatibility promise and the increments shift down one place:
 
 | If any commit in the release... | Increment |
 |---------------------------------|-----------|
@@ -79,11 +82,11 @@ even stable.
 
 ### The first release
 
-A new service starts at `0.1.0`. Its first release is `0.1.0` whatever its
-commits are, because there is no earlier version for them to increment, and
-it covers every commit from the repository's root. The root commit is
-`chore: initial commit`, with a `Change-Id:` like any other, so it is the
-first release's first `chore` entry.
+A new service or library starts at `0.1.0`. Its first release is `0.1.0`
+whatever its commits are, because there is no earlier version for them to
+increment, and it covers every commit from the repository's root. The root
+commit is `chore: initial commit`, with a `Change-Id:` like any other, so it
+is the first release's first `chore` entry.
 
 Starting below `1.0.0` puts a new service under the rule above from its first
 commit. Starting at `0.0.1`, as a patch from nothing, would be just as
