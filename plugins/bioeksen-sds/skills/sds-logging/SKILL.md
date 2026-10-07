@@ -131,6 +131,11 @@ forwarder, or grow a query layer without any app, in any language, changing a
 line. An app that bypasses it converts one integration point into one per app
 — the duplication this repository exists to prevent.
 
+A binding takes the aggregator's address from `AGGREGATOR_URL`, its outbox's
+path from `LOG_OUTBOX_PATH`, and the outbox's bound from `LOG_OUTBOX_BOUND`
+(default 100,000). The outbox is the bounded buffer `references/log-record.md`
+requires, holding the records the aggregator has not yet stored.
+
 ## Bindings
 
 Library choice, logger configuration, error class hierarchies and framework
@@ -157,6 +162,9 @@ that was about to recover, and turns a degraded app into a restart loop.
 What a binding's own tests assert — no secret in any record, a code on every
 failure record, a request unharmed by a down aggregator — is the Logging table
 in `sds-testing/references/contract-tests.md`, written before the binding.
+
+The TypeScript binding is `@bioeksen/sdk`, from the `bio-sdk` repository. A
+TypeScript app MUST use it and MUST NOT write its own.
 
 Split this section into `sds-<language>` skills once a second language is in
 use; the contract above stays here.
