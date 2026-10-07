@@ -1,0 +1,1195 @@
+<!doctype html>
+<!--
+  UI reference for the `frontend` skill.
+
+  Open this file in a browser from inside a project. It loads:
+    1. HeroUI v3's compiled stylesheet: the project's installed copy, else the CDN;
+    2. a reference palette and token mapping (below), so the page works on its own;
+    3. the project's app/globals.css, which overrides (2) when present. The
+       browser ignores the Tailwind-only parts of that file (@import "tailwindcss",
+       @theme) and applies its :root, [data-theme] and scoped-class blocks.
+       Those two imports show up as 404s in the console; that is expected.
+
+  So the palette, the tokens and the contrast table on this page are the
+  project's own. The component previews are HeroUI's real rendered markup
+  (server-rendered from @heroui/react 3.x) styled by HeroUI's real CSS; the JSX
+  beside each preview is what you write. Never copy the preview markup or its
+  BEM classes into application code.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI reference</title>
+
+<link id="heroui-css" rel="stylesheet"
+      href="../../../../node_modules/@heroui/styles/dist/heroui.min.css"
+      onerror="this.onerror=null;this.dataset.source='cdn';this.href='https://cdn.jsdelivr.net/npm/@heroui/styles@3/dist/heroui.min.css'">
+
+<style id="reference-palette">
+  /* Reference palette: a Fluent-style ramp. A project replaces these values in
+     its own global stylesheet; the slot names stay. */
+  :root {
+    --theme-darker: #214737;
+    --theme-dark: #2d614b;
+    --theme-dark-alt: #357359;
+    --theme-primary: #3a7f62;
+    --theme-secondary: #4b8f73;
+    --theme-tertiary: #79b39a;
+    --theme-light: #b6d9ca;
+    --theme-lighter: #d6ebe2;
+    --theme-lighter-alt: #f5faf8;
+
+    --black: #000000;
+    --neutral-dark: #201f1e;
+    --neutral-primary: #323130;
+    --neutral-primary-alt: #3b3a39;
+    --neutral-secondary: #605e5c;
+    --neutral-tertiary: #a19f9d;
+    --neutral-tertiary-alt: #c8c6c4;
+    --neutral-quaternary-alt: #e1dfdd;
+    --neutral-light: #edebe9;
+    --neutral-lighter: #f3f2f1;
+    --neutral-lighter-alt: #faf9f8;
+    --white: #ffffff;
+  }
+
+  /* HeroUI's semantic tokens mapped onto the palette. */
+  :root {
+    --background: var(--neutral-lighter);
+    --foreground: var(--neutral-primary);
+    --surface: var(--white);
+    --surface-foreground: var(--neutral-primary);
+    --surface-secondary: var(--neutral-lighter-alt);
+    --surface-secondary-foreground: var(--neutral-primary);
+    --surface-tertiary: var(--neutral-lighter);
+    --surface-tertiary-foreground: var(--neutral-primary);
+    --overlay: var(--white);
+    --overlay-foreground: var(--neutral-primary);
+    --muted: var(--neutral-secondary);
+    --default: var(--neutral-light);
+    --default-foreground: var(--neutral-primary);
+    --accent: var(--theme-primary);
+    --accent-foreground: var(--white);
+    --focus: var(--theme-primary);
+    --link: var(--theme-primary);
+    --field-background: var(--white);
+    --field-foreground: var(--neutral-primary);
+    --field-placeholder: var(--neutral-tertiary);
+    --segment: var(--white);
+    --segment-foreground: var(--neutral-primary);
+    --border: var(--neutral-quaternary-alt);
+    --separator: var(--neutral-light);
+    --success: var(--theme-dark-alt);
+    --success-foreground: var(--white);
+    --radius: 0.25rem;
+    --field-radius: 0.25rem;
+  }
+
+  /* A scoped re-theme: a dark region built from the dark end of the ramp. */
+  .sidebar-theme {
+    color-scheme: dark;
+    --surface: var(--theme-darker);
+    --surface-foreground: var(--white);
+    --surface-secondary: var(--theme-dark);
+    --surface-secondary-foreground: var(--white);
+    --surface-tertiary: var(--theme-dark-alt);
+    --surface-tertiary-foreground: var(--white);
+    --foreground: var(--white);
+    --muted: var(--white);
+    --default: var(--theme-dark);
+    --default-foreground: var(--white);
+    --accent: var(--theme-light);
+    --accent-foreground: var(--theme-darker);
+    --focus: var(--theme-light);
+    --link: var(--theme-lighter);
+    --border: var(--theme-dark);
+    --separator: var(--theme-dark);
+  }
+
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --background: var(--neutral-dark);
+    --foreground: var(--neutral-lighter);
+    --surface: var(--theme-darker);
+    --surface-foreground: var(--neutral-lighter);
+    --surface-secondary: var(--theme-dark);
+    --surface-secondary-foreground: var(--neutral-lighter);
+    --surface-tertiary: var(--theme-dark-alt);
+    --surface-tertiary-foreground: var(--neutral-lighter);
+    --overlay: var(--theme-darker);
+    --overlay-foreground: var(--neutral-lighter);
+    --muted: var(--neutral-tertiary);
+    --default: var(--neutral-primary-alt);
+    --default-foreground: var(--neutral-lighter);
+    --accent: var(--theme-tertiary);
+    --accent-foreground: var(--theme-darker);
+    --focus: var(--theme-tertiary);
+    --link: var(--theme-light);
+    --field-background: var(--neutral-primary);
+    --field-foreground: var(--neutral-lighter);
+    --field-placeholder: var(--neutral-tertiary);
+    --segment: var(--neutral-primary-alt);
+    --segment-foreground: var(--neutral-lighter);
+    --border: var(--neutral-primary-alt);
+    --separator: var(--neutral-primary);
+    --success: var(--theme-tertiary);
+    --success-foreground: var(--theme-darker);
+  }
+</style>
+
+<link id="project-css" rel="stylesheet" href="../../../../app/globals.css">
+
+<style>
+  /* Page chrome for this reference only. Tokens, never literals. */
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .page { max-width: 1120px; margin: 0 auto; padding: 0 16px 64px; }
+  header.top {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--surface); color: var(--surface-foreground);
+    border-bottom: 1px solid var(--border);
+  }
+  header.top .page { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; padding-top: 10px; padding-bottom: 10px; }
+  header.top h1 { font-size: 17px; margin: 0; }
+  header.top nav { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; }
+  header.top nav a { color: var(--link); }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-left: auto; font-size: 14px; }
+  .controls input { font: inherit; width: 150px; padding: 4px 8px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--field-background); color: var(--field-foreground); }
+  h2.section { font-size: 22px; margin: 48px 0 8px; padding-top: 8px; }
+  h3.sub { font-size: 17px; margin: 28px 0 8px; }
+  p.lead, .note { color: var(--muted); max-width: 72ch; }
+  .note { font-size: 14px; }
+  code, pre { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 13px; }
+  :not(pre) > code { background: var(--surface-secondary); color: var(--surface-secondary-foreground); padding: 1px 5px; border-radius: var(--radius); border: 1px solid var(--separator); }
+  pre {
+    margin: 0; padding: 12px 14px; overflow-x: auto;
+    background: var(--surface-secondary); color: var(--surface-secondary-foreground);
+    border: 1px solid var(--border); border-radius: var(--radius);
+  }
+  .demo { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); margin: 12px 0 20px; }
+  @media (min-width: 900px) { .demo { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .preview {
+    background: var(--surface); color: var(--surface-foreground);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; align-content: flex-start;
+    min-width: 0;
+  }
+  .preview.stack { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
+  .preview.on-page { background: var(--background); }
+  .label-row { font-size: 12px; color: var(--muted); width: 100%; margin: 4px 0 -4px; }
+  .scroll { overflow-x: auto; max-width: 100%; }
+  table.ref { border-collapse: collapse; width: 100%; font-size: 14px; }
+  table.ref th, table.ref td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--separator); vertical-align: middle; }
+  table.ref th { font-weight: 600; color: var(--muted); font-size: 13px; }
+  table.ref code { white-space: nowrap; }
+  .num { font-variant-numeric: tabular-nums; text-align: right !important; }
+  .swatches { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); margin: 8px 0 16px; }
+  .swatch { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); color: var(--surface-foreground); font-size: 12px; }
+  .swatch .chip-color { height: 56px; display: flex; align-items: flex-end; justify-content: space-between; padding: 4px 6px; font-size: 11px; font-variant-numeric: tabular-nums; }
+  .swatch .meta { padding: 6px 8px; }
+  .swatch .meta b { display: block; font-size: 12px; }
+  .swatch.missing .chip-color { background: repeating-linear-gradient(45deg, var(--surface), var(--surface) 6px, var(--separator) 6px, var(--separator) 12px); }
+  .sample { display: inline-block; min-width: 44px; text-align: center; padding: 2px 8px; border-radius: var(--radius); border: 1px solid var(--separator); font-weight: 500; }
+  .dodont { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); margin: 8px 0 20px; }
+  @media (min-width: 900px) { .dodont { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+  .dodont h4 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
+  .status-line { font-size: 13px; color: var(--muted); }
+  .region-host { margin-top: 12px; }
+  .region-host > div { background: var(--surface); color: var(--surface-foreground); border-radius: var(--radius); padding: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  #probes { position: absolute; visibility: hidden; pointer-events: none; }
+</style>
+</head>
+
+<body>
+<header class="top">
+  <div class="page">
+    <h1>UI reference</h1>
+    <nav aria-label="Sections">
+      <a href="#palette">Palette</a>
+      <a href="#tokens">Tokens</a>
+      <a href="#contrast">Contrast</a>
+      <a href="#components">Components</a>
+      <a href="#patterns">Patterns</a>
+      <a href="#traps">Traps</a>
+    </nav>
+    <div class="controls">
+      <div data-slot="toggle-button-group" class="toggle-button-group toggle-button-group--horizontal" role="radiogroup" aria-label="Theme" id="theme-switch">
+        <button type="button" class="toggle-button toggle-button--sm toggle-button--default" role="radio" aria-checked="true" data-selected="true" data-value="light">Light</button>
+        <button type="button" class="toggle-button toggle-button--sm toggle-button--default" role="radio" aria-checked="false" data-value="dark">Dark</button>
+      </div>
+      <label>Scoped class <input id="region-class" value="sidebar-theme" spellcheck="false" aria-describedby="region-help"></label>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <p class="lead" style="margin-top:20px">
+    Styling and component reference for a Next.js project built on HeroUI v3, Tailwind CSS v4 and a
+    Fluent-style palette. Every value on this page is read from the project's stylesheet at load time,
+    so it shows <em>this</em> project's palette and contrast ratios, not the ones it was written with.
+  </p>
+  <p class="status-line" id="sources">Loading stylesheets…</p>
+  <p class="note" id="region-help">
+    <b>Scoped class</b> is the class the project uses to re-theme a region (a dark sidebar, say). It is
+    applied to the dark panels below and to the second column of the contrast table. Leave it empty if
+    the project has none.
+  </p>
+
+  <!-- ============================================================ PALETTE -->
+  <h2 class="section" id="palette">Palette</h2>
+  <p class="lead">
+    The only source of colour. Two ramps, each slot a CSS variable in the global stylesheet and a Tailwind
+    utility through <code>@theme</code> (<code>--theme-primary</code> → <code>bg-theme-primary</code>).
+    Each swatch shows white and black text on it, with both ratios below. Slots marked
+    <em>not defined</em> are Fluent slots the project has not declared.
+  </p>
+  <h3 class="sub">Brand ramp, dark → light</h3>
+  <div class="swatches" id="ramp-theme"></div>
+  <h3 class="sub">Neutral ramp</h3>
+  <div class="swatches" id="ramp-neutral"></div>
+  <p class="note">
+    <b>Trap:</b> Tailwind's own <code>neutral-50 … neutral-950</code> scale shares the prefix and still
+    compiles. <code>bg-neutral-100</code> is a new colour; <code>bg-neutral-lighter</code> is the palette.
+  </p>
+
+  <!-- ============================================================ TOKENS -->
+  <h2 class="section" id="tokens">Semantic tokens</h2>
+  <p class="lead">
+    HeroUI components are coloured through these tokens, and the global stylesheet maps each one onto a
+    palette slot. Style your own markup with the same tokens. A scoped class and the dark theme
+    re-point tokens; a ramp utility stays the same colour, so it is the one that breaks.
+  </p>
+  <div class="scroll"><table class="ref" id="token-table">
+    <thead><tr><th>Token</th><th>Utility</th><th>For</th><th>Value</th><th>Palette slot</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+  <p class="note">
+    A token has a utility only if HeroUI registers it as <code>--color-*</code>, and the utility follows that
+    name: <code>--field-background</code> is <code>bg-field</code>. A class naming anything else
+    (<code>bg-field-background</code>) generates no CSS and no warning.
+  </p>
+  <p class="note">
+    <b>A field's border needs a width as well as a colour.</b> HeroUI draws it at
+    <code>--field-border-width</code>, which it sets to <code>0px</code>, and makes
+    <code>--field-border</code> transparent. Setting the colour alone draws nothing: set both, for example
+    <code>--field-border: var(--neutral-secondary); --field-border-width: 1px;</code>. The contrast table
+    counts a border only when it is drawn.
+  </p>
+
+  <h3 class="sub">Status colours</h3>
+  <div class="scroll"><table class="ref">
+    <thead><tr><th>Meaning</th><th><code>color</code> / <code>status</code></th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td>Overdue, due soon, demo data</td><td><code>warning</code></td><td><span class="chip chip--warning chip--sm chip--soft"><span class="chip__label">Overdue</span></span></td></tr>
+      <tr><td>Rejected, failed, invalid</td><td><code>danger</code></td><td><span class="chip chip--danger chip--sm chip--soft"><span class="chip__label">Rejected</span></span></td></tr>
+      <tr><td>Done, approved, complete</td><td><code>success</code></td><td><span class="chip chip--success chip--sm chip--soft"><span class="chip__label">Approved</span></span></td></tr>
+      <tr><td>In progress, informational, selected</td><td><code>accent</code></td><td><span class="chip chip--accent chip--sm chip--soft"><span class="chip__label">In review</span></span></td></tr>
+      <tr><td>No state</td><td><code>default</code></td><td><span class="chip chip--default chip--sm chip--soft"><span class="chip__label">Draft</span></span></td></tr>
+    </tbody>
+  </table></div>
+  <p class="note">
+    <code>warning</code> and <code>danger</code> keep HeroUI's own amber and red when the brand palette
+    has none. Do not re-point them to the brand colour.
+  </p>
+
+  <!-- ============================================================ CONTRAST -->
+  <h2 class="section" id="contrast">Contrast (WCAG 2.1 AA)</h2>
+  <p class="lead">
+    Measured live from the tokens: 4.5:1 for text, 3:1 for large text (24px, or 18.66px bold) and for
+    what identifies a control (1.4.11). Translucent tokens (the soft variants) are composited over the
+    surface first, as the browser draws them. Switch the theme above to measure the dark theme.
+  </p>
+  <div class="scroll"><table class="ref" id="contrast-table">
+    <thead><tr><th>Pair</th><th>Foreground on background</th><th>Needs</th><th>Page</th><th id="region-col">Scoped region</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+  <p class="note">
+    A pairing not in this table is measured before it ships:
+    ratio = (L<sub>lighter</sub> + 0.05) / (L<sub>darker</sub> + 0.05), L being relative luminance.
+    WCAG does not round: 4.49 fails.
+  </p>
+
+  <!-- ============================================================ COMPONENTS -->
+  <h2 class="section" id="components">Components</h2>
+  <p class="lead">
+    HeroUI v3 only, compound API (<code>&lt;Card&gt;&lt;Card.Header&gt;</code>), <code>onPress</code> not
+    <code>onClick</code>, no provider except the locale one. Previews are real HeroUI output; write the JSX.
+    Fetch a component's docs before using it:
+    <code>node .claude/skills/heroui-react/scripts/get_component_docs.mjs Button</code>.
+  </p>
+  <p class="note">
+    In the snippets, <code>t</code> is the dictionary, <code>getI18n()</code> / <code>useI18n()</code> read it
+    on the server and client, <code>fmt()</code> fills <code>{name}</code> placeholders and
+    <code>errorMessage()</code> turns an error code into a sentence. They stand in for whatever the
+    project's own i18n layer calls them; the project's <code>AGENTS.md</code> says where it lives.
+  </p>
+
+  <h3 class="sub">Button</h3>
+  <div class="demo">
+    <div class="preview">
+      <span class="label-row">Variants: one primary per context</span>
+      <button class="button button--md button--primary" type="button">Save</button>
+      <button class="button button--md button--secondary" type="button">Secondary</button>
+      <button class="button button--md button--tertiary" type="button">Tertiary</button>
+      <button class="button button--md button--outline" type="button">Outline</button>
+      <button class="button button--md button--ghost" type="button">Ghost</button>
+      <button class="button button--md button--danger" type="button">Delete</button>
+      <button class="button button--md button--danger-soft" type="button">Danger soft</button>
+      <span class="label-row">Sizes, disabled, icon-only</span>
+      <button class="button button--sm button--primary" type="button">Small</button>
+      <button class="button button--md button--primary" type="button">Medium</button>
+      <button class="button button--lg button--primary" type="button">Large</button>
+      <button class="button button--md button--primary" type="button" disabled data-disabled="true">Saving…</button>
+      <button class="button button--icon-only button--md button--ghost" type="button" aria-label="Notifications">
+        <svg aria-hidden="true" fill="none" width="20" height="20" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-2 8-2 8h16s-2-1-2-8Zm-4.7 12a2 2 0 0 1-3.5 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+<pre><code>import { Button } from "@heroui/react";
+
+&lt;Button variant="primary" onPress={save}&gt;{t.form.save}&lt;/Button&gt;
+&lt;Button variant="outline" onPress={() =&gt; router.push("/list")}&gt;
+  {t.form.cancel}
+&lt;/Button&gt;
+&lt;Button variant="danger" onPress={remove}&gt;{t.form.delete}&lt;/Button&gt;
+
+// Pending state: disable and swap the label.
+&lt;Button type="submit" variant="primary" isDisabled={pending}&gt;
+  {pending ? t.form.saving : t.form.save}
+&lt;/Button&gt;
+
+// Icon-only: needs an accessible name.
+&lt;Button isIconOnly variant="ghost" aria-label={t.shell.notifications}&gt;
+  &lt;svg aria-hidden="true" fill="none" width="20" height="20" viewBox="0 0 24 24"&gt;
+    &lt;path d="…" stroke="currentColor" strokeWidth="1.5" /&gt;
+  &lt;/svg&gt;
+&lt;/Button&gt;
+
+// Variants: primary · secondary · tertiary · outline · ghost · danger · danger-soft
+// Button has no href. See Patterns › Navigation.</code></pre>
+  </div>
+
+  <h3 class="sub">Chip</h3>
+  <div class="demo">
+    <div class="preview" id="chip-matrix"></div>
+<pre><code>import { Chip } from "@heroui/react";
+
+&lt;Chip color="warning" variant="soft" size="sm"&gt;{t.status.overdue}&lt;/Chip&gt;
+&lt;Chip color={statusColor} size="sm"&gt;{t.documentStatus[status]}&lt;/Chip&gt;
+
+// color:   default · accent · success · warning · danger
+// variant: primary · secondary (default) · soft · tertiary
+// Check the soft variants in the contrast table: their text
+// colour is derived from the token, not chosen.</code></pre>
+  </div>
+
+  <h3 class="sub">Alert</h3>
+  <div class="demo">
+    <div class="preview stack">
+      <div class="alert alert--accent"><div class="alert__indicator"><svg aria-hidden="true" fill="none" height="16" viewBox="0 0 16 16" width="16"><path clip-rule="evenodd" d="M8 13.5a5.5 5.5 0 1 0 0-11a5.5 5.5 0 0 0 0 11M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14m1-9.5a1 1 0 1 1-2 0a1 1 0 0 1 2 0m-.25 3a.75.75 0 0 0-1.5 0V11a.75.75 0 0 0 1.5 0z" fill="currentColor" fill-rule="evenodd"/></svg></div><div class="alert__content"><p class="alert__title">Readings are open</p><span class="alert__description">Three published documents are still unread.</span></div></div>
+      <div class="alert alert--success"><div class="alert__indicator"><svg aria-hidden="true" fill="none" height="16" viewBox="0 0 16 16" width="16"><path clip-rule="evenodd" d="M13.5 8a5.5 5.5 0 1 1-11 0a5.5 5.5 0 0 1 11 0M15 8A7 7 0 1 1 1 8a7 7 0 0 1 14 0m-3.9-1.55a.75.75 0 1 0-1.2-.9L7.419 8.858L6.03 7.47a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.13-.08z" fill="currentColor" fill-rule="evenodd"/></svg></div><div class="alert__content"><p class="alert__title">Saved</p><span class="alert__description">The record was created as a draft.</span></div></div>
+      <div class="alert alert--warning"><div class="alert__indicator"><svg aria-hidden="true" fill="none" height="16" viewBox="0 0 16 16" width="16"><path clip-rule="evenodd" d="M7.134 2.994L2.217 11.5a1 1 0 0 0 .866 1.5h9.834a1 1 0 0 0 .866-1.5L8.866 2.993a1 1 0 0 0-1.732 0m3.03-.75c-.962-1.665-3.366-1.665-4.329 0L.918 10.749c-.963 1.666.24 3.751 2.165 3.751h9.834c1.925 0 3.128-2.085 2.164-3.751zM8 5a.75.75 0 0 1 .75.75v2a.75.75 0 0 1-1.5 0v-2A.75.75 0 0 1 8 5m1 5.75a1 1 0 1 1-2 0a1 1 0 0 1 2 0" fill="currentColor" fill-rule="evenodd"/></svg></div><div class="alert__content"><p class="alert__title">Sample data</p><span class="alert__description">This screen shows mock records.</span></div></div>
+      <div class="alert alert--danger"><div class="alert__indicator"><svg aria-hidden="true" fill="none" height="16" viewBox="0 0 16 16" width="16"><path clip-rule="evenodd" d="M8 13.5a5.5 5.5 0 1 0 0-11a5.5 5.5 0 0 0 0 11M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14m1-4.5a1 1 0 1 1-2 0a1 1 0 0 1 2 0M8.75 5a.75.75 0 0 0-1.5 0v2.5a.75.75 0 0 0 1.5 0z" fill="currentColor" fill-rule="evenodd"/></svg></div><div class="alert__content"><p class="alert__title">Could not save</p><span class="alert__description">The code is already in use (ERR-0001).</span></div></div>
+    </div>
+<pre><code>import { Alert } from "@heroui/react";
+
+// A form result is announced: HeroUI's Alert sets no role itself.
+// A rejection is read at once: role="alert".
+&lt;Alert status="danger" role="alert"&gt;
+  &lt;Alert.Indicator /&gt;
+  &lt;Alert.Content&gt;
+    &lt;Alert.Title&gt;{t.form.failed}&lt;/Alert.Title&gt;
+    &lt;Alert.Description&gt;
+      {errorMessage(t, result.code, result.message)} ({result.code})
+    &lt;/Alert.Description&gt;
+  &lt;/Alert.Content&gt;
+&lt;/Alert&gt;
+
+// A success waits its turn: role="status", on a container that is always
+// rendered, so only its content changes (Patterns › Form).
+
+// status: default · accent · success · warning · danger
+// Translate errors by their code, and show the code.</code></pre>
+  </div>
+
+  <h3 class="sub">Card and empty state</h3>
+  <div class="demo">
+    <div class="preview stack on-page">
+      <div class="card card--default"><div class="card__header"><h3 class="card__title">Record details</h3><p class="card__description">Prepared by the process owner</p></div><div class="card__content">Card content sits on <code>--surface</code>.</div><div class="card__footer"><button class="button button--sm button--outline" type="button">Edit</button></div></div>
+      <div class="card card--transparent"><div class="card__content"><p class="typography typography--align-start typography--color-muted typography--body-sm">No records match this filter.</p></div></div>
+    </div>
+<pre><code>import { Card, Typography } from "@heroui/react";
+
+&lt;Card&gt;
+  &lt;Card.Header&gt;
+    &lt;Card.Title&gt;{t.record.details}&lt;/Card.Title&gt;
+    &lt;Card.Description&gt;{t.record.detailsHint}&lt;/Card.Description&gt;
+  &lt;/Card.Header&gt;
+  &lt;Card.Content&gt;…&lt;/Card.Content&gt;
+  &lt;Card.Footer&gt;…&lt;/Card.Footer&gt;
+&lt;/Card&gt;
+
+// Empty state
+&lt;Card variant="transparent"&gt;
+  &lt;Card.Content&gt;
+    &lt;Typography color="muted" type="body-sm"&gt;{t.list.noMatch}&lt;/Typography&gt;
+  &lt;/Card.Content&gt;
+&lt;/Card&gt;
+
+// variant: default · secondary · tertiary · transparent</code></pre>
+  </div>
+
+  <h3 class="sub">Text field, search field</h3>
+  <div class="demo">
+    <div class="preview stack">
+      <div class="textfield" data-required="true"><label class="label" for="f-code">Code</label><input class="input input--primary" id="f-code" type="text" placeholder="e.g. PR-012" aria-describedby="f-code-hint"><span class="description" id="f-code-hint">Unique within the folder.</span></div>
+      <div class="textfield" data-invalid="true"><label class="label" for="f-name">Name</label><input class="input input--primary" id="f-name" type="text" aria-invalid="true" data-invalid="true" aria-describedby="f-name-err"><span class="field-error" id="f-name-err" data-visible="true">This field is required.</span></div>
+      <div class="search-field search-field--primary" data-empty="true"><div class="search-field__group" role="group"><svg aria-hidden="true" fill="none" height="16" viewBox="0 0 16 16" width="16" class="search-field__search-icon"><path clip-rule="evenodd" d="M11.5 7a4.5 4.5 0 1 1-9 0a4.5 4.5 0 0 1 9 0m-.82 4.74a6 6 0 1 1 1.06-1.06l2.79 2.79a.75.75 0 1 1-1.06 1.06z" fill="currentColor" fill-rule="evenodd"/></svg><input aria-label="Search records" type="search" placeholder="Search by code or name" class="search-field__input"></div></div>
+    </div>
+<pre><code>import { Description, FieldError, Input, Label, SearchField, TextField } from "@heroui/react";
+
+// Inside &lt;Form validationBehavior="aria" validationErrors={fields}&gt;
+// (Patterns › Form): the server's error for "code" appears in the empty
+// &lt;FieldError /&gt; and clears when the user edits the field. No isInvalid.
+&lt;TextField name="code" isRequired&gt;
+  &lt;Label&gt;{t.form.code}&lt;/Label&gt;
+  &lt;Input placeholder="PR-012" /&gt;
+  &lt;Description&gt;{t.form.codeHint}&lt;/Description&gt;
+  &lt;FieldError /&gt;
+&lt;/TextField&gt;
+
+// No visible label: aria-label is required.
+&lt;SearchField aria-label={t.list.search} defaultValue={q ?? ""}&gt;
+  &lt;SearchField.Group&gt;
+    &lt;SearchField.SearchIcon /&gt;
+    &lt;SearchField.Input name="q" placeholder={t.list.searchPlaceholder} /&gt;
+    &lt;SearchField.ClearButton /&gt;
+  &lt;/SearchField.Group&gt;
+&lt;/SearchField&gt;
+
+// A placeholder is not a label: anything the user needs goes in
+// &lt;Label&gt; or &lt;Description&gt;.</code></pre>
+  </div>
+
+  <h3 class="sub">Select</h3>
+  <div class="demo">
+    <div class="preview stack">
+      <div class="select select--primary"><span class="label">Document type</span><button class="select__trigger" type="button" aria-haspopup="listbox" aria-expanded="false"><span class="select__value" data-placeholder="true">Choose a type</span><svg aria-hidden="true" fill="none" height="16" viewBox="0 0 16 16" width="16" class="select__indicator"><path clip-rule="evenodd" d="M2.97 5.47a.75.75 0 0 1 1.06 0L8 9.44l3.97-3.97a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 0 1 0-1.06" fill="currentColor" fill-rule="evenodd"/></svg></button></div>
+    </div>
+<pre><code>import { Label, ListBox, Select } from "@heroui/react";
+
+&lt;Select name="typeId" placeholder={t.form.typePlaceholder}&gt;
+  &lt;Label&gt;{t.form.type}&lt;/Label&gt;
+  &lt;Select.Trigger&gt;
+    &lt;Select.Value /&gt;
+    &lt;Select.Indicator /&gt;
+  &lt;/Select.Trigger&gt;
+  &lt;Select.Popover&gt;
+    &lt;ListBox&gt;
+      {types.map((type) =&gt; (
+        &lt;ListBox.Item key={type.id} id={type.id} textValue={type.label}&gt;
+          {type.label}
+          &lt;ListBox.ItemIndicator /&gt;
+        &lt;/ListBox.Item&gt;
+      ))}
+    &lt;/ListBox&gt;
+  &lt;/Select.Popover&gt;
+&lt;/Select&gt;
+
+// A collection component: render it in a client component.</code></pre>
+  </div>
+
+  <h3 class="sub">Table</h3>
+  <div class="demo">
+    <div class="preview stack">
+      <div class="table-root table-root--primary"><div class="table__scroll-container"><table class="table__content" aria-label="Documents" role="grid"><thead class="table__header" role="rowgroup"><tr role="row"><th class="table__column" role="columnheader">Code</th><th class="table__column" role="columnheader">Name</th><th class="table__column" role="columnheader">Status</th></tr></thead><tbody class="table__body" role="rowgroup"><tr class="table__row" role="row"><td class="table__cell" role="rowheader" style="font-weight:500">PR-001</td><td class="table__cell" role="gridcell">Document control procedure</td><td class="table__cell" role="gridcell"><span class="chip chip--success chip--sm chip--secondary"><span class="chip__label">Published</span></span></td></tr><tr class="table__row" role="row"><td class="table__cell" role="rowheader" style="font-weight:500">PR-002</td><td class="table__cell" role="gridcell">Training instruction</td><td class="table__cell" role="gridcell"><span class="chip chip--default chip--sm chip--secondary"><span class="chip__label">Draft</span></span></td></tr></tbody></table></div></div>
+    </div>
+<pre><code>import { Table } from "@heroui/react";
+
+&lt;Table&gt;
+  &lt;Table.ScrollContainer&gt;
+    &lt;Table.Content aria-label={t.list.table} className="min-w-[900px]"&gt;
+      &lt;Table.Header&gt;
+        &lt;Table.Column id="code" isRowHeader width={120}&gt;{t.list.colCode}&lt;/Table.Column&gt;
+        &lt;Table.Column id="name"&gt;{t.list.colName}&lt;/Table.Column&gt;
+      &lt;/Table.Header&gt;
+      &lt;Table.Body&gt;
+        {rows.map((row) =&gt; (
+          &lt;Table.Row key={row.id} id={row.id} href={`/records/${row.id}`}&gt;
+            &lt;Table.Cell className="font-medium"&gt;{row.code}&lt;/Table.Cell&gt;
+            &lt;Table.Cell&gt;{row.name}&lt;/Table.Cell&gt;
+          &lt;/Table.Row&gt;
+        ))}
+      &lt;/Table.Body&gt;
+    &lt;/Table.Content&gt;
+  &lt;/Table.ScrollContainer&gt;
+&lt;/Table&gt;
+
+// Exactly one isRowHeader column. aria-label on Table.Content.
+// Built from a server component? See Patterns › Table from a server component.</code></pre>
+  </div>
+
+  <h3 class="sub">Meter</h3>
+  <div class="demo">
+    <div class="preview stack">
+      <div class="meter meter--accent meter--md" role="meter progressbar" aria-label="PR-001 read ratio" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;color:var(--muted)">3 / 5 read</span><div class="meter__track"><div class="meter__fill" style="width:60%"></div></div></div>
+      <div class="meter meter--success meter--md" role="meter progressbar" aria-label="PR-002 read ratio" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;color:var(--muted)">5 / 5 read</span><div class="meter__track"><div class="meter__fill" style="width:100%"></div></div></div>
+    </div>
+<pre><code>import { Meter } from "@heroui/react";
+
+&lt;Meter
+  aria-label={fmt(t.list.readRatio, { code: row.code })}
+  className="flex flex-col gap-1"
+  color={ratio === 100 ? "success" : "accent"}
+  value={ratio}
+&gt;
+  &lt;span className="text-muted text-xs tabular-nums"&gt;{fmt(t.list.readCount, { read, target })}&lt;/span&gt;
+  &lt;Meter.Track&gt;&lt;Meter.Fill /&gt;&lt;/Meter.Track&gt;
+&lt;/Meter&gt;
+
+// A name per row: put the record in it, or every meter reads the same.</code></pre>
+  </div>
+
+  <h3 class="sub">Navigation and identity</h3>
+  <div class="demo">
+    <div class="preview stack">
+      <ol aria-label="Breadcrumbs" class="breadcrumbs"><li class="breadcrumbs__item"><a class="link breadcrumbs__link" href="#components">Home</a><svg aria-hidden="true" fill="none" height="16" viewBox="0 0 16 16" width="16" class="breadcrumbs__separator"><path clip-rule="evenodd" d="M5.47 2.97a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1 0 1.06l-4.5 4.5a.75.75 0 1 1-1.06-1.06L9.44 8 5.47 4.03a.75.75 0 0 1 0-1.06Z" fill="currentColor" fill-rule="evenodd"/></svg></li><li class="breadcrumbs__item" data-current="true"><span class="link breadcrumbs__link" role="link" aria-disabled="true" aria-current="page" data-current="true">Documents</span></li></ol>
+      <h2 class="typography typography--align-start typography--color-default typography--h2" style="margin:0">Documents</h2>
+      <p class="typography typography--align-start typography--color-muted typography--body-sm" style="margin:0">42 documents · 3 unread · 1 due for review</p>
+      <hr class="separator separator--horizontal separator--default">
+      <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+        <span class="avatar avatar--md"><span class="avatar__fallback avatar__fallback--accent">AB</span></span>
+        <span class="badge-anchor"><button class="button button--icon-only button--md button--ghost" type="button" aria-label="Tasks, 3 pending"><svg aria-hidden="true" fill="none" width="20" height="20" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-2 8-2 8h16s-2-1-2-8Zm-4.7 12a2 2 0 0 1-3.5 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="badge badge--accent badge--top-right badge--md badge--primary"><span class="badge__label">3</span></span></span>
+        <div class="toggle-button-group toggle-button-group--horizontal" role="radiogroup" aria-label="Language"><button class="toggle-button toggle-button--sm toggle-button--default" type="button" role="radio" aria-checked="true" data-selected="true">TR</button><button class="toggle-button toggle-button--sm toggle-button--default" type="button" role="radio" aria-checked="false">EN</button></div>
+        <a class="link" href="#components">A link</a>
+      </div>
+    </div>
+<pre><code>import { Avatar, Badge, Breadcrumbs, Separator, ToggleButton,
+  ToggleButtonGroup, Typography } from "@heroui/react";
+
+&lt;Breadcrumbs&gt;
+  &lt;Breadcrumbs.Item href="/"&gt;{t.nav.home}&lt;/Breadcrumbs.Item&gt;
+  &lt;Breadcrumbs.Item&gt;{t.list.title}&lt;/Breadcrumbs.Item&gt;
+&lt;/Breadcrumbs&gt;
+&lt;Typography type="h2"&gt;{t.list.title}&lt;/Typography&gt;
+&lt;Typography className="mt-1" color="muted" type="body-sm"&gt;{summary}&lt;/Typography&gt;
+&lt;Separator /&gt;
+
+&lt;Badge.Anchor&gt;
+  &lt;Button isIconOnly variant="ghost" aria-label={fmt(t.shell.tasks, { n })}&gt;…&lt;/Button&gt;
+  &lt;Badge color="accent"&gt;{n}&lt;/Badge&gt;
+&lt;/Badge.Anchor&gt;
+
+&lt;ToggleButtonGroup aria-label={t.shell.language} selectionMode="single"
+  disallowEmptySelection selectedKeys={new Set([locale])} size="sm"
+  onSelectionChange={…}&gt;
+  {LOCALES.map((l) =&gt; &lt;ToggleButton key={l} id={l}&gt;{l.toUpperCase()}&lt;/ToggleButton&gt;)}
+&lt;/ToggleButtonGroup&gt;</code></pre>
+  </div>
+
+  <h3 class="sub">Scoped region</h3>
+  <p class="note">The same components inside the scoped class above. Only tokens change; no component is overridden.</p>
+  <div class="region-host"><div id="region-demo">
+    <button class="button button--md button--primary" type="button">Primary</button>
+    <button class="button button--md button--ghost" type="button">Ghost</button>
+    <span class="chip chip--accent chip--sm chip--soft"><span class="chip__label">Accent soft</span></span>
+    <span style="color:var(--muted)">Muted text</span>
+    <a class="link" href="#tokens" style="color:var(--link)">Link</a>
+  </div></div>
+
+  <!-- ============================================================ PATTERNS -->
+  <h2 class="section" id="patterns">Patterns</h2>
+
+  <h3 class="sub">Page skeleton</h3>
+<pre><code>// Server component. Next 16: searchParams is a Promise.
+export default async function Page({ searchParams }: PageProps&lt;"/records"&gt;) {
+  const { locale, t } = await getI18n();            // the project's server-side copy accessor
+  const { q } = await searchParams;
+  const query = typeof q === "string" &amp;&amp; q.trim() !== "" ? q.trim() : undefined;
+  const page = await recordService.list({ q: query }); // the service layer, not the app's own /api
+
+  return (
+    &lt;div className="flex flex-col gap-6"&gt;
+      &lt;div className="flex flex-col gap-3"&gt;
+        &lt;Breadcrumbs&gt;…&lt;/Breadcrumbs&gt;
+        &lt;div className="flex flex-wrap items-end justify-between gap-4"&gt;
+          &lt;div&gt;
+            &lt;Typography type="h2"&gt;{t.records.title}&lt;/Typography&gt;
+            &lt;Typography className="mt-1" color="muted" type="body-sm"&gt;
+              {fmt(t.records.summary, { total: page.totalCount })}
+            &lt;/Typography&gt;
+          &lt;/div&gt;
+          &lt;div className="flex gap-2"&gt;{/* actions */}&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+
+      {/* min-w-0: a wide table must not widen the grid column. */}
+      &lt;div className="grid gap-6 lg:grid-cols-[minmax(0,260px)_minmax(0,1fr)]"&gt;
+        &lt;aside&gt;{/* filters as a GET form */}&lt;/aside&gt;
+        &lt;div className="flex min-w-0 flex-col gap-5"&gt;…&lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+
+  <h3 class="sub">Navigation with a Button</h3>
+<pre><code>// Button is React Aria's button: it has no href.
+
+// Server component: a GET form.
+&lt;form action="/records/new" method="get"&gt;
+  &lt;Button type="submit" variant="primary"&gt;{t.records.new}&lt;/Button&gt;
+&lt;/form&gt;
+
+// Client component: navigate in onPress.
+&lt;Button variant="outline" onPress={() =&gt; router.push("/records")}&gt;{t.form.cancel}&lt;/Button&gt;
+
+// A whole table row: href on Table.Row.
+// Don't: hand-copy button classes onto an &lt;a&gt;.</code></pre>
+
+  <h3 class="sub">Form posting to a server action (React 19)</h3>
+<pre><code>"use client";
+
+type FormState = { result: ActionResult | null; saved: number };
+
+export function RecordForm({ action }: { action: (fd: FormData) =&gt; Promise&lt;ActionResult&gt; }) {
+  const { t } = useI18n();
+  const [state, submit, pending] = useActionState(
+    async (previous: FormState, formData: FormData): Promise&lt;FormState&gt; =&gt; {
+      const result = await action(formData);
+      return { result, saved: previous.saved + (result.ok ? 1 : 0) };
+    },
+    { result: null, saved: 0 },
+  );
+  // The server's field errors, keyed by field name.
+  const fields = state.result &amp;&amp; !state.result.ok ? state.result.fields : {};
+  const formRef = useRef&lt;HTMLFormElement&gt;(null);
+
+  // Focus goes where the user acts next, once per result.
+  useEffect(() =&gt; {
+    const form = formRef.current;
+    if (form === null || state.result === null) return;
+    if (state.result.ok) {
+      // Success: the re-keyed fields are fresh; start again at the first one.
+      form.querySelector&lt;HTMLElement&gt;("input, textarea, select")?.focus();
+      return;
+    }
+    const invalid = form.querySelector&lt;HTMLElement&gt;('[aria-invalid="true"]');
+    if (invalid !== null) {
+      invalid.focus(); // its error is its description: label and error are read together
+      return;
+    }
+    // A whole-form rejection: back to Save (disabling it while pending can drop
+    // focus), with the alert in view.
+    form.querySelector&lt;HTMLElement&gt;('button[type="submit"]')?.focus();
+    form.querySelector('[role="alert"]')?.scrollIntoView({ block: "nearest" });
+  }, [state]);
+
+  return (
+    // HeroUI's Form, not a bare &lt;form&gt;. validationBehavior="aria": the default,
+    // "native", hands validation to the browser, which then blocks submits by
+    // itself. An empty required field is refused with no visible error, and after
+    // the server rejects a field, the form cannot be submitted again until reload.
+    &lt;Form
+      ref={formRef}
+      validationBehavior="aria"
+      validationErrors={fields}
+      onSubmit={(event) =&gt; {
+        // Not &lt;form action={fn}&gt;: React 19 resets uncontrolled fields before
+        // the action runs, so a rejected submit would wipe the user's input.
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        startTransition(() =&gt; submit(formData)); // outside a transition, pending never turns true
+      }}
+    &gt;
+      {/* Announce the result. A rejection is read at once. */}
+      {state.result &amp;&amp; !state.result.ok ? (
+        &lt;Alert status="danger" role="alert"&gt;…&lt;/Alert&gt;
+      ) : null}
+      {/* A success waits its turn. The status region is always rendered: some
+          screen readers announce it only if it exists before its text does. */}
+      &lt;div role="status"&gt;
+        {state.result?.ok ? &lt;Alert status="success"&gt;…&lt;/Alert&gt; : null}
+      &lt;/div&gt;
+
+      {/* Reset after success by re-keying, not form.reset(): child state survives reset(). */}
+      &lt;div key={state.saved}&gt;
+        {/* isRequired marks the field (aria-required, asterisk); the server enforces it. */}
+        &lt;TextField name="code" isRequired&gt;
+          &lt;Label&gt;{t.form.code}&lt;/Label&gt;
+          &lt;Input /&gt;
+          &lt;FieldError /&gt;   {/* shows fields.code; clears when the user edits the field */}
+        &lt;/TextField&gt;
+
+        {/* A value React Aria does not own (a hidden input a custom picker fills)
+            reads its error from the result itself. */}
+        &lt;FolderPicker name="folderId" error={fields.folderId} /&gt;
+      &lt;/div&gt;
+      &lt;Button type="submit" variant="primary" isDisabled={pending}&gt;
+        {pending ? t.form.saving : t.form.save}
+      &lt;/Button&gt;
+    &lt;/Form&gt;
+  );
+}
+
+// Don't drive isInvalid from server errors: a controlled isInvalid stays set
+// until the next result, and with native validation it blocks that result.
+// No client-side re-validation: the server validates and returns field errors.
+// Files never go through a server action (1 MB body limit): upload them to a
+// route handler first and put only the handle in the form.
+// Tests click the submit Button; fireEvent.submit skips the browser's own
+// validation and cannot catch a form that refuses to submit.</code></pre>
+
+  <h3 class="sub">Table from a server component</h3>
+<pre><code>// HeroUI's Table builds its collection from its children, and functions cannot
+// cross the server/client boundary. So the server passes data, and a small client
+// wrapper builds Table.Row / Table.Cell. Cell contents may be ReactNode: plain
+// element trees (Chip, Meter) do cross the boundary.
+
+"use client";
+export type DataTableColumn = { key: string; label: string; width?: number;
+  isRowHeader?: boolean; cellClassName?: string };
+export type DataTableRow = { id: string; href?: string; cells: Record&lt;string, ReactNode&gt; };
+
+export function DataTable({ ariaLabel, columns, rows, className }: {
+  ariaLabel: string; columns: readonly DataTableColumn[];
+  rows: readonly DataTableRow[]; className?: string;
+}) {
+  return (
+    &lt;Table&gt;
+      &lt;Table.ScrollContainer&gt;
+        &lt;Table.Content aria-label={ariaLabel} className={className}&gt;
+          &lt;Table.Header&gt;
+            {columns.map((c) =&gt; (
+              &lt;Table.Column key={c.key} id={c.key} isRowHeader={c.isRowHeader} width={c.width}&gt;
+                {c.label}
+              &lt;/Table.Column&gt;
+            ))}
+          &lt;/Table.Header&gt;
+          &lt;Table.Body&gt;
+            {rows.map((row) =&gt; (
+              &lt;Table.Row key={row.id} id={row.id} href={row.href}&gt;
+                {columns.map((c) =&gt; (
+                  &lt;Table.Cell key={c.key} className={c.cellClassName}&gt;{row.cells[c.key]}&lt;/Table.Cell&gt;
+                ))}
+              &lt;/Table.Row&gt;
+            ))}
+          &lt;/Table.Body&gt;
+        &lt;/Table.Content&gt;
+      &lt;/Table.ScrollContainer&gt;
+    &lt;/Table&gt;
+  );
+}</code></pre>
+
+  <h3 class="sub">Re-theming a region</h3>
+<pre><code>/* Global stylesheet: redefine tokens in a scoped class, then put the class on
+   the region's root. Never override component internals class by class. */
+.sidebar-theme {
+  color-scheme: dark;
+  --surface: var(--theme-darker);
+  --surface-foreground: var(--white);
+  --accent: var(--theme-light);          /* light accent on dark green … */
+  --accent-foreground: var(--theme-darker); /* … with dark text on it */
+  --focus: var(--theme-light);
+  --border: var(--theme-dark);
+}
+
+&lt;aside className="sidebar-theme bg-surface text-surface-foreground"&gt;…&lt;/aside&gt;</code></pre>
+
+  <h3 class="sub">Icons</h3>
+<pre><code>// Inline SVG. No icon package unless the project names one.
+&lt;svg aria-hidden="true" fill="none" width="20" height="20" viewBox="0 0 24 24"&gt;
+  &lt;path d="…" stroke="currentColor" strokeWidth="1.5"
+        strokeLinecap="round" strokeLinejoin="round" /&gt;
+&lt;/svg&gt;
+// aria-hidden: the name belongs to the control around it.
+// currentColor: the token decides the colour, so it follows themes and scoped regions.</code></pre>
+
+  <!-- ============================================================ TRAPS -->
+  <h2 class="section" id="traps">Traps</h2>
+
+  <h3 class="sub">Tailwind's built-in palette still compiles</h3>
+  <div class="dodont">
+<pre><code>// Don't: 26 built-in families, all bypassing the palette.
+&lt;p className="text-red-600 bg-gray-100"&gt;
+&lt;div className="bg-neutral-100"&gt;   {/* Tailwind's neutral, not the palette's */}
+&lt;div className="bg-[#3a7f62]"&gt;     {/* arbitrary literal */}
+&lt;path fill="#214737" /&gt;</code></pre>
+<pre><code>// Do: tokens first, then named palette slots.
+&lt;p className="text-danger"&gt;
+&lt;div className="bg-surface-secondary"&gt;
+&lt;div className="bg-neutral-lighter"&gt;
+&lt;path fill="currentColor" /&gt;</code></pre>
+  </div>
+
+  <h3 class="sub">A utility named after the token generates nothing</h3>
+  <div class="dodont">
+<pre><code>// Don't: no --color-field-background is registered, so no CSS, no warning.
+&lt;div className="bg-field-background"&gt;</code></pre>
+<pre><code>// Do: the registered name (--color-field → bg-field).
+&lt;div className="bg-field"&gt;</code></pre>
+  </div>
+
+  <h3 class="sub">Accent text on the page background</h3>
+  <div class="dodont">
+    <div class="preview on-page"><span style="color:var(--accent)">Accent text directly on <code>--background</code></span><span class="note" id="trap-accent-page"></span></div>
+    <div class="preview"><span style="color:var(--accent)">Accent text on <code>--surface</code></span><span class="note" id="trap-accent-surface"></span></div>
+  </div>
+
+  <h3 class="sub">A form that stops submitting</h3>
+  <div class="dodont">
+<pre><code>// Don't: a bare form, with server errors driving isInvalid.
+// Validation defaults to "native": an empty isRequired field blocks the
+// submit with no visible error, and once the server rejects "code" the
+// browser refuses every later submit, even after the user fixes it.
+&lt;form onSubmit={onSubmit}&gt;
+  &lt;TextField name="code" isRequired isInvalid={fields.code !== undefined}&gt;
+    &lt;Label&gt;{t.form.code}&lt;/Label&gt;&lt;Input /&gt;
+    &lt;FieldError&gt;{fields.code}&lt;/FieldError&gt;
+  &lt;/TextField&gt;
+&lt;/form&gt;</code></pre>
+<pre><code>// Do: HeroUI's Form, aria validation, server errors by field name.
+// Every submit reaches the server; each error shows under its field
+// and clears when the user edits it.
+&lt;Form validationBehavior="aria" validationErrors={fields} onSubmit={onSubmit}&gt;
+  &lt;TextField name="code" isRequired&gt;
+    &lt;Label&gt;{t.form.code}&lt;/Label&gt;&lt;Input /&gt;
+    &lt;FieldError /&gt;
+  &lt;/TextField&gt;
+&lt;/Form&gt;</code></pre>
+  </div>
+
+  <h3 class="sub">A placeholder used as a label</h3>
+  <div class="dodont">
+<pre><code>// Don't: the only instruction is in the placeholder. It vanishes on input,
+// and placeholder colour is usually below 4.5:1.
+&lt;TextField aria-label="Code"&gt;&lt;Input placeholder="Code, e.g. PR-012, unique per folder" /&gt;&lt;/TextField&gt;</code></pre>
+<pre><code>// Do
+&lt;TextField&gt;
+  &lt;Label&gt;{t.form.code}&lt;/Label&gt;
+  &lt;Input placeholder="PR-012" /&gt;
+  &lt;Description&gt;{t.form.codeHint}&lt;/Description&gt;
+&lt;/TextField&gt;</code></pre>
+  </div>
+
+  <h3 class="sub">Server-to-client boundary</h3>
+  <div class="dodont">
+<pre><code>// Don't, in a server component: a render function cannot be serialised.
+&lt;Table.Content renderEmptyState={() =&gt; t.list.empty}&gt;
+&lt;Button onPress={() =&gt; …}&gt;        {/* handlers need "use client" */}</code></pre>
+<pre><code>// Do: pass data to a client wrapper (DataTable), render the empty state
+// on the server, keep handlers in client components.
+{rows.length === 0 ? &lt;EmptyState /&gt; : &lt;DataTable rows={rows} … /&gt;}</code></pre>
+  </div>
+
+  <h3 class="sub">Fighting the radius</h3>
+  <div class="dodont">
+<pre><code>// Don't: restore or flatten one component's corners by hand.
+&lt;Card className="rounded-2xl"&gt;</code></pre>
+<pre><code>/* Do: HeroUI scales every radius step from --radius. Change the policy
+   once, in the global stylesheet. rounded-full stays round. */
+:root { --radius: 0.25rem; }
+/* Steps pinned in @theme (--radius-xl: …) are Tailwind-only: this page
+   cannot read them, so its previews may look rounder than the app. */</code></pre>
+  </div>
+</main>
+
+<div id="probes" aria-hidden="true"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  const THEME_SLOTS = ["theme-darker", "theme-dark", "theme-dark-alt", "theme-primary", "theme-secondary",
+    "theme-tertiary", "theme-light", "theme-lighter", "theme-lighter-alt"];
+  const NEUTRAL_SLOTS = ["black", "neutral-dark", "neutral-primary", "neutral-primary-alt", "neutral-secondary",
+    "neutral-secondary-alt", "neutral-tertiary", "neutral-tertiary-alt", "neutral-quaternary",
+    "neutral-quaternary-alt", "neutral-light", "neutral-lighter", "neutral-lighter-alt", "white"];
+
+  const TOKENS = [
+    ["--background", "bg-background", "The page"],
+    ["--foreground", "text-foreground", "Text on the page"],
+    ["--surface", "bg-surface", "Cards, panels, tables"],
+    ["--surface-foreground", "text-surface-foreground", "Text on a surface"],
+    ["--surface-secondary", "bg-surface-secondary", "A recessed surface"],
+    ["--surface-tertiary", "bg-surface-tertiary", "A further recessed surface"],
+    ["--overlay", "bg-overlay", "Popovers, menus, modals"],
+    ["--muted", "text-muted", "Secondary text: hints, metadata"],
+    ["--default", "bg-default", "Neutral control fill"],
+    ["--default-foreground", "text-default-foreground", "Text on a neutral fill"],
+    ["--accent", "bg-accent", "Primary action, selection (prefer variant/color props)"],
+    ["--accent-foreground", "text-accent-foreground", "Text on the accent"],
+    ["--accent-soft", "bg-accent-soft", "Soft accent fill (derived by HeroUI)"],
+    ["--accent-soft-foreground", "text-accent-soft-foreground", "Text on the soft accent (derived)"],
+    ["--focus", "ring-focus", "Focus rings; never remove an outline"],
+    ["--link", "text-link", "Links"],
+    ["--field-background", "bg-field", "Form fields and field-like containers"],
+    ["--field-foreground", "text-field-foreground", "Text in a field"],
+    ["--field-placeholder", "text-field-placeholder", "Placeholder text"],
+    ["--field-border", "border-field-border", "Field outline"],
+    ["--border", "border-border", "Lines around things"],
+    ["--separator", "border-separator", "Lines between things"],
+    ["--success", "bg-success", "Via color=\"success\""],
+    ["--warning", "bg-warning", "Via color=\"warning\" (HeroUI's amber)"],
+    ["--danger", "bg-danger", "Via color=\"danger\" (HeroUI's red)"],
+  ];
+
+  // [label, foreground, background, minimum, drawn over]
+  const PAIRS = [
+    ["Body text", "--foreground", "--background", 4.5],
+    ["Text on a surface", "--surface-foreground", "--surface", 4.5],
+    ["Muted text on the page", "--muted", "--background", 4.5],
+    ["Muted text on a surface", "--muted", "--surface", 4.5],
+    ["Link on the page", "--link", "--background", 4.5],
+    ["Link on a surface", "--link", "--surface", 4.5],
+    ["Accent text on the page", "--accent", "--background", 4.5],
+    ["Accent text on a surface", "--accent", "--surface", 4.5],
+    ["Primary button", "--accent-foreground", "--accent", 4.5],
+    ["Primary button, hovered", "--accent-foreground", "--accent-hover", 4.5],
+    ["Neutral button / chip", "--default-foreground", "--default", 4.5],
+    ["Soft accent chip", "--accent-soft-foreground", "--accent-soft", 4.5, "--surface"],
+    ["Success, solid", "--success-foreground", "--success", 4.5],
+    ["Soft success chip", "--success-soft-foreground", "--success-soft", 4.5, "--surface"],
+    ["Warning, solid", "--warning-foreground", "--warning", 4.5],
+    ["Soft warning chip", "--warning-soft-foreground", "--warning-soft", 4.5, "--surface"],
+    ["Danger, solid", "--danger-foreground", "--danger", 4.5],
+    ["Soft danger chip", "--danger-soft-foreground", "--danger-soft", 4.5, "--surface"],
+    ["Error text on a surface (FieldError)", "--danger", "--surface", 4.5],
+    ["Field text", "--field-foreground", "--field-background", 4.5],
+    ["Placeholder", "--field-placeholder", "--field-background", 4.5],
+    ["Focus ring on the page", "--focus", "--background", 3],
+    ["Focus ring on a surface", "--focus", "--surface", 3],
+    // A field is findable by its border or by its fill; the better of the two counts.
+    // A border counts only when it is drawn: HeroUI's --field-border-width is 0px.
+    ["Field edge vs. the surface (a drawn border, or the fill)", ["--field-border", "--field-background"], "--surface", 3],
+  ];
+
+  const root = document.documentElement;
+  const probes = document.getElementById("probes");
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 1;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+  // Scope elements whose custom properties we resolve.
+  const pageScope = document.createElement("div");
+  const regionScope = document.createElement("div");
+  probes.append(pageScope, regionScope);
+
+  const defined = (scope, name) => getComputedStyle(scope).getPropertyValue(name).trim() !== "";
+
+  function cssColor(scope, name) {
+    const p = document.createElement("span");
+    p.style.color = `var(${name})`;
+    scope.append(p);
+    const c = getComputedStyle(p).color;
+    p.remove();
+    return c;
+  }
+
+  // Composite a stack of CSS colours (bottom first) and read the sRGB pixel.
+  function paint(stack) {
+    ctx.clearRect(0, 0, 1, 1);
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, 1, 1);
+    for (const c of stack) { ctx.fillStyle = c; ctx.fillRect(0, 0, 1, 1); }
+    const d = ctx.getImageData(0, 0, 1, 1).data;
+    return [d[0], d[1], d[2]];
+  }
+
+  const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+  const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+  const hex = ([r, g, b]) => "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
+
+  // Inside a scoped region the region's own surface is the backdrop, so the
+  // page-level `--background` pairs are measured against `--surface` there.
+  // The width a field's border is drawn at. HeroUI draws it at
+  // var(--field-border-width, var(--border-width)), and sets the first to 0px,
+  // so a border colour alone draws nothing.
+  function fieldBorderWidth(scope) {
+    const style = getComputedStyle(scope);
+    const own = style.getPropertyValue("--field-border-width").trim();
+    const fallback = style.getPropertyValue("--border-width").trim();
+    return parseFloat(own || fallback || "0") || 0;
+  }
+
+  function measure(scope, [label, fg, bg, min, over], inRegion = false) {
+    if (Array.isArray(fg)) {
+      const all = fg.map((f) => measure(scope, [label, f, bg, min, over], inRegion)).filter(Boolean);
+      return all.length === 0 ? null : all.reduce((a, b) => (b.value > a.value ? b : a));
+    }
+    const local = (name) => (inRegion && name === "--background" ? "--surface" : name);
+    fg = local(fg); bg = local(bg);
+    if (!defined(scope, fg) || !defined(scope, bg)) return null;
+    const base = [cssColor(scope, local("--background"))];
+    if (over) base.push(cssColor(scope, over));
+    const bgStack = [...base, cssColor(scope, bg)];
+    const b = paint(bgStack);
+    // A border that is not drawn shows the surface behind it: 1:1, whatever its colour.
+    if (fg === "--field-border" && fieldBorderWidth(scope) <= 0) {
+      return { value: 1, fg: hex(b), bg: hex(b), note: "border not drawn: --field-border-width is 0" };
+    }
+    const f = paint([...bgStack, cssColor(scope, fg)]);
+    return { value: ratio(f, b), fg: hex(f), bg: hex(b), note: fg === "--field-border" ? "via the border" : fg === "--field-background" ? "via the fill" : "" };
+  }
+
+  const el = (tag, attrs = {}, ...kids) => {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) k === "text" ? (n.textContent = v) : n.setAttribute(k, v);
+    n.append(...kids);
+    return n;
+  };
+  const chip = (ok) => el("span", { class: `chip chip--${ok ? "success" : "danger"} chip--sm chip--secondary` },
+    el("span", { class: "chip__label", text: ok ? "Pass" : "Fail" }));
+
+  function resultCell(m, min) {
+    const td = el("td");
+    if (!m) { td.append(el("span", { class: "note", text: "not defined" })); return td; }
+    const sample = el("span", { class: "sample", text: "Aa" });
+    sample.style.color = m.fg; sample.style.background = m.bg;
+    const wrap = el("span", { style: "display:inline-flex;gap:8px;align-items:center" },
+      sample, el("span", { class: "num", text: m.value.toFixed(2) }), chip(m.value >= min));
+    td.append(wrap);
+    if (m.note) td.append(el("div", { class: "note", text: m.note }));
+    return td;
+  }
+
+  function renderSwatches(container, slots) {
+    container.replaceChildren();
+    for (const slot of slots) {
+      const name = `--${slot}`;
+      const has = defined(root, name);
+      const card = el("div", { class: "swatch" + (has ? "" : " missing") });
+      const color = el("div", { class: "chip-color" });
+      if (has) {
+        const c = paint([cssColor(pageScope, name)]);
+        color.style.background = hex(c);
+        // "Aa" in white and in black shows the contrast; the numbers sit in the
+        // readable meta row, since on a mid-ramp swatch one of the two cannot be read.
+        const w = el("span", { text: "Aa" }); w.style.color = "#fff";
+        const k = el("span", { text: "Aa" }); k.style.color = "#000";
+        color.append(w, k);
+        card.append(color, el("div", { class: "meta" }, el("b", { text: slot }),
+          el("span", { text: `${hex(c)} · bg-${slot}` }), el("br"),
+          el("span", { class: "num", text: `white ${ratio([255, 255, 255], c).toFixed(2)} · black ${ratio([0, 0, 0], c).toFixed(2)}` })));
+      } else {
+        card.append(color, el("div", { class: "meta" }, el("b", { text: slot }), el("span", { text: "not defined" })));
+      }
+      container.append(card);
+    }
+  }
+
+  function slotFor(rgb) {
+    for (const slot of [...THEME_SLOTS, ...NEUTRAL_SLOTS]) {
+      if (!defined(root, `--${slot}`)) continue;
+      if (hex(paint([cssColor(pageScope, `--${slot}`)])) === hex(rgb)) return slot;
+    }
+    return "";
+  }
+
+  function renderTokens() {
+    const body = document.querySelector("#token-table tbody");
+    body.replaceChildren();
+    for (const [name, utility, role] of TOKENS) {
+      const has = defined(root, name);
+      const rgb = has ? paint([cssColor(pageScope, "--background"), cssColor(pageScope, name)]) : null;
+      const sw = el("span", { class: "sample", text: " " });
+      if (rgb) sw.style.background = hex(rgb);
+      body.append(el("tr", {},
+        el("td", {}, el("code", { text: name })),
+        el("td", {}, el("code", { text: utility })),
+        el("td", { text: role }),
+        el("td", {}, ...(rgb ? [sw, document.createTextNode(" " + hex(rgb))] : [el("span", { class: "note", text: "not defined" })])),
+        el("td", { text: rgb ? slotFor(rgb) || "derived / HeroUI" : "" }),
+      ));
+    }
+  }
+
+  function renderContrast() {
+    const regionClass = document.getElementById("region-class").value.trim();
+    regionScope.className = regionClass;
+    document.getElementById("region-col").textContent = regionClass ? `.${regionClass}` : "Scoped region";
+    const body = document.querySelector("#contrast-table tbody");
+    body.replaceChildren();
+    for (const pair of PAIRS) {
+      const [label, fg, bg, min, over] = pair;
+      body.append(el("tr", {},
+        el("td", { text: label }),
+        el("td", {}, el("code", { text: [].concat(fg).join(" | ") }), document.createTextNode(" on "), el("code", { text: over ? `${bg} over ${over}` : bg })),
+        el("td", { class: "num", text: `${min}:1` }),
+        resultCell(measure(pageScope, pair), min),
+        regionClass ? resultCell(measure(regionScope, pair, true), min) : el("td", { class: "note", text: "—" }),
+      ));
+    }
+    const a = measure(pageScope, ["", "--accent", "--background", 4.5]);
+    const s = measure(pageScope, ["", "--accent", "--surface", 4.5]);
+    if (a) document.getElementById("trap-accent-page").textContent = `${a.value.toFixed(2)}:1`;
+    if (s) document.getElementById("trap-accent-surface").textContent = `${s.value.toFixed(2)}:1`;
+  }
+
+  function renderChips() {
+    const box = document.getElementById("chip-matrix");
+    box.replaceChildren();
+    for (const variant of ["secondary", "soft", "primary", "tertiary"]) {
+      box.append(el("span", { class: "label-row", text: `variant="${variant}"` }));
+      for (const color of ["default", "accent", "success", "warning", "danger"]) {
+        box.append(el("span", { class: `chip chip--${color} chip--sm chip--${variant}` },
+          el("span", { class: "chip__label", text: color })));
+      }
+    }
+  }
+
+  function renderRegion() {
+    const cls = document.getElementById("region-class").value.trim();
+    const demo = document.getElementById("region-demo");
+    demo.className = cls;
+    demo.parentElement.hidden = cls === "";
+  }
+
+  function renderAll() {
+    renderSwatches(document.getElementById("ramp-theme"), THEME_SLOTS);
+    renderSwatches(document.getElementById("ramp-neutral"), NEUTRAL_SLOTS);
+    renderTokens();
+    renderContrast();
+    renderRegion();
+  }
+
+  // Theme switch, using HeroUI's own toggle markup.
+  const switcher = document.getElementById("theme-switch");
+  switcher.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-value]");
+    if (!button) return;
+    for (const b of switcher.querySelectorAll("button")) {
+      const on = b === button;
+      b.setAttribute("aria-checked", String(on));
+      if (on) b.setAttribute("data-selected", "true"); else b.removeAttribute("data-selected");
+    }
+    root.setAttribute("data-theme", button.dataset.value);
+    renderAll();
+  });
+  document.getElementById("region-class").addEventListener("input", () => { renderContrast(); renderRegion(); });
+
+  // Report where the styles came from, then render once everything has loaded.
+  // HeroUI is "loaded" when one of its own tokens resolves. The project's sheet
+  // counts as loaded when it has a `sheet`: its Tailwind-only @imports fail in a
+  // browser and fire `error` on the <link>, but the rest of the file applies.
+  window.addEventListener("load", () => {
+    const hero = document.getElementById("heroui-css");
+    const project = document.getElementById("project-css");
+    const heroOk = defined(root, "--accent-soft");
+    const heroFrom = !heroOk ? "nowhere: previews are unstyled (no node_modules and no network?)"
+      : hero.dataset.source === "cdn" ? "the CDN (no local node_modules)" : "the project's node_modules";
+    const projectOk = project.sheet !== null;
+    document.getElementById("sources").textContent =
+      `HeroUI styles from ${heroFrom}. Palette and tokens from ` +
+      (projectOk ? "the project's app/globals.css." : "the reference palette in this file (app/globals.css not found).");
+    renderChips();
+    renderAll();
+  });
+})();
+</script>
+</body>
+</html>
