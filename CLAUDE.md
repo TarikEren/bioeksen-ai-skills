@@ -1,7 +1,8 @@
 # Working in this repository
 
 A Claude Code plugin marketplace holding one plugin, `bioeksen-sds`, whose
-skills are the shared specifications every BioEksen service is built against.
+skills are the shared specifications every BioEksen service is built against,
+the shared practice built on them, and the Next.js skills that carry both out.
 
 There is no application code here — nothing for an LSP to navigate. It is
 Markdown and two OpenAPI files, so grep is the right tool, with Python in three
@@ -37,6 +38,11 @@ implement. Treat a change here as an API change, not a docs tweak.
 - `plugins/bioeksen-sds/skills/<skill>/SKILL.md` — entry point, with the
   `name` + `description` frontmatter that decides when the skill loads
 - `plugins/bioeksen-sds/skills/<skill>/references/` — the detail
+- `plugins/bioeksen-sds/skills/<skill>/references/nextjs.md` — a generic
+  skill's Next.js specifics, written for apps scaffolded from the nextjs
+  template of bioeksen-app-setup
+- `plugins/bioeksen-sds/skills/sds-nextjs-*/` — the stack skills: how a Next.js
+  app carries out every other skill
 - `plugins/bioeksen-sds/skills/<skill>/scripts/` — scripts the skill tells an
   assistant to run, e.g. `sds-commit`'s `mint_change_id.py`. They ship with the
   installed plugin, so they read project facts such as the software id from
@@ -77,6 +83,8 @@ one is normative and the other says so:
 | The test-first rule and its exemptions | `sds-testing/SKILL.md` — `sds-commit/SKILL.md` defines only the trailer that names an exemption |
 | Configuration: one module, validation before ready, declared values, secrets | `sds-config/SKILL.md` — the variable names are fixed where their values are defined: `LOG_LEVEL` and the transport's in `sds-logging/SKILL.md`, the authentication values' in `sds-auth/references/credentials.md`; and `sds-logging/references/log-record.md` keeps the software id out of configuration |
 | Contract test cases | `sds-testing/references/contract-tests.md` — each case restates one assertion; its code, status or field stays normative in the source the case names |
+| Schema and migration practice | `sds-database/SKILL.md` — the codes a database failure takes stay normative in `sds-logging/references/code-prefixes.md`, and the test-database guard in `sds-testing/SKILL.md` |
+| Any rule as a Next.js app applies it | The generic skill that states it — `sds-nextjs-backend`, `sds-nextjs-frontend` and every `references/nextjs.md` apply it, and are never normative for it |
 
 When two disagree, the normative one is right and the other gets corrected.
 

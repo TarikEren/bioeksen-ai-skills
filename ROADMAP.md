@@ -45,6 +45,10 @@ skill it names: treat landing it as an API change, per `CLAUDE.md`, and run
 | 2026-10-07 | The versioning rules apply to a published library as to a service, and for a library they are its compatibility promise: breaking any caller of its public exports is breaking. Landed in `ee3cd01` |
 | 2026-10-07 | Configuration names are fixed across the estate: `AGGREGATOR_URL`, `LOG_OUTBOX_PATH` and `LOG_OUTBOX_BOUND` for the log transport; `ENTRA_*`, `AUTH_CLOCK_SKEW_SECONDS` and `TRUSTED_PROXIES` for authentication. The `azp`-to-software-id mapping is served by `bio-softop`'s registry, not configured. Landed in `1461fb5` and `926a0ae` |
 | 2026-10-07 | A TypeScript app logs through `@bioeksen/sdk` and runs the contract suites `@bioeksen/sdk/testing` exports. Landed in `1461fb5` and `a3bc071` |
+| 2026-10-07 | `sds-ci` added: three runners told apart by registration, secrets on runner hosts, releases verified and deployed by bio-softop, AI task runs gated outside the model. The project kit's workflow moves to `.forgejo/workflows/` and runs the CI image's kit. Landed in `73b14fe` and `53e2d08` |
+| 2026-10-07 | `sds-api-design` governs any API, a server action included; `details` belongs to the code: field errors for `VAL-4001` to `VAL-4007`, otherwise what the code's entry defines, or null. Landed in `e0b6ee3` |
+| 2026-10-07 | Every unit of development has acceptance tests a tester writes ahead of the code and blind to it, hidden from the developer, red on the unit's branch; `Test-Exempt: acceptance` names them. Landed in `5c127c8` |
+| 2026-10-07 | The scaffolder's skills join `bioeksen-sds`: testing into `sds-testing`, ci-cd into `sds-ci`, database and reviewing as `sds-database` and `sds-reviewing`, each with a `references/nextjs.md`; the backend and frontend skills as `sds-nextjs-backend` and `sds-nextjs-frontend`. `heroui-react` stays vendored in the template. Landed in `cc889c7`, `a8cfe3d`, `8be031a`, `ca86316`, `2002656` and `8f88bb9` |
 
 ## Order of work
 

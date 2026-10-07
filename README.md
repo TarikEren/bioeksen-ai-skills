@@ -5,15 +5,25 @@ written to be loaded by coding assistants as well as read by people.
 
 Everything ships as one plugin, [`bioeksen-sds`](plugins/bioeksen-sds/). Each
 skill is a directory under `plugins/bioeksen-sds/skills/` with a `SKILL.md` entry
-point and, where the detail warrants it, a `references/` folder. Conventions that
-two services must agree on live here; anything that only affects how one codebase
-is written does not — with two deliberate exceptions. `sds-testing` is a practice
-rather than an agreement, and it is here because its contract tests are how two
-services know they keep the agreements, and test-first is what keeps those tests
-able to fail. `sds-config` is here because an app that reports ready on a
-configuration it cannot use breaks the promise every load balancer relies on,
-and a secret leaked from one app's configuration is the whole estate's
-incident.
+point and, where the detail warrants it, a `references/` folder. It holds three
+kinds of skill:
+
+- **The contract**, what two services must agree on: `sds-api-design`,
+  `sds-auth`, `sds-logging` and `sds-commit`.
+- **The shared practice**, how every BioEksen codebase is built whatever its
+  stack: `sds-config`, `sds-testing`, `sds-database`, `sds-reviewing` and
+  `sds-ci`. `sds-testing` is here because its contract tests are how two
+  services know they keep the agreements, and test-first is what keeps those
+  tests able to fail. `sds-config` is here because an app that reports ready on
+  a configuration it cannot use breaks the promise every load balancer relies
+  on, and a secret leaked from one app's configuration is the whole estate's
+  incident. The others are here because a schema, a review or a pipeline that
+  each codebase invents for itself is one more place for the estate to drift.
+- **The stack skills**, how a Next.js app carries the rest out:
+  `sds-nextjs-backend` and `sds-nextjs-frontend`. Every other skill outranks
+  them, and neither is ever the source of a shared rule. A generic skill's own
+  Next.js specifics sit in its `references/nextjs.md`, written for apps
+  scaffolded from the nextjs template.
 
 ## Licence
 
@@ -31,12 +41,12 @@ BioEksen personnel and authorised parties.
 | [`sds-logging`](plugins/bioeksen-sds/skills/sds-logging/) | Log records, severities and types, the error code registry, the log aggregator API |
 | [`sds-config`](plugins/bioeksen-sds/skills/sds-config/) | Configuration: one validated module, checked before the app reports ready, every value declared, secrets kept out of logs, commits and clients |
 | [`sds-commit`](plugins/bioeksen-sds/skills/sds-commit/) | Conventional commit format and the release version it implies |
-| [`sds-testing`](plugins/bioeksen-sds/skills/sds-testing/) | Test-first development: no behaviour change without a test that failed first, and the contract tests every convention above requires |
+| [`sds-testing`](plugins/bioeksen-sds/skills/sds-testing/) | Test-first development: no behaviour change without a test that failed first, acceptance tests written ahead of the code and blind to it, how tests are written and run, and the contract tests every convention above requires |
 | [`sds-database`](plugins/bioeksen-sds/skills/sds-database/) | Schemas and migrations: one source of truth, constraints that enforce the specification, forward-only migrations safe on a live database, transactions, parameterised and indexed queries, and disposable databases only |
 | [`sds-reviewing`](plugins/bioeksen-sds/skills/sds-reviewing/) | Reviewing a change and recording the review: an independent reviewer's passes in priority order, every finding verified before it is reported, and a record in which no finding is lost |
 | [`sds-nextjs-backend`](plugins/bioeksen-sds/skills/sds-nextjs-backend/) | Server code in a Next.js App Router app in TypeScript: route handlers, server actions, services and repositories, validation at every boundary, authorisation, and the TypeScript references behind them |
 | [`sds-nextjs-frontend`](plugins/bioeksen-sds/skills/sds-nextjs-frontend/) | UI in a Next.js App Router app styled with HeroUI v3 and Tailwind CSS v4: the server/client trust boundary, the palette and its contrast, copy from dictionaries, forms, tables and icons |
-| [`sds-ci`](plugins/bioeksen-sds/skills/sds-ci/) | CI, runners and AI tasks: where workflows live and who changes them, which runner runs what and holds which secret, how a release is verified and deployed, and how a model's work is kept to its branch |
+| [`sds-ci`](plugins/bioeksen-sds/skills/sds-ci/) | CI, runners and AI tasks: where workflows live and who changes them, which runner runs what and holds which secret, how a release is verified and deployed, how a model's work is kept to its branch, what the jobs and the image hold, and how a failed run is read |
 
 ## How they fit together
 
@@ -53,6 +63,12 @@ sds-config ─── every value validated before the app reports ready, as CFG-
 sds-testing ── a contract test for each rule above, written before the code
 sds-commit ─── the test lands in its feat or fix commit, or the commit names
                its exemption
+sds-database ─ constraints that hold the specification, and migrations that
+               lose nothing
+sds-reviewing ─ every change read by someone who did not write it, and every
+                finding kept
+sds-ci ─────── which runner runs what, and a release verified before it deploys
+sds-nextjs-* ─ how a Next.js app carries all of the above out
 ```
 
 Skills cross-reference each other by paths relative to

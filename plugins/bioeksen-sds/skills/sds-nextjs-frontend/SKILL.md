@@ -20,6 +20,10 @@ skill outranks them, as every `sds-*` skill does, and **every other `sds-*`
 skill outranks this one**: it is how a Next.js app carries them out, never the
 source of their rules.
 
+Paths such as `sds-logging/references/log-record.md` name a file in another
+skill of this plugin, relative to the plugin's skills directory: the parent
+of `${CLAUDE_SKILL_DIR}`, which is this skill's own directory.
+
 ## Read first
 
 1. **The Next.js docs for the installed version**, not memory. Under
