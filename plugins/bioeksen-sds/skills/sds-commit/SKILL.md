@@ -28,7 +28,7 @@ of `${CLAUDE_SKILL_DIR}`, which is this skill's own directory.
 | refactor | Commits that rewrite or restructure code without altering API or UI behavior |
 | perf | Refactor commits whose purpose is to improve performance |
 | style | Commits that address code style (e.g., white-space, formatting, missing semi-colons) and do not affect application behavior |
-| test | Commits that add missing tests to behaviour that already exists, or correct existing tests. A test for new or changed behaviour lands in that behaviour's own `feat` or `fix` commit, per `sds-testing/SKILL.md` |
+| test | Commits that add missing tests to behaviour that already exists, correct existing tests, or add a unit's acceptance tests ahead of its behaviour. A developer's test for new or changed behaviour lands in that behaviour's own `feat` or `fix` commit, per `sds-testing/SKILL.md` |
 | docs | Commits that exclusively affect documentation |
 | build | Commits that affect build-related components such as build tools, dependencies, project version etc. |
 | ops | Commits that affect operational aspects like infrastructure (IaC), deployment scripts, CI/CD pipelines, backups, monitoring, or recovery procedures |

@@ -40,7 +40,7 @@ SCOPE = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 # exemptions themselves — the table in sds-testing/SKILL.md, which invariant
 # 11 holds this tuple to.
 TESTED_TYPES = ("feat", "fix")
-TEST_EXEMPTIONS = ("docs", "config", "generated")
+TEST_EXEMPTIONS = ("docs", "config", "generated", "acceptance")
 TRAILER = re.compile(r"^[A-Za-z][A-Za-z0-9-]*: ")
 SCISSORS = "# ------------------------ >8 ------------------------"
 # Messages git or an autosquash workflow writes, which a hook lets through;

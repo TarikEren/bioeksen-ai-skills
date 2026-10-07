@@ -86,6 +86,9 @@ class TestExemptTest(unittest.TestCase):
     def test_named_exemption_in_the_final_paragraph_conforms(self):
         self.assertEqual(self.problems("feat(api): add x", CHANGE_ID + "\nTest-Exempt: docs"), [])
 
+    def test_a_feature_driven_by_acceptance_tests_already_on_its_branch_conforms(self):
+        self.assertEqual(self.problems("feat(api): add x", CHANGE_ID + "\nTest-Exempt: acceptance"), [])
+
     def test_unknown_exemption_is_a_problem(self):
         problems = self.problems("feat(api): add x", CHANGE_ID + "\nTest-Exempt: whatever")
         self.assertTrue(any("Test-Exempt" in p and "'whatever'" in p for p in problems), problems)

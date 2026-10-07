@@ -47,6 +47,7 @@ change.
 | `docs` | Prose no test can read: documentation, comments, a specification |
 | `config` | A configuration value, where the code that reads it is already tested |
 | `generated` | Code produced by a generator from a source that is itself tested |
+| `acceptance` | Behaviour driven by its unit's acceptance tests, already on its branch, per **Acceptance tests** |
 
 These are the only exemptions. A commit relying on one names it with the
 trailer `sds-commit/SKILL.md` defines, so the claim is visible in review and
@@ -67,6 +68,37 @@ it is never merged, and the real implementation starts again, test-first.
 3. **Refactor.** Tidy the code and the test with everything green, and keep it
    green.
 4. Repeat for the next behaviour.
+
+## Acceptance tests
+
+Every unit of development — a feature, a sprint, a task — MUST have acceptance
+tests that are red before its code exists, written by someone who has not seen
+that code, for a developer who does not see them:
+
+- **The tester writes them from the specification**: the requirements, the
+  contract the `sds-*` skills define, and the architecture decisions taken for
+  the unit. Never from the code, which the tester does not see.
+- **The developer MUST NOT see them.** The developer works from each test's
+  name, the references it cites, its description and its result, alongside
+  the same architecture decisions and specifications, and makes it pass.
+- **They land first, red,** in `test` commits on the unit's branch, each seen
+  failing for the missing behaviour, not for a missing name: the developer
+  first builds the skeleton the tests compile against. They are never marked
+  expected to fail. They are red because the behaviour is not there yet, not
+  because of a defect.
+- **The unit's branch is red until the unit ends; the main branch only ever
+  receives green.** Merging the unit into it is the loop's last gate.
+
+A developer's own tests, such as a unit test beside the code it drives, still
+follow **The cycle** and land in the commit with their behaviour. A `feat` or
+`fix` commit whose only tests are its unit's acceptance tests, already on its
+branch, names the `acceptance` exemption.
+
+A developer who writes both the code and its only test can shape either to fit
+the other. A test written blind to the code cannot be bent to it, and code
+written blind to the test can pass it only by doing what the specification
+says. Two people who never saw each other's work agreeing on the result is the
+evidence one author cannot give.
 
 ## Where the expected value comes from
 
@@ -174,10 +206,13 @@ reported as not run.
 
 ## Commits
 
-The test lands in the same commit as the behaviour it drives, typed for that
-behaviour as `feat` or `fix`: one commit is one change, per
+A developer's test lands in the same commit as the behaviour it drives, typed
+for that behaviour as `feat` or `fix`: one commit is one change, per
 `sds-commit/SKILL.md`. A `test` commit is for tests added to behaviour that
-already exists. A red state is never pushed to a shared branch.
+already exists, and for a unit's acceptance tests, written ahead of it. A red
+state is never pushed to a shared branch, except the acceptance tests on their
+own unit's branch, per **Acceptance tests**; the main branch only ever
+receives green.
 
 ## When it seems impossible to test first
 
@@ -209,3 +244,4 @@ works in production lets anyone mint an identity.
 | "Just add a retry" | A retry makes a flaky test pass and the race behind it invisible; find the race |
 | "It passed on the second run" | Then it fails some of the time; report it as flaky |
 | "Skip it for now" | A skipped test is a deleted test nobody reviewed; a known defect is marked expected to fail instead |
+| "I need to read the acceptance test to pass it" | Then the code would fit the test, not the specification; work from its name, its references and the specification |
