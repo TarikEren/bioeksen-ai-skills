@@ -42,6 +42,9 @@ skill it names: treat landing it as an API change, per `CLAUDE.md`, and run
 | 2026-10-06 | `sds-testing` adds known defects as strict expected failures, no weakened tests, flaky and not-run reporting, guarded test databases and seams that fail closed. These rulings were taken from create-bioeksen-app, which had settled them first. Landed in `d09c906` |
 | 2026-10-07 | Aggregator retention is by type and severity: `AUDIT` forever, `SECURITY` a year, `ERROR` and `FATAL` until their issue is resolved or closed plus 30 days (90 days when no issue names them), `WARNING` 90 days, `INFO` 30 days and `ACCESS` `INFO` 14. `DEBUG` never leaves the app. Item 3, landed in `be8a36a` |
 | 2026-10-07 | The local git service links a record to its issue and, on merging a fix whose `Fixes-Log:` trailer names it, stores the fix's Change-Id on it, as an app holding `logs.resolve`. Landed in `5b47190` and `409b530` |
+| 2026-10-07 | The versioning rules apply to a published library as to a service, and for a library they are its compatibility promise: breaking any caller of its public exports is breaking. Landed in `ee3cd01` |
+| 2026-10-07 | Configuration names are fixed across the estate: `AGGREGATOR_URL`, `LOG_OUTBOX_PATH` and `LOG_OUTBOX_BOUND` for the log transport; `ENTRA_*`, `AUTH_CLOCK_SKEW_SECONDS` and `TRUSTED_PROXIES` for authentication. The `azp`-to-software-id mapping is served by `bio-softop`'s registry, not configured. Landed in `1461fb5` and `926a0ae` |
+| 2026-10-07 | A TypeScript app logs through `@bioeksen/sdk` and runs the contract suites `@bioeksen/sdk/testing` exports. Landed in `1461fb5` and `a3bc071` |
 
 ## Order of work
 
@@ -372,7 +375,7 @@ id loudly without a commit ever depending on a service being reachable.
 |---|------|------|
 | ~~11.1~~ | `log-record.md` | **Done** in `55895d6`: a repository stores its id in `.bioeksen/software-id`, and this one holds `bioeksen-sds` |
 | ~~11.2~~ | `release-notes.md` | **Done** in `55895d6`: minting is local and MUST NOT require a network call |
-| 11.3 | — | When the service exists: the allocation and resolution endpoints, specified like any other app, under `/api/v1/`. The aggregator's `azp`-to-id mapping, configuration today, then becomes a lookup against it |
+| 11.3 | — | When the service exists: the allocation and resolution endpoints, specified like any other app, under `/api/v1/`. The aggregator's `azp`-to-id mapping is no longer configuration: since `926a0ae` it is served by `bio-softop`'s registry |
 
 The verification row above now has its local half: `project-kit/tools/commit_msg.py`
 fails a `Change-Id` whose software id is not the one in `.bioeksen/software-id`.
