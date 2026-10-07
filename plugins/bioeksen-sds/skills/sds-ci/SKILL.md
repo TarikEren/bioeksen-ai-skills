@@ -1,6 +1,6 @@
 ---
 name: sds-ci
-description: BioEksen CI, runner and AI task conventions. Use when writing or changing a forge workflow, registering or configuring a runner, setting up deployment, or delegating a task to an AI model that pushes to the forge.
+description: BioEksen CI, runner, delivery and AI task conventions. Use when writing, changing or proposing a forge workflow, registering or configuring a runner, setting up deployment, changing a container image or a local-development compose file, preparing a release, finding out why a run failed, or delegating a task to an AI model that pushes to the forge.
 ---
 
 # CI, Runners and AI Tasks
@@ -12,7 +12,15 @@ write a workflow that asks for any runner its repository can reach. These
 rules decide which code runs where, and holding what, so that the answer does
 not depend on who wrote the workflow.
 
+The pipeline is only worth trusting if it runs the same checks a developer
+runs and cannot be talked out of a failure. So: **the pipeline runs the
+project's own scripts**, and **a gate is never weakened to get a run green**.
+
 The keywords MUST, SHOULD and MAY are used as in RFC 2119.
+
+- `references/nextjs.md` — how an app scaffolded from the nextjs template
+  carries this skill out: its toolchain checks, its branches, its image and
+  its migration step.
 
 Paths such as `sds-logging/references/log-record.md` name a file in another
 skill of this plugin, relative to the plugin's skills directory: the parent
@@ -130,6 +138,16 @@ production at a moment the estate can name.
 - A release's database migrations MUST leave the schema usable by the
   previous release, so that rolling back never needs a down-migration.
 
+### Preparing a release
+
+- **The version is derived from the commits**, as `sds-commit` says, never
+  picked by hand.
+- **Every release has its note** at `/release-notes/{version}.md`, in the
+  `sds-commit` format.
+- **A person creates the `v{version}` tag**, and bio-softop verifies and
+  deploys it, as above. A role or a model prepares the version and the note;
+  it never tags, publishes or deploys.
+
 ## Workflow definitions
 
 - Workflow files live in `.forgejo/workflows/`, a repository's only workflow
@@ -156,6 +174,86 @@ This rule is the second layer, not the first. The push gate under **AI task
 runs** refuses the same changes before they leave the workstation, and a
 workflow change that slipped past both could reach only the `ci` runner,
 which is isolated for unreviewed code.
+
+## The jobs
+
+Read first, before proposing a change to a workflow:
+
+1. **The project's delivery conventions, and its scripts**: which checks
+   exist and what each one runs.
+2. **The workflows, the image definition and any local-development compose
+   file.** Propose changes in their own style.
+3. **`sds-testing/SKILL.md`, Running the suites**: the order the test tiers
+   run in, and **Test databases**: how a suite that creates or resets a
+   database is guarded.
+4. **`sds-commit/SKILL.md`**: how a version is derived from the commits,
+   and the release-notes format.
+
+The workflow is the user's. You propose a change to it in your report, as the
+exact YAML and the reason; you never edit `.forgejo/`.
+
+- **Each job runs a script the project already has**, the same one a developer
+  runs locally. If a check has no script, the script is added first, by the
+  role that owns it, and the job calls it.
+- **Tiers run in `sds-testing`'s order**: types and lint, then unit and
+  component tests, then the build; integration and end-to-end tests against
+  disposable database services after that. A cheap tier fails before an
+  expensive one starts.
+- **The commits job** runs the `bioeksen-sds` project kit's checks on every
+  pull request: one `Change-Id` per commit with this app's software id
+  (`sds-commit`), and a test or a `Test-Exempt:` trailer on every `feat` and
+  `fix` (`sds-testing`). It runs the CI image's copy of the kit, under
+  `/opt/bioeksen-sds/{tag}/`, at the release `.claude/settings.json` pins; the
+  two versions move together. The job's token reads only this repository, so
+  the kit is never checked out.
+- **Installs follow the lockfile.**
+- **The toolchain comes from the estate's CI image.** A job checks that each
+  tool is the version the project pins; it never sets one up, and never
+  downloads a browser, a system package or a tool. A step that needs more than
+  the egress allows (**Isolating `ci` jobs**) fails there: name what it needs
+  in your report, for the image.
+- **Generated code is generated in the job.**
+- **Databases are service containers.** The job runs in a container, so it
+  reaches each by its service name. The suite's own guard still decides
+  whether it may empty one.
+- **Every job has a timeout**, and artifacts that explain a failure (test
+  reports, traces) are kept with a retention limit.
+- **Actions are pinned to full commits**, with the release in a comment, and
+  resolve through the forge's own mirror. Untrusted input (branch names, pull
+  request titles, commit messages) reaches a `run:` step only through an
+  environment variable.
+
+### Gating the test-first loop
+
+The acceptance tests of a unit are merged into its branch before the code
+that makes them pass, per **Acceptance tests** in `sds-testing/SKILL.md`. So:
+
+- **A unit's branch** runs every suite on every push and pull request. Red
+  acceptance tests there are expected until the unit's iteration ends, so they
+  report without blocking merges inside the unit.
+- **`main`** requires every suite green, the acceptance suite included.
+  Merging a unit into `main` is the loop's last gate.
+- **CI runs the acceptance suite through the runners directly** and keeps
+  their reports as artifacts. The results-only rule is for the role sessions,
+  not for CI.
+
+## The container image
+
+- **Multi-stage builds**: dependencies, build and runtime stages, with only
+  the runtime stage's files in the final image.
+- **A pinned base image**, by digest, with the runtime version the project
+  pins.
+- **Run as a non-root user.**
+- **The image carries only the files the server needs.**
+- **A `.dockerignore`** that keeps out `.git`, installed dependencies, build
+  output, `.env*` files and local data.
+- **No secrets in the image**: not in a layer, a build argument or a copied
+  `.env` file. They arrive at run time; a build that needs the registry token
+  receives it as a build secret, per **Secrets**.
+- **No migrations in the image.** They run from the release's tagged commit,
+  as a step of its deployment.
+- **Compose files are for local development only.** Production compose
+  definitions live in the deploy repository.
 
 ## AI task runs
 
@@ -233,3 +331,43 @@ each of these MUST be attempted and seen refused:
 
 A check that could not be run is reported as not run, never as passed, per
 **Keeping the suite honest** in `sds-testing/SKILL.md`.
+
+## Reading a failed run
+
+1. **Read the failure, not the summary**: the failed job's log and its
+   artifacts, from the forge's run page, as the user gives them to you.
+2. **Classify it:**
+   - **Code:** the change is wrong. It goes to the developer who owns it.
+   - **Test:** a test is wrong, or proves a defect. It goes to the tester.
+   - **Flaky:** it passes on a re-run of the same commit. It is still a
+     finding, and goes to whoever owns the test, with every failure you saw.
+   - **Commits:** a commit lacks its `Change-Id` or its test. It goes to the
+     role that made the commit.
+   - **Infrastructure:** the runner, the image, a service or the registry.
+     It goes to the user.
+   - **Configuration:** the Dockerfile or a compose file is wrong, which you
+     fix; or the workflow is, which you propose.
+3. **Reproduce it locally** with the same script, where you can.
+
+## Never
+
+- Edit a workflow directory, or add a workflow anywhere (**Workflow
+  definitions**).
+- Skip, disable or delete a check, or mark a gate `continue-on-error`, to get
+  a run green.
+- Add retries, longer timeouts or sleeps to hide a flaky test.
+- Lower a coverage or quality threshold without the task saying so.
+- Print, create or ask for a secret, or propose one beyond what **Secrets**
+  allows.
+- Push, tag, re-run, cancel, merge or deploy, or change branch protection or
+  required checks.
+
+## Before handing back
+
+- The scripts a proposed job runs exist, and pass locally, or each one that
+  cannot run locally is named with the reason.
+- The Docker image builds, if you changed it and Docker is available.
+- A proposed workflow change is in the report as the exact YAML, its actions
+  pinned to full commits.
+- The report names the gates, what each one runs, and anything you could not
+  check.
