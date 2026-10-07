@@ -91,6 +91,10 @@ The lowest severity an app logs is configuration under the name
 `sds-logging/SKILL.md` gives it, `LOG_LEVEL`, so an operator can change it on
 any app without first finding what that app calls it.
 
+Authentication values take the names in `sds-auth/references/credentials.md`,
+**Configuration**, and the log transport's values take the names in
+`sds-logging/SKILL.md`, **Transport**.
+
 ## Not configuration
 
 The software id is not configuration. It is allocated once, never changed, and

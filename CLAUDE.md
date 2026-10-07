@@ -75,7 +75,7 @@ one is normative and the other says so:
 | Outbound call behaviour | `sds-api-design/references/service-calls.md` — timeouts, retries, breakers, idempotency |
 | Aggregator endpoint schemas | `sds-logging/references/aggregator-api.yaml` — the markdown beside it is rationale |
 | The test-first rule and its exemptions | `sds-testing/SKILL.md` — `sds-commit/SKILL.md` defines only the trailer that names an exemption |
-| Configuration: one module, validation before ready, declared values, secrets | `sds-config/SKILL.md` — `sds-logging/SKILL.md` names `LOG_LEVEL`, and `sds-logging/references/log-record.md` keeps the software id out of configuration |
+| Configuration: one module, validation before ready, declared values, secrets | `sds-config/SKILL.md` — the variable names are fixed where their values are defined: `LOG_LEVEL` and the transport's in `sds-logging/SKILL.md`, the authentication values' in `sds-auth/references/credentials.md`; and `sds-logging/references/log-record.md` keeps the software id out of configuration |
 | Contract test cases | `sds-testing/references/contract-tests.md` — each case restates one assertion; its code, status or field stays normative in the source the case names |
 
 When two disagree, the normative one is right and the other gets corrected.
