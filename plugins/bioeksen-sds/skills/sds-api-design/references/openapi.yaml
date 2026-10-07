@@ -745,14 +745,39 @@ components:
           type: string
           description: Human readable summary. May be reworded at any time.
         details:
-          type: [array, "null"]
-          description: Field errors for validation failures; null otherwise.
-          items:
-            type: object
-            additionalProperties: false
-            required: [field, issue]
+          description: >-
+            Belongs to the code. A code about fields, VAL-4001 to VAL-4007,
+            carries one entry per field at fault. Any other code carries the
+            object its entry in sds-logging/references/code-prefixes.md
+            defines, or null when the entry defines none.
+          anyOf:
+            - type: "null"
+            - $ref: "#/components/schemas/FieldErrors"
+            - type: object
+      allOf:
+        - if:
             properties:
-              field:
-                type: string
-              issue:
-                type: string
+              code:
+                enum: [VAL-4001, VAL-4002, VAL-4003, VAL-4004, VAL-4005, VAL-4006, VAL-4007]
+          then:
+            properties:
+              details:
+                $ref: "#/components/schemas/FieldErrors"
+          else:
+            properties:
+              details:
+                type: [object, "null"]
+
+    FieldErrors:
+      type: array
+      minItems: 1
+      description: One entry per field at fault.
+      items:
+        type: object
+        additionalProperties: false
+        required: [field, issue]
+        properties:
+          field:
+            type: string
+          issue:
+            type: string

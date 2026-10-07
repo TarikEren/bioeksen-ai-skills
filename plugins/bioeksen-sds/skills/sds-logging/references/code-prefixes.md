@@ -18,6 +18,12 @@ nowhere else is invisible to every filter, runbook and dashboard.
 You never *choose* the HTTP status, severity, log type or message prose for a
 failure. All four are determined by the code — see Derived attributes.
 
+A code also decides what an error response's `details` holds, per
+`sds-api-design/references/standard-api-endpoints.md`: the field errors for
+`VAL-4001` to `VAL-4007`, and for any other code the object its entry below
+defines, or `null` when it defines none. No entry defines one yet. Adding one
+is a change to that code's entry, made here and nowhere else.
+
 The list is enforced, not merely documented: `ErrorCode` in
 `sds-api-design/references/openapi.yaml` enumerates these exact values, so an
 unlisted code fails schema validation.

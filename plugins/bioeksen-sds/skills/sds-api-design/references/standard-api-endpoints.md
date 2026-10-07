@@ -128,7 +128,7 @@ any other rejection.
     "status": "fail",
     "code": "<error code>",
     "message": "<human readable summary>",
-    "details": "<array of field errors, or null>"
+    "details": "<what the code defines, or null>"
 }
 ```
 
@@ -137,8 +137,13 @@ any other rejection.
 record written for this failure. `message` is written for humans and MAY be
 reworded at any time; clients that branch on the error MUST branch on `code`.
 
-`details` MUST be `null` unless the error is a validation error, in which case
-it is an array of `{ "field": "<name>", "issue": "<what is wrong>" }`.
+`details` belongs to the code. A code about fields, `VAL-4001` to `VAL-4007`,
+MUST carry an array of `{ "field": "<name>", "issue": "<what is wrong>" }`, one
+entry per field at fault. Any other code carries the object its entry in
+`sds-logging/references/code-prefixes.md` defines, and MUST carry `null` when
+its entry defines none — which, today, is every one of them. A client reads
+`details` by the `code` beside it, so the shape is never a guess: the code that
+says what went wrong also says what `details` holds.
 
 ### Method, size and media type
 

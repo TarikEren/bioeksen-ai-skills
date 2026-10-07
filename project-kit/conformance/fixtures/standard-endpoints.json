@@ -66,6 +66,42 @@
     "instance": {"status": "fail", "code": "VAL-4006", "message": "quantity must be positive", "details": [{"field": "quantity", "issue": "must be at least 1"}]}
   },
   {
+    "name": "a code carrying the details object its entry defines",
+    "schema": "openapi.yaml#/components/schemas/Error",
+    "valid": true,
+    "instance": {"status": "fail", "code": "RES-4301", "message": "the order changed since it was read", "details": {"currentVersion": 8}}
+  },
+  {
+    "name": "a field code whose details is an object",
+    "schema": "openapi.yaml#/components/schemas/Error",
+    "valid": false,
+    "instance": {"status": "fail", "code": "VAL-4006", "message": "quantity must be positive", "details": {"quantity": "must be at least 1"}}
+  },
+  {
+    "name": "a field code naming no field",
+    "schema": "openapi.yaml#/components/schemas/Error",
+    "valid": false,
+    "instance": {"status": "fail", "code": "VAL-4001", "message": "a required field is missing", "details": null}
+  },
+  {
+    "name": "a field code with an empty list of fields",
+    "schema": "openapi.yaml#/components/schemas/Error",
+    "valid": false,
+    "instance": {"status": "fail", "code": "VAL-4001", "message": "a required field is missing", "details": []}
+  },
+  {
+    "name": "a code that names no field carrying field errors",
+    "schema": "openapi.yaml#/components/schemas/Error",
+    "valid": false,
+    "instance": {"status": "fail", "code": "AUTH-4100", "message": "Credential missing", "details": [{"field": "Authorization", "issue": "absent"}]}
+  },
+  {
+    "name": "a malformed body, which names no field",
+    "schema": "openapi.yaml#/components/schemas/Error",
+    "valid": true,
+    "instance": {"status": "fail", "code": "VAL-4000", "message": "Request body malformed", "details": null}
+  },
+  {
     "name": "an envelope carrying an invented code",
     "schema": "openapi.yaml#/components/schemas/Error",
     "valid": false,
