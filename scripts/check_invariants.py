@@ -46,7 +46,9 @@ CONTRACT_TESTS = TESTING / "references" / "contract-tests.md"
 COMMIT_MSG = ROOT / "project-kit" / "tools" / "commit_msg.py"
 TEMPLATE = ROOT / "project-kit" / "template"
 TEMPLATE_SETTINGS = TEMPLATE / ".claude" / "settings.json"
-TEMPLATE_WORKFLOW = TEMPLATE / ".github" / "workflows" / "bioeksen.yml"
+TEMPLATE_WORKFLOW = TEMPLATE / ".forgejo" / "workflows" / "bioeksen.yml"
+# Where the CI image carries a bioeksen-sds release's project kit, per sds-ci.
+KIT_PATH = re.compile(r"/opt/bioeksen-sds/(v[^/\s]+)/project-kit")
 
 # sds-auth restates exactly steps 1-9 of the selection procedure.
 AUTH_STEPS = 9
@@ -273,21 +275,28 @@ def main() -> int:
 
         # 10. The project template pins the release it ships in, in both the
         # places a generated project reads it, so the skills an assistant
-        # loads and the checks CI runs come from one version.
+        # loads and the checks CI runs come from one version. CI runs the CI
+        # image's copy of that release's kit, never a checkout, from the only
+        # workflow directory sds-ci allows.
         marketplace = manifests[MARKETPLACE]["name"]
         pinned = f"v{own.get('version')}"
         settings = json.loads(read(TEMPLATE_SETTINGS))
         source = settings.get("extraKnownMarketplaces", {}).get(marketplace, {}).get("source", {})
-        env = yaml.safe_load(read(TEMPLATE_WORKFLOW)).get("env", {})
         if source.get("ref") != pinned:
             fail("invariant 10", f"template settings.json pins {source.get('ref')!r}, "
                                  f"the plugin is {pinned}")
-        if env.get("BIOEKSEN_SDS_REF") != pinned:
-            fail("invariant 10", f"template workflow pins {env.get('BIOEKSEN_SDS_REF')!r}, "
-                                 f"the plugin is {pinned}")
-        if env.get("BIOEKSEN_SDS_REPO") != source.get("repo"):
-            fail("invariant 10", f"template workflow checks out {env.get('BIOEKSEN_SDS_REPO')!r}, "
-                                 f"settings.json names {source.get('repo')!r}")
+        if not TEMPLATE_WORKFLOW.is_file():
+            fail("invariant 10", f"the template has no {TEMPLATE_WORKFLOW.relative_to(ROOT)}")
+        else:
+            kit = str((yaml.safe_load(read(TEMPLATE_WORKFLOW)) or {}).get("env", {}).get("KIT"))
+            match = KIT_PATH.fullmatch(kit)
+            if not match or match.group(1) != pinned:
+                fail("invariant 10", f"template workflow runs the kit from {kit!r}, "
+                                     f"not /opt/bioeksen-sds/{pinned}/project-kit")
+        for directory in (".github", ".gitea"):
+            if (TEMPLATE / directory).exists():
+                fail("invariant 10", f"the template carries {directory}/, "
+                                     "a workflow directory sds-ci forbids")
         if settings.get("enabledPlugins", {}).get(f"{own['name']}@{marketplace}") is not True:
             fail("invariant 10", f"template settings.json does not enable "
                                  f"{own['name']}@{marketplace}")

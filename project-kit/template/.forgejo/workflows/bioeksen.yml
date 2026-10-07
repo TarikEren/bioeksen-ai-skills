@@ -1,0 +1,53 @@
+name: bioeksen
+
+# The checks bioeksen-sds asks of every service, on the estate's `ci` runner
+# (sds-ci). The CI image carries each bioeksen-sds release, as released, under
+# /opt/bioeksen-sds/{tag}/, and a job runs the project kit from there: its
+# token reads only this repository, so it never checks the skills out. KIT's
+# tag must equal the ref in .claude/settings.json, so the skills an assistant
+# reads and the checks CI runs come from one release.
+#
+# Actions are pinned to full commits, with the release in a comment. People
+# change this file, in `ops` commits; no role or model does (sds-ci).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+env:
+  KIT: /opt/bioeksen-sds/v0.6.0/project-kit
+
+jobs:
+  conventions:
+    runs-on: ci
+    timeout-minutes: 10
+    env:
+      BASE: ${{ github.event.pull_request.base.sha }}
+      HEAD: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # The commit and release note checks read history, not just the tip.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check this pull request's commits
+        if: github.event_name == 'pull_request'
+        run: python3 "$KIT/tools/commit_msg.py" --range "$BASE..$HEAD"
+
+      - name: Check that this pull request's feat and fix commits change a test
+        if: github.event_name == 'pull_request'
+        run: python3 "$KIT/tools/check_tests.py" --range "$BASE..$HEAD"
+
+      - name: Check the release note
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: python3 "$KIT/tools/check_release_note.py" "${GITHUB_REF_NAME#v}"
+
+      # Start this service here, however the project runs it — a container,
+      # a compose file, a background process — and then check its standard
+      # endpoints. The conformance check needs $KIT/requirements.txt installed.
+      #
+      # - name: Check the standard endpoints
+      #   run: python3 "$KIT/conformance/check_service.py" --base-url http://localhost:8080

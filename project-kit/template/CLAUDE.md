@@ -36,8 +36,9 @@ missing or empty, ask for the id.
 ## Checks
 
 `.bioeksen-sds/` is a checkout of bioeksen-ai-skills at the release pinned in
-`.claude/settings.json`. CI makes one through `.github/workflows/bioeksen.yml`;
-to make one locally, clone that release into it:
+`.claude/settings.json`. CI never makes one: `.forgejo/workflows/bioeksen.yml`
+runs the same release's kit from the CI image. To run the checks locally,
+clone that release into it:
 
 ```bash
 git clone --depth 1 --branch <the pinned release> https://github.com/TarikEren/bioeksen-ai-skills .bioeksen-sds
