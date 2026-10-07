@@ -282,23 +282,28 @@ prevent.
 
 ## Configuration
 
-Every value below arrives as environment configuration. This is the concrete
-list `CFG-5000` and `CFG-5001` refer to: a missing one is `CFG-5000` at
-startup, a present but unusable one is `CFG-5001`.
+Every value below arrives as environment configuration, under the variable
+beside it, except the client id to software id mapping, which is not
+configuration. This is the concrete list `CFG-5000` and `CFG-5001` refer to:
+a missing one is `CFG-5000` at startup, a present but unusable one is
+`CFG-5001`.
 
-| Value | Required of | Purpose |
-|-------|-------------|---------|
-| Tenant id | Every app | The Entra tenant, checked against `tid` |
-| Issuer | Every app | The exact `iss` string to compare against |
-| JWKS URI | Every app | Where signing keys are fetched |
-| JWKS cache max age | Every app | How long keys are held before an unconditional refresh |
-| Audience | Every app | This app's Application ID URI — the value `aud` must equal |
-| Client id | Every app | This app's own identity, used when it calls another app |
-| Client credential | Every app | The certificate or secret backing that identity |
-| Operator scope | Every app | The `scp` value marking a delegated token as an operator |
-| Clock skew | Every app | 60 seconds, per **Validation** |
-| Client id to software id | The aggregator | Resolves a submitting app's `azp` to the software id its records must carry |
-| Trusted proxies | Apps behind a proxy | The addresses whose `X-Forwarded-For` entries are believed when finding a request's source, per the rate limiting rule in `SKILL.md` |
+| Value | Variable | Required of | Purpose |
+|-------|----------|-------------|---------|
+| Tenant id | `ENTRA_TENANT_ID` | Every app | The Entra tenant, checked against `tid` |
+| Issuer | `ENTRA_ISSUER` | Every app | The exact `iss` string to compare against |
+| JWKS URI | `ENTRA_JWKS_URI` | Every app | Where signing keys are fetched |
+| JWKS cache max age | `ENTRA_JWKS_MAX_AGE_SECONDS` | Every app | How long keys are held before an unconditional refresh |
+| Audience | `ENTRA_AUDIENCE` | Every app | This app's Application ID URI — the value `aud` must equal |
+| Client id | `ENTRA_CLIENT_ID` | Every app | This app's own identity, used when it calls another app |
+| Client credential | `ENTRA_CLIENT_CERTIFICATE_PATH`, or `ENTRA_CLIENT_SECRET` | Every app | The certificate or secret backing that identity |
+| Operator scope | `ENTRA_OPERATOR_SCOPE` | Every app | The `scp` value marking a delegated token as an operator |
+| Clock skew | `AUTH_CLOCK_SKEW_SECONDS` | Every app | 60 seconds, per **Validation** |
+| Client id to software id | — | The aggregator | Served by `bio-softop`'s registry; not configuration |
+| Trusted proxies | `TRUSTED_PROXIES` | Apps behind a proxy | The addresses whose `X-Forwarded-For` entries are believed when finding a request's source, per the rate limiting rule in `SKILL.md` |
+
+These names are fixed for every app, as `LOG_LEVEL` is, so an operator finds
+a setting under the same name everywhere.
 
 An app MUST fail to start when any value required of it is missing, rather
 than starting and rejecting every request it receives. A service that is up but can

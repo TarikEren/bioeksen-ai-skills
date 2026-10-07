@@ -340,10 +340,9 @@ precedence over any validation fault in the same record. An `azp` that
 resolves to no app is refused with `PERM-4150`: it names nothing the estate
 knows.
 
-The resolution is the aggregator's configuration today, derivable from the
-directory by the Application ID URI convention in
-`sds-auth/references/credentials.md`, and a lookup against the id-issuing
-service once one exists.
+The resolution is not the aggregator's configuration: it is served by
+`bio-softop`'s registry, per **Configuration** in
+`sds-auth/references/credentials.md`.
 
 The two read endpoints
 MUST require an operator credential — the aggregator holds every app's logs,
