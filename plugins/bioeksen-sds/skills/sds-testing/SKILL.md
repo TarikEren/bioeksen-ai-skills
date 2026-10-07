@@ -101,6 +101,11 @@ Implement until every check passes. The service's own tests still cover what
 the conformance check cannot see from outside: what the service logs, and what
 it calls.
 
+A TypeScript app also runs the contract suites `@bioeksen/sdk/testing`
+exports. They cover the cases in `references/contract-tests.md` that the
+conformance check cannot see from outside: what the app logs and what it
+calls.
+
 ## Bug fixes
 
 A bug is a missing test. Before fixing one, write the test that reproduces it —
