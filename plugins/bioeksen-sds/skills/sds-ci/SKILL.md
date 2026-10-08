@@ -35,18 +35,19 @@ hold and what they are registered to, never by their labels:
 |--------|------|------|-------|
 | `ci` | The AI workstation | Every job except AI task runs and deployment: builds, tests and checks on any branch | No secret beyond **Secrets** below |
 | `ai` | The AI workstation | AI task runs, from the AI task repository's protected main branch, and nothing else | The bot account's token and the wrapper's app credential, on its host only, given to the wrapper and never to the model |
-| `deploy` | The application server | Building and deploying an app's release, or publishing a library's, from a `v*` tag on a commit of a repository's protected main branch, and nothing else | The deployment and registry-write credentials, on its host only |
+| `deploy` | The application server | Building and deploying an app's release, or publishing a library's, from a release tag (`v*`, or `{software-id}/v*` in a monorepo) on a commit of a repository's protected main branch, and nothing else | The deployment and registry-write credentials, on its host only |
 
 - The `deploy` runner MUST be registered to the deploy repository alone, and
   the `ai` runner to the AI task repository alone: never to an app
   repository, an organisation or the instance. No other runner is registered
   on the application server.
 - No app repository contains a deployment workflow. When a release tag is
-  pushed to an app's repository, the git service's integration, bio-softop,
-  verifies the release, per **Releases and deployment** below, and dispatches
-  the deploy repository's workflow, from that repository's own protected main
-  branch, with the app's software id, the version and the commit. A merge to
-  main deploys nothing.
+  pushed, `v*` in a repository holding one service and `{software-id}/v*` in a
+  monorepo, the git service's integration, bio-softop, verifies the release,
+  per **Releases and deployment** below, and dispatches the deploy
+  repository's workflow, from that repository's own protected main branch,
+  with the released unit's software id, the version and the commit. A merge
+  to main deploys nothing.
 - The deploy and AI task repositories' workflows are changed only by people,
   and their main branches are protected like every other.
 
@@ -73,13 +74,21 @@ model's task branch, and the tests either of them wrote. Its job containers:
 - MUST have network egress limited to an allowlist: the forge, the package
   registries a build needs, and, for AI task runs, the model server.
   Everything else is refused, the application server's databases included.
+- MUST run build tools with their telemetry off, and MUST NOT write to a
+  build cache shared across jobs. A shared cache, where one is added, may be
+  read by `ci` jobs, and a release build never reads it.
+
+A cache entry is trusted by whoever reads it, and a `ci` job runs code nobody
+has reviewed. Written from a model's task branch, an entry could record a
+passing result under the very key the main branch's build computes next.
 
 A `ci` job's automatic token can write to its own repository's unprotected
 branches. Nothing trusts an unprotected branch: a branch reaches main only
 through review, so what the token can write is never acted on unreviewed.
 
-- Release tags, `v*` per `sds-commit/references/release-notes.md`, MUST be
-  protected tags that only people can create.
+- Release tags, `v*`, or `{software-id}/v*` in a monorepo, per
+  `sds-commit/references/release-notes.md`, MUST be protected tags that only
+  people can create.
 
 ## Secrets
 
@@ -103,8 +112,9 @@ one.
 ## Releases and deployment
 
 A deployment is a release, as `sds-commit/references/release-notes.md`
-defines one: a version, its release note, and its `v{version}` tag, created by
-a person. Deploying releases rather than merges means everything running in
+defines one: a version, its release note, and its tag, `v{version}`, or
+`{software-id}/v{version}` for a release unit of a monorepo, created by a
+person. In a monorepo each unit is released, and deployed, on its own. Deploying releases rather than merges means everything running in
 production has a version and a release note, and a merged fix reaches
 production at a moment the estate can name.
 
@@ -112,11 +122,18 @@ production at a moment the estate can name.
 - Before dispatching, the git service's integration verifies that:
   - the tag points to a commit reachable from the repository's protected
     main branch;
-  - `/release-notes/{version}.md` exists in that commit;
-  - the version is exactly the one the commits since the previous `v*` tag
-    imply, per **Versioning** in `sds-commit/SKILL.md`, including the shift
-    below `1.0.0` and the first release at `0.1.0`;
-  - the note's entry count equals `git log --no-merges {previous}..{tag}`.
+  - the release's note exists in that commit, at `/release-notes/{version}.md`,
+    or in a monorepo at `{unit}/release-notes/{version}.md`;
+  - the version is exactly the one the commits since the previous tag of the
+    same kind imply, per **Versioning** in `sds-commit/SKILL.md`, including the
+    shift below `1.0.0` and the first release at `0.1.0`. In a monorepo those
+    are the commits of the unit's release range, per **Release units** in
+    `sds-commit/references/release-notes.md`;
+  - the note's entry count equals the number of commits in that range,
+    `git log --no-merges {previous}..{tag}` in a repository holding one
+    service;
+  - once an aggregator runs, it accepts every error code the release's build
+    contains, so that no record the release writes is refused and lost.
 
   A release failing any check is not deployed. The refusal is logged as
   `JOB-4000`, its check in the structured tail, e.g. `reason=version-mismatch`,
@@ -125,6 +142,8 @@ production at a moment the estate can name.
   deployed: no environment exists for it yet.
 - A library's release is published, not deployed: the `deploy` runner builds
   the tagged commit and publishes that version to the package registry. A
+  unit that holds several packages publishes all of them together, each at
+  the tag's version. A
   library's pre-release tag is published too, under the `next` dist-tag, so
   apps can try it; an app's main branch never pins one.
 - A published version is never removed or overwritten. Apps pin exact
@@ -132,7 +151,14 @@ production at a moment the estate can name.
   fix release.
 - The release image is built by the `deploy` runner from the tagged commit and
   tagged with the version. A `ci` job never writes to the registry, so nothing
-  built from an unreviewed branch can be deployed.
+  built from an unreviewed branch can be deployed. In a monorepo, each
+  deployable package of the unit gets its own image, built from the unit's
+  closure alone, with Turborepo by `turbo prune <package> --docker`, so it
+  holds nothing of the other units.
+- A deployment runs the release's migrations first, from the tagged commit, so
+  a failed migration stops it with the running release untouched. It then
+  moves the app to the new image, and waits for `GET /api/health/ready` to
+  report `ok` within the app's startup budget.
 - Rolling back an app is deploying an earlier release's version again,
   dispatched by an operator. It creates no tag.
 - A release's database migrations MUST leave the schema usable by the
@@ -142,10 +168,10 @@ production at a moment the estate can name.
 
 - **The version is derived from the commits**, as `sds-commit` says, never
   picked by hand.
-- **Every release has its note** at `/release-notes/{version}.md`, in the
-  `sds-commit` format.
-- **A person creates the `v{version}` tag**, and bio-softop verifies and
-  deploys it, as above. A role or a model prepares the version and the note;
+- **Every release has its note**, at the path and in the format
+  `sds-commit/references/release-notes.md` gives it.
+- **A person creates the release tag**, and bio-softop verifies and deploys
+  it, as above. A role or a model prepares the version and the note;
   it never tags, publishes or deploys.
 
 ## Workflow definitions
@@ -157,10 +183,13 @@ production at a moment the estate can name.
   The forge runs workflows from either when `.forgejo/workflows/` is absent,
   so a file added there would replace the reviewed ones.
 - A repository's **protected paths** are `.forgejo/**`, `.gitea/**`,
-  `.github/**`, `.bioeksen/**`, and every path its `/AGENTS.md` assigns to no
-  role, `.claude/**` and `/AGENTS.md` itself among them. They are the workflow
-  directories, the software id, and the rules the repository's roles and
-  models work under.
+  `.github/**`, `**/.bioeksen/**`, every AGENTS.md and CLAUDE.md file, and
+  every path an AGENTS.md assigns to no role, `.claude/**` among them. They
+  are the workflow directories, the software ids, and the rules the
+  repository's roles and models work under. In a monorepo they also include
+  the root build files, the shared packages and the tooling, `packages/**`
+  and `tooling/**` in `bio-software`: a change there reaches every unit at
+  once.
 - Every `ai/**` branch MUST be covered by a branch protection rule listing the
   protected paths as protected file patterns, so the forge refuses a push that
   changes one.
@@ -173,7 +202,9 @@ production at a moment the estate can name.
 This rule is the second layer, not the first. The push gate under **AI task
 runs** refuses the same changes before they leave the workstation, and a
 workflow change that slipped past both could reach only the `ci` runner,
-which is isolated for unreviewed code.
+which is isolated for unreviewed code. In a monorepo a branch rule cannot know
+which unit a task is for, so the push gate alone refuses a change to another
+unit.
 
 ## The jobs
 
@@ -200,15 +231,31 @@ exact YAML and the reason; you never edit `.forgejo/`.
   disposable database services after that. A cheap tier fails before an
   expensive one starts.
 - **The commits job** runs the `bioeksen-sds` project kit's checks on every
-  pull request: one `Change-Id` per commit with this app's software id
-  (`sds-commit`), and a test or a `Test-Exempt:` trailer on every `feat` and
-  `fix` (`sds-testing`). It runs the CI image's copy of the kit, under
+  pull request: one `Change-Id` per commit, carrying the id `sds-commit` gives
+  it, and in a monorepo exactly the `Affects:` and `Changes-Package:` trailers
+  its paths give it; and a test or a `Test-Exempt:` trailer on every `feat`
+  and `fix` (`sds-testing`). It runs the CI image's copy of the kit, under
   `/opt/bioeksen-sds/{tag}/`, at the release `.claude/settings.json` pins; the
   two versions move together. The job's token reads only this repository, so
   the kit is never checked out.
+- **The pinned release must be in the image.** A job that cannot find it
+  there reports not run and fails, per **Keeping the suite honest** in
+  `sds-testing/SKILL.md`. A newer release existing never fails a job: the pin
+  moves when a person moves it. A task whose result depends on the pinned
+  release lists the pin file among its cache inputs, so moving the pin runs
+  it again.
+- **In a monorepo, a job runs only what a change affects**, and a change to a
+  root build file affects every unit. One final job, named `ci`, depends on
+  every other job, runs whether they ran or were skipped, and fails if any
+  failed. It is the main branch's one required check, so the check exists on
+  every pull request whatever was skipped.
 - **Installs follow the lockfile.**
-- **The toolchain comes from the estate's CI image.** A job checks that each
-  tool is the version the project pins; it never sets one up, and never
+- **The toolchain comes from the estate's CI image.** The image is built by
+  the `deploy` runner and pinned by digest. It carries the runtime, the
+  package manager and the monorepo's build tool at the versions the
+  repository pins, the browsers and engines the tests need, Python for the
+  `sds-*` scripts, and each `bioeksen-sds` release in use. A job checks that
+  each tool is the version the project pins; it never sets one up, and never
   downloads a browser, a system package or a tool. A step that needs more than
   the egress allows (**Isolating `ci` jobs**) fails there: name what it needs
   in your report, for the image.
@@ -271,19 +318,23 @@ the host allows; no sandbox can reach that engine.
   `sds-logging/references/error-codes.md`, so that no tool reading either
   takes one for the other.
 - **Dispatch.** A run is dispatched on the AI task repository's protected
-  main branch, with the target repository and the task passed as inputs. A
+  main branch, with the target repository, in a monorepo the task's release
+  unit, and the task passed as inputs. A
   run, a revision included, therefore never executes a workflow from any
   branch a model wrote.
 - **No credential for the model.** The model works on a copy of the checkout
-  inside its sandbox. The push is made by the wrapper with the bot account's
+  inside its sandbox. In a monorepo the copy holds only the task's unit and
+  that unit's closure, with Turborepo the output of `turbo prune`, less the
+  role's can't-read paths, so the model sees nothing else of the repository. The push is made by the wrapper with the bot account's
   token, which is never mounted into the sandbox.
 - **The push gate.** Before pushing, the wrapper refuses the run when any
   commit:
   - changes a path outside the task's allowed paths, or any protected path,
     per **Workflow definitions**;
-  - lacks exactly one `Change-Id:` trailer carrying the repository's
-    software id, minted per `sds-commit/SKILL.md`, whose script the sandbox
-    image therefore includes, with Python to run it;
+  - in a monorepo, changes a path outside the task's release unit;
+  - lacks exactly one `Change-Id:` trailer carrying the id `sds-commit` gives
+    it, the task's unit's in a monorepo, minted per `sds-commit/SKILL.md`,
+    whose script the sandbox image therefore includes, with Python to run it;
   - would be pushed anywhere but `ai/{task-id}`, or would need a force push.
 
   A refused run ends as `JOB-5000` with its rule in the structured tail,
@@ -328,6 +379,9 @@ each of these MUST be attempted and seen refused:
 | The bot account pushing to main, or approving a pull request | Branch protection and the bot's permissions |
 | A merge to main with no release tag reaching production | Deployment is dispatched only for a verified release tag |
 | A tag whose version disagrees with its commits being deployed | The release verification |
+| A push to `ai/{task-id}` changing a shared package, the tooling, a root build file or another unit, in a monorepo | The push gate |
+| A unit's release whose version ignores a breaking commit that names the unit as its scope | The release verification: the range is the unit's own |
+| A `ci` job writing to a build cache shared across jobs | The cache's credentials: `ci` jobs can at most read it |
 
 A check that could not be run is reported as not run, never as passed, per
 **Keeping the suite honest** in `sds-testing/SKILL.md`.

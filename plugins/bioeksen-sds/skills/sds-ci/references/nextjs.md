@@ -25,6 +25,10 @@ that template carries out `SKILL.md`, which outranks it, and the project's
   `postinstall`, the route types by `typecheck`).
 - **Databases**: `TEST_DATABASE_HOSTS` lists the service names a suite may
   empty a database on.
+- **In `bio-software`**, jobs run `turbo run <task> --affected`, with
+  `TURBO_TELEMETRY_DISABLED=1` and no remote cache. The tasks that check
+  against the pinned `bioeksen-sds` release list the root
+  `/.claude/settings.json` among their Turborepo inputs.
 
 ## Branches
 
@@ -42,5 +46,9 @@ that template carries out `SKILL.md`, which outranks it, and the project's
 - **The `.dockerignore`** keeps out `node_modules` among the installed
   dependencies.
 - **No migrations in the image.** `db:deploy` runs from the release's tagged
-  commit, as a step of the deployment `/AGENTS.md` § Delivery describes.
+  commit, as a step of the deployment `/AGENTS.md` § Delivery describes; in
+  `bio-software`, `pnpm --filter <package> run db:deploy`, first.
+- **In `bio-software`**, the Dockerfile builds from the repository's root:
+  `turbo prune <package> --docker`, an install from the pruned lockfile, then
+  the build.
 - **Compose files are for local development only**, named `compose.dev.yaml`.
