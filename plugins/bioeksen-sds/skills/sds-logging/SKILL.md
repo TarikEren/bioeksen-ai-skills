@@ -163,8 +163,9 @@ What a binding's own tests assert — no secret in any record, a code on every
 failure record, a request unharmed by a down aggregator — is the Logging table
 in `sds-testing/references/contract-tests.md`, written before the binding.
 
-The TypeScript binding is `@bioeksen/sdk`, from the `bio-sdk` repository. A
-TypeScript app MUST use it and MUST NOT write its own.
+The TypeScript binding is `@bioeksen/sdk`, which the `bio-sdk` release unit of
+`bio-software` publishes. A TypeScript app MUST use it and MUST NOT write its
+own.
 
 Split this section into `sds-<language>` skills once a second language is in
 use; the contract above stays here.

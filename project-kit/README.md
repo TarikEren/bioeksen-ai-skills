@@ -29,6 +29,12 @@ generated project runs to stay on them.
    tests live where the test check's built-in list would not find them. A
    project whose tests follow its language's usual layout needs no file.
 
+In `bio-software`, the monorepo, the generator writes a new app's directory
+and never copies `template/`: the monorepo's root already holds the settings
+and the workflow every app shares. The tools below work there too,
+attributing each commit to the release units it affects, per **Release units**
+in `plugins/bioeksen-sds/skills/sds-commit/references/release-notes.md`.
+
 ## What it never copies
 
 The skills. A copied skill is a second copy of a contract, and it drifts from
@@ -72,7 +78,8 @@ If this repository is private:
 | `tools/commit_msg.py --hook FILE` | Checks one message as a commit-msg hook, minting a missing `Change-Id` | The standard library |
 | `tools/commit_msg.py --range A..B` | Checks every non-merge commit in a range | The standard library |
 | `tools/check_tests.py --range A..B` | Checks that every `feat` and `fix` commit in a range changes a test, or names its exemption in a `Test-Exempt:` trailer, per `sds-testing`. Test paths come from `.bioeksen/test-paths` at the checkout, or a built-in list | The standard library |
-| `tools/check_release_note.py VERSION` | Checks a release note against its range, after its commit and before the tag | The standard library |
+| `tools/check_release_note.py VERSION` | Checks a release note against its range, after its commit and before the tag. In a monorepo it takes the unit's tag, e.g. `bio-inventory/v2.4.0` | The standard library |
+| `tools/units.py` | Release units as of a commit already made, for the checks above: the same attribution the mint script gives a staged change | The standard library |
 | `conformance/check_service.py --base-url URL` | Checks a running instance's standard endpoints against `openapi.yaml` | `requirements.txt` |
 | `conformance/check_service.py --self-test` | Checks the fixtures against the schemas, and every check against `stub_service.py` | `requirements.txt` |
 
