@@ -259,13 +259,22 @@ Drop a row only when it cannot apply, and say why in the report.
 
 ## The standard endpoints
 
-For the four standard endpoints the failing suite already exists: the project
-kit's conformance check. Run it against the service before implementing them,
-and its failures are the red list:
+For the four standard endpoints the failing suite already exists: this
+skill's conformance check, which ships with it. Run it against the service
+before implementing them, and its failures are the red list:
 
 ```bash
-python .bioeksen-sds/project-kit/conformance/check_service.py --base-url http://localhost:8080
+pip install -r ${CLAUDE_SKILL_DIR}/scripts/requirements.txt
+python ${CLAUDE_SKILL_DIR}/scripts/check_service.py --base-url http://localhost:8080 --operator-token <token>
 ```
+
+It checks every response against `sds-api-design/references/openapi.yaml`,
+and what no schema can express: the `X-Request-Id` echo, 401 `AUTH-4100`
+without a credential, and, with an operator token, the code for each bad
+query parameter. It exits 0 when every check passed, 1 when one failed, and 2
+when one was not run: the packages are missing, the service cannot be
+reached, or no operator token was given. Report a 2 as not run, never as
+passed.
 
 Implement until every check passes. The service's own tests still cover what
 the conformance check cannot see from outside: what the service logs, and what

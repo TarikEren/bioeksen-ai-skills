@@ -1,6 +1,5 @@
 # The commit tools under tools/ need only the standard library. The
-# conformance check under conformance/ validates responses against the
-# normative OpenAPI schemas, which needs a JSON Schema 2020-12 validator.
-pyyaml==6.0.3
-jsonschema==4.26.0
-referencing==0.37.0
+# conformance check validates responses against the normative OpenAPI
+# schemas, which needs a JSON Schema 2020-12 validator. Its pins live beside
+# it, in the plugin, so an installed copy carries them too.
+-r ../plugins/bioeksen-sds/skills/sds-testing/scripts/requirements.txt

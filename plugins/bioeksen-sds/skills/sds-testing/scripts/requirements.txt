@@ -1,0 +1,5 @@
+# What check_service.py needs beside it: it validates responses against the
+# normative OpenAPI schemas, which takes a JSON Schema 2020-12 validator.
+pyyaml==6.0.3
+jsonschema==4.26.0
+referencing==0.37.0

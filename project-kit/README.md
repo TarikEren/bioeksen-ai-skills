@@ -80,7 +80,7 @@ If this repository is private:
 | `tools/check_tests.py --range A..B` | Checks that every `feat` and `fix` commit in a range changes a test, or names its exemption in a `Test-Exempt:` trailer, per `sds-testing`. Test paths come from `.bioeksen/test-paths` at the checkout, or a built-in list | The standard library |
 | `tools/check_release_note.py VERSION` | Checks a release note against its range, after its commit and before the tag. In a monorepo it takes the unit's tag, e.g. `bio-inventory/v2.4.0` | The standard library |
 | `tools/units.py` | Release units as of a commit already made, for the checks above: the same attribution the mint script gives a staged change | The standard library |
-| `conformance/check_service.py --base-url URL` | Checks a running instance's standard endpoints against `openapi.yaml` | `requirements.txt` |
+| `conformance/check_service.py --base-url URL` | Checks a running instance's standard endpoints against `openapi.yaml`. It runs the `sds-testing` skill's own `scripts/check_service.py`, which an installed plugin carries, so an assistant runs the same check without this repository | `requirements.txt` |
 | `conformance/check_service.py --self-test` | Checks the fixtures against the schemas, and every check against `stub_service.py` | `requirements.txt` |
 
 This repository runs every one of them against itself in CI.

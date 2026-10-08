@@ -11,8 +11,9 @@ the registry and every status against its code, and requires a case for every
 step of the validation order. An empirical value — a threshold, a timeout — is
 the app's configured value, never a number copied into the test.
 
-For the four standard endpoints, the project kit's conformance check already
-runs the cases visible from outside a service. Its own tests still cover what
+For the four standard endpoints, the conformance check this skill ships,
+`sds-testing/scripts/check_service.py`, already runs the cases visible from
+outside a service. Its own tests still cover what
 it logs and what it calls.
 
 ## Errors
