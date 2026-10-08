@@ -455,6 +455,13 @@ It MUST NOT point at a shared or production database, and MUST NOT print a
 connection string. A guard that cannot tell refuses, and the suite is
 reported as not run.
 
+In a monorepo, each app's disposable databases are its own: named with its
+software id in snake case before the suffix, e.g. `bio_inventory_integration`,
+and a suite empties only its own app's. Apps sharing one database server then
+cannot empty each other's data, and a name says whose it is. A name longer
+than the engine allows an identifier, 63 bytes in PostgreSQL, is refused
+rather than truncated, because two truncated names can collide.
+
 **A suite that creates or resets a database runs only after you have checked
 its guard.**
 - Read the suite's environment and global setup files.
