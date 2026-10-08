@@ -93,5 +93,19 @@ class LaterReleaseTest(RepositoryTest):
         self.assertIn("imply 0.1.1", out)
 
 
+class AfterAPreReleaseTest(RepositoryTest):
+    def test_the_previous_release_is_the_final_one_not_its_pre_release(self):
+        # git's version sort ranks v1.0.0-beta.1 above v1.0.0 unless told otherwise.
+        self.commit("chore: initial commit", INITIAL, {"README.md": "x"})
+        self.git("tag", "v1.0.0-beta.1")
+        self.commit("fix: mend x", "svc-20261006T121000-cccc", {"src/x.py": "x"})
+        self.git("tag", "v1.0.0")
+        self.commit("fix: mend y", "svc-20261006T121500-dddd", {"src/y.py": "y"})
+        self.release("1.0.1", ("svc-20261006T121500-dddd", "fix"))
+        status, out = self.check("1.0.1")
+        self.assertEqual(status, 0, out)
+        self.assertIn("v1.0.0..HEAD", out)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -38,11 +38,29 @@ def git(root: Path, *args: str) -> str:
                           check=True).stdout
 
 
+def precedence(version: str) -> tuple:
+    """A sort key in SemVer precedence: a pre-release ranks below its release, and
+    numeric identifiers compare as numbers."""
+    parsed = VERSION.match(version)
+    if not parsed:
+        return (-1,)
+    core, _, pre = version.partition("-")
+    numbers = tuple(int(part) for part in core.split("."))
+    if not pre:
+        return (*numbers, 1)
+    return (*numbers, 0, *((0, int(p), "") if p.isdigit() else (1, 0, p)
+                           for p in pre.split(".")))
+
+
 def previous_tag(root: Path, head: str, version: str) -> str | None:
-    """The latest earlier v* tag reachable from head, or None for a first release."""
-    tags = git(root, "tag", "--merged", head, "--list", "v*", "--sort=-v:refname").split()
-    earlier = [t for t in tags if t != f"v{version}"]
-    return earlier[0] if earlier else None
+    """The latest earlier v* tag reachable from head, or None for a first release.
+
+    Sorted here rather than by git, whose version sort ranks v1.0.0-beta.1 above
+    v1.0.0 unless versionsort.suffix is configured.
+    """
+    tags = git(root, "tag", "--merged", head, "--list", "v*").split()
+    earlier = [t for t in tags if t != f"v{version}" and VERSION.match(t[1:])]
+    return max(earlier, key=lambda t: precedence(t[1:])) if earlier else None
 
 
 def implied(previous: str | None, commits: list[dict]) -> str:
