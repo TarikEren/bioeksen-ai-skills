@@ -19,7 +19,8 @@ the file's path and every /-suffix of it, so tests/* matches tests/a.py and
 service/tests/a.py alike. Matching is case-sensitive on every platform.
 
 Run it over the range a change adds, never back past the release the rule
-began after: earlier commits predate it.
+began after: earlier commits predate it. In a monorepo, the commits of a
+history moved into it predate it too, and are listed as notices, unchecked.
 """
 from __future__ import annotations
 
@@ -30,6 +31,7 @@ from pathlib import Path
 
 from change_id import repo_root
 from commit_msg import SUBJECT, TEST_EXEMPTIONS, TESTED_TYPES, clean, paragraphs
+from units import predates_monorepo
 
 PATTERNS_FILE = Path(".bioeksen") / "test-paths"
 # Directories that hold tests, and the file names test runners look for, per
@@ -93,6 +95,9 @@ def findings(root: Path, revisions: str) -> tuple[list[str], list[str], int]:
         files = git(root, "diff-tree", "--root", "--no-commit-id", "--name-only", "-r",
                     sha).splitlines()
         subject = body.splitlines()[0] if body else ""
+        if predates_monorepo(root, sha):
+            notices.append(f"{sha[:10]} predates the monorepo and is not checked: {subject}")
+            continue
         if PATTERNS_FILE.as_posix() in files:
             notices.append(f"{sha[:10]} changes {PATTERNS_FILE.as_posix()}: {subject}")
         parsed = SUBJECT.match(subject)

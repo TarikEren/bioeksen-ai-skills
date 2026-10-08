@@ -1,7 +1,11 @@
 """The message checks commit_msg.py runs as a commit-msg hook and in CI."""
+import io
 import unittest
+from contextlib import redirect_stdout
 
-from commit_msg import check, clean, with_change_id
+from change_id import Attribution
+from commit_msg import check, clean, main, with_change_id
+from tests.repository import MonorepoTest
 
 SOFTWARE_ID = "bioeksen-sds"
 CHANGE_ID = "Change-Id: bioeksen-sds-20261005T120000-ab12"
@@ -155,6 +159,128 @@ class WithChangeIdTest(unittest.TestCase):
     def test_change_id_becomes_its_own_paragraph_after_prose(self):
         result = with_change_id(message("docs: x", "Body."), "bioeksen-sds-20261005T120000-ab12")
         self.assertTrue(result.endswith("Body.\n\n" + CHANGE_ID + "\n"), result)
+
+    def test_trailers_follow_the_change_id(self):
+        result = with_change_id(message("feat(ui): x", "Co-Authored-By: A <a@b>"),
+                                "bio-software-20261008T100000-ab12",
+                                ["Affects: a", "Changes-Package: @x/ui"])
+        self.assertTrue(result.endswith("Change-Id: bio-software-20261008T100000-ab12\n"
+                                        "Affects: a\nChanges-Package: @x/ui\n"
+                                        "Co-Authored-By: A <a@b>\n"), result)
+
+
+SHARED = Attribution("bio-software", ("bio-inventory", "bio-softop"), ("@bioeksen/ui",), True)
+SHARED_ID = "Change-Id: bio-software-20261008T100000-ab12"
+
+
+class AttributionCheckTest(unittest.TestCase):
+    """The prefix and trailers release-notes.md's Release units give a commit."""
+
+    def problems(self, trailers: str, expected: Attribution = SHARED) -> list[str]:
+        return check(message("feat(ui): add x", "Body.", trailers), expected)
+
+    def test_the_computed_prefix_and_trailers_conform(self):
+        self.assertEqual(self.problems(SHARED_ID + "\nAffects: bio-inventory\n"
+                                       "Affects: bio-softop\nChanges-Package: @bioeksen/ui\n"
+                                       "Test-Exempt: docs"), [])
+
+    def test_a_single_unit_commit_carries_the_units_id_and_no_trailers(self):
+        unit = Attribution("bio-inventory", (), (), True)
+        self.assertEqual(self.problems("Change-Id: bio-inventory-20261008T100000-ab12\n"
+                                       "Test-Exempt: docs", unit), [])
+
+    def test_another_prefix_than_the_paths_give_is_a_problem(self):
+        unit = Attribution("bio-inventory", (), (), True)
+        problems = self.problems(SHARED_ID + "\nTest-Exempt: docs", unit)
+        self.assertTrue(any("'bio-software'" in p and "'bio-inventory'" in p and "attribute" in p
+                            for p in problems), problems)
+
+    def test_a_missing_affects_trailer_is_a_problem(self):
+        problems = self.problems(SHARED_ID + "\nAffects: bio-inventory\n"
+                                 "Changes-Package: @bioeksen/ui\nTest-Exempt: docs")
+        self.assertTrue(any("Affects" in p and "'bio-softop'" in p for p in problems), problems)
+
+    def test_an_affects_trailer_naming_a_unit_not_affected_is_a_problem(self):
+        problems = self.problems(SHARED_ID + "\nAffects: bio-inventory\nAffects: bio-softop\n"
+                                 "Affects: bio-sdk\nChanges-Package: @bioeksen/ui\n"
+                                 "Test-Exempt: docs")
+        self.assertTrue(any("Affects" in p and "'bio-sdk'" in p for p in problems), problems)
+
+    def test_a_missing_or_extra_changes_package_trailer_is_a_problem(self):
+        problems = self.problems(SHARED_ID + "\nAffects: bio-inventory\nAffects: bio-softop\n"
+                                 "Changes-Package: @bioeksen/tsconfig\nTest-Exempt: docs")
+        self.assertTrue(any("Changes-Package" in p and "'@bioeksen/ui'" in p
+                            for p in problems), problems)
+        self.assertTrue(any("Changes-Package" in p and "'@bioeksen/tsconfig'" in p
+                            for p in problems), problems)
+
+    def test_a_trailer_twice_is_a_problem(self):
+        problems = self.problems(SHARED_ID + "\nAffects: bio-inventory\nAffects: bio-inventory\n"
+                                 "Affects: bio-softop\nChanges-Package: @bioeksen/ui\n"
+                                 "Test-Exempt: docs")
+        self.assertTrue(any("Affects" in p and "twice" in p for p in problems), problems)
+
+    def test_a_trailer_outside_the_final_paragraph_is_a_problem(self):
+        problems = check(message("feat(ui): add x", "Affects: bio-inventory",
+                                 SHARED_ID + "\nAffects: bio-softop\n"
+                                 "Changes-Package: @bioeksen/ui\nTest-Exempt: docs"), SHARED)
+        self.assertTrue(any("Affects" in p and "final paragraph" in p for p in problems),
+                        problems)
+
+    def test_an_affects_trailer_in_a_repository_holding_one_service_is_a_problem(self):
+        problems = check(message("docs: x", CHANGE_ID + "\nAffects: bioeksen-sds"), SOFTWARE_ID)
+        self.assertTrue(any("Affects" in p for p in problems), problems)
+
+
+class MonorepoRangeTest(MonorepoTest):
+    def run_range(self) -> tuple[int, str]:
+        out = io.StringIO()
+        with redirect_stdout(out):
+            status = main(["--range", f"{self.initial}..HEAD", "--root", str(self.root)])
+        return status, out.getvalue()
+
+    def test_commits_carrying_their_attribution_conform(self):
+        self.commit("feat(ui): x\n\nChange-Id: bio-inventory-20261008T100000-ab12\n"
+                    "Test-Exempt: docs\n", {"packages/ui/index.ts": "y"})
+        self.commit("chore: tune the linter\n\nChange-Id: bio-software-20261008T100100-ab12\n"
+                    "Affects: bio-inventory\nAffects: bio-softop\n"
+                    "Changes-Package: @bioeksen/eslint-config\n",
+                    {"packages/eslint-config/index.js": "y"})
+        status, out = self.run_range()
+        self.assertEqual(status, 0, out)
+
+    def test_a_commit_carrying_the_monorepos_id_for_one_app_fails(self):
+        self.commit("feat(ui): x\n\nChange-Id: bio-software-20261008T100000-ab12\n"
+                    "Test-Exempt: docs\n", {"apps/bio-inventory/app/page.tsx": "y"})
+        status, out = self.run_range()
+        self.assertEqual(status, 1, out)
+        self.assertIn("'bio-inventory'", out)
+
+    def test_the_hook_mints_the_id_and_trailers_the_staged_change_gets(self):
+        self.stage({"packages/eslint-config/index.js": "y"})
+        path = self.root / "MSG"
+        path.write_text("chore: tune the linter\n", encoding="utf-8")
+        self.assertEqual(main(["--hook", str(path), "--root", str(self.root)]), 0)
+        written = path.read_text(encoding="utf-8")
+        self.assertRegex(written, r"\nChange-Id: bio-software-\d{8}T\d{6}-[a-z0-9]{4,}\n"
+                                  r"Affects: bio-inventory\nAffects: bio-softop\n"
+                                  r"Changes-Package: @bioeksen/eslint-config\n$")
+
+    def test_the_hook_leaves_an_existing_change_id_to_ci(self):
+        # An amended or reworded commit's staged change is not its whole change,
+        # so only --range, against the first parent, can attribute it.
+        self.stage({"apps/bio-inventory/app/page.tsx": "y"})
+        path = self.root / "MSG"
+        path.write_text("docs: x\n\nChange-Id: bio-softop-20261008T100000-ab12\n",
+                        encoding="utf-8")
+        self.assertEqual(main(["--hook", str(path), "--root", str(self.root)]), 0)
+
+    def test_a_commit_from_a_history_moved_in_is_not_checked(self):
+        self.git("rm", "-q", ".bioeksen/software-id")
+        self.commit("fix: an old commit\n", {"apps/bio-inventory/app/page.tsx": "y"})
+        status, out = self.run_range()
+        self.assertEqual(status, 0, out)
+        self.assertIn("predates", out)
 
 
 if __name__ == "__main__":

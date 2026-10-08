@@ -11,7 +11,10 @@ none, then checks the result. It checks:
     and a description that does not start with a capital or end with a period
   - a blank line between the subject and anything after it
   - exactly one Change-Id trailer, in the final paragraph, in the identifier
-    format, carrying the software id stored in .bioeksen/software-id
+    format, carrying the software id stored in .bioeksen/software-id; in a
+    monorepo, the id **Release units** in sds-commit/references/release-notes.md
+    gives the commit's paths, with exactly the Affects: and Changes-Package:
+    trailers it gives, each once, in the final paragraph
   - a BREAKING CHANGE: footer on every commit whose subject carries !, and
     no such footer without the !
   - at most one Test-Exempt trailer, only on a feat or fix commit, in the
@@ -19,6 +22,13 @@ none, then checks the result. It checks:
   - Fixes-Log trailers only on a fix commit, in the final paragraph, each
     naming one aggregator recordId
   - no <software-id> placeholder left anywhere
+
+In a monorepo, --range attributes each commit against its first parent, and
+lists as notices, unchecked, the commits of a history moved into it, which
+predate it. The hook attributes the staged change when it mints the
+Change-Id. A message that already carries one is checked for its form
+alone: an amended or reworded commit's staged change is not its whole
+change, so only --range can attribute it.
 """
 from __future__ import annotations
 
@@ -28,7 +38,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from change_id import CHANGE_ID, mint, repo_root, software_id
+from change_id import CHANGE_ID, Attribution, attribution, mint, repo_root
+from units import commit_attribution
 
 # The type table in sds-commit/SKILL.md, in its order.
 TYPES = ("feat", "fix", "refactor", "perf", "style", "test", "docs", "build",
@@ -68,8 +79,14 @@ def paragraphs(message: str) -> list[list[str]]:
     return blocks
 
 
-def check(message: str, expected_id: str) -> list[str]:
-    """Every problem with one cleaned message; an empty list means it conforms."""
+def check(message: str, expected: str | Attribution | None) -> list[str]:
+    """Every problem with one cleaned message; an empty list means it conforms.
+
+    expected is the attribution the commit's paths give it, or a single-service
+    repository's id; None checks the message's form alone.
+    """
+    if isinstance(expected, str):
+        expected = Attribution(expected)
     problems: list[str] = []
     lines = message.splitlines()
     if not lines or not lines[0].strip():
@@ -104,9 +121,15 @@ def check(message: str, expected_id: str) -> list[str]:
         if not parsed:
             problems.append(f"Change-Id {value!r} is not "
                             "{software-id}-{YYYYMMDDTHHMMSS}-{random}")
-        elif parsed["software_id"] != expected_id:
-            problems.append(f"Change-Id carries {parsed['software_id']!r}, but "
-                            f".bioeksen/software-id holds {expected_id!r}")
+        elif expected and parsed["software_id"] != expected.software_id:
+            if expected.monorepo:
+                problems.append(f"Change-Id carries {parsed['software_id']!r}, but the paths "
+                                f"the commit changes attribute it to "
+                                f"{expected.software_id!r} (see Release units in "
+                                "sds-commit/references/release-notes.md)")
+            else:
+                problems.append(f"Change-Id carries {parsed['software_id']!r}, but "
+                                f".bioeksen/software-id holds {expected.software_id!r}")
         if change_ids[0] not in paragraphs(message)[-1]:
             problems.append("the Change-Id trailer is not in the final paragraph")
 
@@ -139,19 +162,43 @@ def check(message: str, expected_id: str) -> list[str]:
     if fixes and subject and subject["type"] != "fix":
         problems.append(f"a Fixes-Log trailer on a {subject['type']} commit; only a fix "
                         "resolves a log record")
+    if expected:
+        problems += _unit_trailers(lines, paragraphs(message)[-1], expected)
     if "<software-id>" in message:
         problems.append("the <software-id> placeholder has not been replaced")
     return problems
 
 
-def with_change_id(message: str, change_id: str) -> str:
-    """The message with a Change-Id placed first in its trailer paragraph."""
+def _unit_trailers(lines: list[str], final: list[str], expected: Attribution) -> list[str]:
+    """Problems with a message's Affects: and Changes-Package: trailers."""
+    problems: list[str] = []
+    for key, wanted, verb in (("Affects", expected.affects, "affect"),
+                              ("Changes-Package", expected.packages, "change")):
+        found = [line for line in lines if line.startswith(f"{key}:")]
+        values = [line.partition(":")[2].strip() for line in found]
+        if any(line not in final for line in found):
+            problems.append(f"an {key}: trailer is not in the final paragraph")
+        for value in sorted(set(values)):
+            if values.count(value) > 1:
+                problems.append(f"{key}: names {value!r} twice")
+        for value in sorted(set(values) - set(wanted)):
+            problems.append(f"{key}: names {value!r}, which the commit does not {verb}")
+        for value in wanted:
+            if value not in values:
+                problems.append(f"no {key}: trailer names {value!r}, which the commit "
+                                f"does {verb}")
+    return problems
+
+
+def with_change_id(message: str, change_id: str,
+                   trailers: tuple[str, ...] | list[str] = ()) -> str:
+    """The message with a Change-Id, then trailers, first in its trailer paragraph."""
     blocks = paragraphs(message)
-    trailer = f"Change-Id: {change_id}"
+    added = [f"Change-Id: {change_id}", *trailers]
     if len(blocks) > 1 and all(TRAILER.match(line) for line in blocks[-1]):
-        blocks[-1].insert(0, trailer)
+        blocks[-1][:0] = added
     else:
-        blocks.append([trailer])
+        blocks.append(added)
     return "\n\n".join("\n".join(block) for block in blocks) + "\n"
 
 
@@ -159,10 +206,12 @@ def run_hook(path: Path, root: Path) -> int:
     message = clean(path.read_text(encoding="utf-8"))
     if message.startswith(PASSED_BY_HOOK):
         return 0
-    expected = software_id(root)
+    found = attribution(root)
+    expected = found if not found.monorepo else None
     if not any(line.startswith("Change-Id:") for line in message.splitlines()):
-        message = with_change_id(message, mint(expected))
+        message = with_change_id(message, mint(found.software_id), found.trailers())
         path.write_text(message, encoding="utf-8")
+        expected = found
     problems = check(message, expected)
     for problem in problems:
         print(f"commit-msg: {problem}", file=sys.stderr)
@@ -172,12 +221,16 @@ def run_hook(path: Path, root: Path) -> int:
 
 
 def run_range(revisions: str, root: Path) -> int:
-    expected = software_id(root)
     log = subprocess.run(["git", "log", "--no-merges", "--format=%H%x00%B%x1e", revisions],
                          cwd=root, capture_output=True, text=True, check=True).stdout
     failed = checked = 0
     for record in filter(str.strip, log.split("\x1e")):
         sha, _, body = record.strip("\n").partition("\x00")
+        expected = commit_attribution(root, sha)
+        if expected is None:
+            print(f"note: {sha[:10]} predates the monorepo and is not checked: "
+                  f"{body.splitlines()[0] if body else ''}")
+            continue
         checked += 1
         problems = check(clean(body), expected)
         if problems:

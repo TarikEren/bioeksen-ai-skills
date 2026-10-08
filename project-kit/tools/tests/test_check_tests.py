@@ -138,6 +138,15 @@ class RepositoryTest(unittest.TestCase):
         self.assertEqual(failures, [])
         self.assertTrue(any("test-paths" in n for n in notices), notices)
 
+    def test_a_commit_from_a_history_moved_into_a_monorepo_is_not_checked(self):
+        # A history moved in with git filter-repo: an app's own id file, no root
+        # one, and a feat commit from before the rule.
+        self.commit("feat: an old feature", {"apps/bio-kys/.bioeksen/software-id": "bio-kys\n",
+                                             "apps/bio-kys/src/x.ts": "x"})
+        failures, notices, _ = findings(self.root, "HEAD")
+        self.assertEqual(failures, [])
+        self.assertTrue(any("predates" in n for n in notices), notices)
+
 
 if __name__ == "__main__":
     unittest.main()
