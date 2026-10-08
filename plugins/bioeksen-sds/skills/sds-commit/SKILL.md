@@ -61,7 +61,7 @@ The footer should contain the change identifier, issue references and informatio
 - The footer is a mandatory part: every commit carries a `Change-Id:` trailer
 - `Change-Id:` carries the identifier its release note entry is written under, e.g. `Change-Id: auth-service-20260904T170512-a3f9`, its timestamp in UTC+03:00
   - Mint it when writing the commit and copy it verbatim into the note, so an entry resolves to the commit that produced it
-  - Mint it with this skill's script, `${CLAUDE_SKILL_DIR}/scripts/mint_change_id.py`, run with Python from anywhere inside the repository the commit belongs to. It reads the software id from `.bioeksen/software-id` and prints a fresh identifier. When that file is missing or empty it exits non-zero rather than guess: ask for the id, write it there, and run the script again. Never compose an identifier by hand, and never reuse one
+  - Mint it with this skill's script, `${CLAUDE_SKILL_DIR}/scripts/mint_change_id.py`, run with Python from inside the repository the commit belongs to, after staging the commit. In a repository holding one service it reads the software id from `.bioeksen/software-id` at the root and prints a fresh identifier. In a monorepo it works out which release units the staged changes affect, per **Release units** in [release-notes](references/release-notes.md): it mints with that unit's id when they affect exactly one, and otherwise with the monorepo's own id, printing after the identifier the `Affects:` and `Changes-Package:` trailers the commit carries. When a file it needs is missing, empty or malformed it exits non-zero rather than guess: ask for the id, write it there, and run the script again. Never compose an identifier or those trailers by hand, and never reuse one
   - See [release-notes](references/release-notes.md) for the identifier format
   - Exactly one `Change-Id:` per commit: one commit is one entry
   - Gerrit uses a `Change-Id:` trailer of its own, `I` followed by 40 hex digits. The two formats cannot share one trailer, so a repository reviewed through Gerrit MUST NOT install Gerrit's commit-msg hook alongside this convention
@@ -71,6 +71,9 @@ The footer should contain the change identifier, issue references and informatio
 - A `fix` commit SHOULD name each aggregator record of the failure it fixes with a `Fixes-Log:` trailer carrying the record's `recordId`, e.g. `Fixes-Log: 01J9Z4K7XQ2M8N`
   - One trailer per record, in the final trailer paragraph beside `Change-Id:`. Any other type carries none: only a fix resolves a failure
   - When the pull request carrying the commit is merged, the git service stores the commit's Change-Id on each record it names, and the aggregator deletes the record 30 days later, per `sds-logging/references/aggregator-api.md`. A record no fix names stays until its issue is closed, or its own window ends
+- A commit minted with a monorepo's own id carries an `Affects:` trailer for each release unit it affects and a `Changes-Package:` trailer for each shared package it changes, e.g. `Affects: bio-inventory` and `Changes-Package: @bioeksen/ui`
+  - In the final trailer paragraph beside `Change-Id:`, one per line, exactly as the script prints them. A commit minted with a unit's id carries neither, and so does every commit in a repository holding one service
+  - They say which units the commit reached, and so which units' release notes list it, per **Release units** in [release-notes](references/release-notes.md)
 - Optionally reference issue identifiers (e.g., Closes #123, Fixes JIRA-456)
 - Breaking changes must start with the phrase `BREAKING CHANGE:`
   - For a single line description just add a space after `BREAKING CHANGE:`
@@ -94,7 +97,7 @@ Change-Id: <a freshly minted identifier>
 ## Merging
 One commit is one release note entry, so a branch MUST reach the main branch with every commit's message and trailer intact:
 - **Rebase-merge, or a merge commit**, keeps each commit as written. A merge commit itself carries no entry, per [release-notes](references/release-notes.md)
-- **Squash-merge** replaces a branch's commits with one, and GitHub builds its message by concatenating theirs — several `Change-Id:` trailers in one commit, or none if the message is replaced. A squash-merged commit MUST be edited before merging into this format, with a description covering the whole branch and exactly one freshly minted `Change-Id:`
+- **Squash-merge** replaces a branch's commits with one, and GitHub builds its message by concatenating theirs — several `Change-Id:` trailers in one commit, or none if the message is replaced. A squash-merged commit MUST be edited before merging into this format, with a description covering the whole branch, exactly one freshly minted `Change-Id:`, and, in a monorepo, the trailers the script prints for the branch's combined change
 
 ## Versioning
 The next release's version follows from the commits it contains, as in SemVer:

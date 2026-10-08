@@ -28,6 +28,58 @@ One file per release, never a single accumulating changelog. A released version
 is immutable, so its note is immutable too: it is written once and afterwards
 only corrected for factual error, never rewritten to reflect later releases.
 
+## Release units
+
+A monorepo holds several services or libraries that each release on their own,
+as `bio-software` holds every BioEksen app. Each is a **release unit**. These
+rules decide which commits belong to which unit, so that a unit's change
+identifiers, release notes and history name the commits that changed it and
+no others. A repository holding one service is a single unit, its root, and
+nothing in this section applies to it.
+
+- **Release unit.** A directory below the repository's root that holds
+  `.bioeksen/software-id`, per `sds-logging/references/log-record.md`. One unit
+  may hold several packages under its one id, such as an app's web and worker
+  processes, or libraries published together. The root holds the monorepo's
+  own id. Units do not nest.
+- **Closure of a unit**, as of a commit:
+  1. the unit's own directory;
+  2. every workspace package its packages depend on through `workspace:`
+     dependencies, in any dependency field, transitively;
+  3. the root build files: `/package.json`, `/pnpm-workspace.yaml`,
+     `/turbo.json`, `/.npmrc`, `/.nvmrc` and the root `tsconfig` files.
+
+  The closure is read from a pnpm workspace, the kind the estate's monorepo
+  is.
+- **The lockfile.** `/pnpm-lock.yaml` belongs to the units whose own package
+  manifests, those in their directories, the same commit changes. A commit
+  that changes the lockfile and no package manifest belongs to every unit.
+- **Affected units** of a commit: the units whose closure, as of that commit,
+  contains a path the commit changes compared with its first parent, and those
+  the lockfile rule gives it.
+- **Attribution.** A commit's change identifier, per **Change identifiers**
+  below, carries:
+
+  | Affected units | `{software-id}` | Trailers |
+  |----------------|-----------------|----------|
+  | Exactly one | That unit's id | None beyond those `SKILL.md` defines for every commit |
+  | Several | The monorepo's id | `Affects: {software-id}`, one per affected unit; `Changes-Package: {package name}`, one per changed workspace package that sits in no unit's directory |
+  | None, e.g. only `.claude/`, workflows or root documents | The monorepo's id | `Changes-Package:` for each such package changed; no `Affects:` |
+
+  The script **Footer** in `SKILL.md` names computes the id and the trailers
+  from the staged changes. A person never writes them, and CI checks them
+  against the commit's paths.
+- **History from before the monorepo.** A commit whose tree holds no id at the
+  root predates the monorepo: it came in with a history moved there. It
+  belongs to the unit whose directory holds its paths, and it is not checked
+  against these rules, which it was not written under.
+
+The rules read paths rather than a person's judgement. A person deciding which
+apps a shared change reaches either names too few, and an app ships a change
+its note never mentions, or names every app to be safe, and every note fills
+with changes that never reached it. The dependency graph already holds the
+answer, and reading it gives the same answer every time.
+
 ## Version
 
 These versions name releases of a deployed service or of a published

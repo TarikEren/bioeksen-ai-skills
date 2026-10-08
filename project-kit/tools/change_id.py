@@ -19,11 +19,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "plugins" / "bioeks
                        / "skills" / "sds-commit" / "scripts"))
 
 from mint_change_id import (  # noqa: E402 - the path above has to be set first
-    CHANGE_ID, ID_FILE, MINT_ZONE, SOFTWARE_ID, SOFTWARE_ID_MAX, main, mint, repo_root,
-    software_id)
+    CHANGE_ID, ID_FILE, MINT_ZONE, SOFTWARE_ID, SOFTWARE_ID_MAX, Attribution, attribute,
+    attribution, main, mint, needed_files, parse_id, repo_root, software_id, unit_dirs)
 
-__all__ = ["CHANGE_ID", "ID_FILE", "MINT_ZONE", "SOFTWARE_ID", "SOFTWARE_ID_MAX", "main",
-           "mint", "repo_root", "software_id"]
+__all__ = ["CHANGE_ID", "ID_FILE", "MINT_ZONE", "SOFTWARE_ID", "SOFTWARE_ID_MAX",
+           "Attribution", "attribute", "attribution", "main", "mint", "needed_files",
+           "parse_id", "repo_root", "software_id", "unit_dirs"]
 
 if __name__ == "__main__":
     raise SystemExit(main())
