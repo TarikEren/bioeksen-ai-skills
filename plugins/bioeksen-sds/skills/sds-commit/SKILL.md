@@ -39,6 +39,7 @@ of `${CLAUDE_SKILL_DIR}`, which is this skill's own directory.
 Optional and provides additional contextual information.
 - Allowed scopes vary and are typically defined by the specific project
 - Do not use issue identifiers as scopes
+- In a monorepo, a breaking commit's scope is the id of the release unit it breaks, per **Versioning** below
 
 ### Breaking Changes Indicator
 A commit that introduces a breaking change MUST be marked by an `!` before the `:` in the subject line e.g. `feat(api)!: remove status endpoint`
@@ -106,6 +107,9 @@ The next release's version follows from the commits it contains, as in SemVer:
 - Otherwise — `fix` and every other type — increment the patch version
 - Below `1.0.0` these shift down one place: a breaking change increments the minor version, everything else the patch version
 - A new service or library starts at `0.1.0`: its first release is `0.1.0` whatever its commits, and its root commit is `chore: initial commit`
+- In a monorepo, each release unit is versioned on its own, from the commits in its release range, per **Release units** in [release-notes](references/release-notes.md)
+  - A commit's type applies to every unit it affects. A change that is a feature for one unit and only a refactor for another is two commits
+  - A breaking commit names the one unit it breaks as its scope, e.g. `feat(bio-sdk)!: rename createLogger`. It is breaking for that unit alone, and every other unit it affects counts it by its type. So a change to a shared package's API that updates every caller in the same commit breaks no app: nothing outside the monorepo calls it. A unit that publishes packages, such as `bio-sdk`, is broken by a change to their API, and that commit names it
 - Refer to [release-notes](references/release-notes.md) for more information on versioning and release notes.
 
 ## Rules

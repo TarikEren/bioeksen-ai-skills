@@ -15,14 +15,15 @@ editorial selection applied.
 
 | Rule | Value |
 |------|-------|
-| Path | `/release-notes/{version}.md`, relative to the repository root |
+| Path | `/release-notes/{version}.md`, relative to the repository root. In a monorepo, `{unit}/release-notes/{version}.md`, in the release unit's own directory |
 | `{version}` | The released version, no `v` prefix, e.g. `/release-notes/2.4.0.md` |
-| Tag | `v{version}`, e.g. `v2.4.0`, on the commit that adds the note |
+| Tag | `v{version}`, e.g. `v2.4.0`; in a monorepo `{software-id}/v{version}`, naming the unit, e.g. `bio-inventory/v2.4.0`. On the commit that adds the note |
 | Existence | The note MUST be committed before the release is tagged |
 
 The tag carries the `v` and the file does not. That is the one place the two
 spellings differ, and it is recorded here so nobody has to guess from whichever
-they saw last.
+they saw last. A monorepo's tag also carries the unit's id, which the note's
+directory already gives it.
 
 One file per release, never a single accumulating changelog. A released version
 is immutable, so its note is immutable too: it is written once and afterwards
@@ -73,6 +74,13 @@ nothing in this section applies to it.
   root predates the monorepo: it came in with a history moved there. It
   belongs to the unit whose directory holds its paths, and it is not checked
   against these rules, which it was not written under.
+- **Release range** of a unit's release: the non-merge commits between the
+  unit's previous tag and this one,
+  `{software-id}/v{previous}..{software-id}/v{version}`, whose affected units
+  include the unit. Each commit is judged as of itself, by the rule that gave
+  it its trailers. A commit that changes only the lockfile, and so affects
+  every unit, is in every unit's next release, and the history before a unit
+  existed is in none of its releases.
 
 The rules read paths rather than a person's judgement. A person deciding which
 apps a shared change reaches either names too few, and an app ships a change
@@ -81,6 +89,9 @@ with changes that never reached it. The dependency graph already holds the
 answer, and reading it gives the same answer every time.
 
 ## Version
+
+In a monorepo, each release unit is versioned on its own, from the commits in
+its **Release range**, so everything below applies to one unit at a time.
 
 These versions name releases of a deployed service or of a published
 library. For a service, nothing resolves them as a dependency range, so the
@@ -139,6 +150,10 @@ whatever its commits are, because there is no earlier version for them to
 increment, and it covers every commit from the repository's root. The root
 commit is `chore: initial commit`, with a `Change-Id:` like any other, so it
 is the first release's first `chore` entry.
+
+A release unit of a monorepo starts at `0.1.0` too. Its first release covers
+the commits that reached it, from the one that created it: the monorepo's
+history before the unit existed is in none of its releases.
 
 Starting below `1.0.0` puts a new service under the rule above from its first
 commit. Starting at `0.0.1`, as a patch from nothing, would be just as
@@ -214,7 +229,7 @@ Every entry is identified by:
 
 | Part | Rules |
 |------|-------|
-| `{software-id}` | The service the release belongs to. The same value as the `id` field of a log record, in the same format — see `sds-logging/references/log-record.md`. Constant across every entry in every note for that project |
+| `{software-id}` | The release unit the commit affects, which in a repository holding one service is its root's: the same value as the `id` field of a log record, in the same format — see `sds-logging/references/log-record.md`. In a monorepo, the monorepo's own id for a commit that affects several units or none, per **Release units** |
 | `{unique string}` | A timestamp in UTC+03:00, written `YYYYMMDDTHHMMSS` with no zone suffix, followed by `-` and at least four random characters, e.g. `20260904T170512-a3f9` |
 
 Both parts are lowercase apart from the `T` of the timestamp, and use only
@@ -238,7 +253,9 @@ notes that hold them; the `Z` is what tells the two forms apart.
 Reusing the log record `id` as the software part means an identifier read out
 of a release note and one read out of a log line name the same service without
 a lookup table — which matters when the reader is aggregating notes across the
-estate, or is a model with only the text in front of it.
+estate, or is a model with only the text in front of it. A monorepo's own id
+names no service, so its entries name the units they reached instead, per
+**Which commits appear**.
 
 ### When the software id is unknown
 
@@ -269,6 +286,8 @@ written, recorded there as a mandatory `Change-Id:` footer trailer per the
 footer rules in `SKILL.md`, and copied verbatim into the note. That trailer is
 what lets `git log --grep` take an entry back to the change that produced it,
 and what keeps the note verifiable once the subject lines have been forgotten.
+In a monorepo it does the same, and the commit's `Affects:` trailers say which
+units' notes list it.
 
 Minting is local: the identifier is built from the stored software id, the
 clock and a random tail, and MUST NOT require a network call. A commit that
@@ -281,7 +300,11 @@ makes a locally minted identifier collision-resistant without coordination.
 
 - Every commit reachable from the release tag and not from the previous one
   MUST have an entry, whatever its type. `docs`, `style` and `chore` commits
-  are listed like any other.
+  are listed like any other. In a monorepo, that is every commit of the unit's
+  **Release range**, and the previous release is the unit's own previous tag.
+- An entry minted with a monorepo's own id ends its reason by naming the units
+  the commit affects, as its `Affects:` trailers list them:
+  `- bio-software-20261008T101500-a3f9 feat(sdk): … (affects bio-inventory, bio-softop)`.
 - Merge commits are not listed. The commits they bring in are.
 - A first release has no previous tag. Its range is every commit from the
   root, so the initial commit has an entry too.
@@ -295,7 +318,8 @@ makes a locally minted identifier collision-resistant without coordination.
   anything.
 
 Listing every commit is what makes the note checkable against `git log`:
-the entry count MUST equal `git log --no-merges {previous}..{version}`.
+the entry count MUST equal `git log --no-merges {previous}..{version}`, and
+in a monorepo the number of that range's commits that reach the unit.
 Filtering by perceived importance breaks that check, and makes a change that
 was never in the release indistinguishable from one judged too small to
 mention — a distinction the change record has to preserve.
@@ -319,3 +343,8 @@ breaks and `{changes}` states what to do instead.
 A major release whose note contains no `!` entry is a contradiction, and one of
 the two is wrong. The single exception is `1.0.0`, which is a declaration of
 stability rather than a consequence of a breaking change.
+
+In a monorepo, an entry keeps its commit's `!` in every note that lists it, but
+the change is breaking only for the unit its scope names, per **Versioning** in
+`SKILL.md`. Another unit's note lists it first like any breaking entry, while
+its version counts the commit by its type alone.

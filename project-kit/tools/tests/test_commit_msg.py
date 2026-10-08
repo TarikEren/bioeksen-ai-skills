@@ -227,6 +227,30 @@ class AttributionCheckTest(unittest.TestCase):
         self.assertTrue(any("Affects" in p and "final paragraph" in p for p in problems),
                         problems)
 
+    def test_a_breaking_commit_whose_scope_names_an_affected_unit_conforms(self):
+        sdk = Attribution("bio-software", ("bio-inventory", "bio-sdk"), (), True)
+        problems = check(message("feat(bio-sdk)!: rename x", "BREAKING CHANGE: x is gone.",
+                                 SHARED_ID + "\nAffects: bio-inventory\nAffects: bio-sdk\n"
+                                 "Test-Exempt: docs"), sdk)
+        self.assertEqual(problems, [])
+
+    def test_a_breaking_commit_in_a_monorepo_must_name_the_unit_it_breaks(self):
+        sdk = Attribution("bio-software", ("bio-inventory", "bio-sdk"), (), True)
+        for subject in ("feat(api)!: rename x", "feat!: rename x"):
+            problems = check(message(subject, "BREAKING CHANGE: x is gone.",
+                                     SHARED_ID + "\nAffects: bio-inventory\nAffects: bio-sdk\n"
+                                     "Test-Exempt: docs"), sdk)
+            self.assertTrue(any("scope" in p and "'bio-sdk'" in p for p in problems),
+                            (subject, problems))
+
+    def test_a_breaking_single_unit_commit_names_its_unit(self):
+        unit = Attribution("bio-inventory", (), (), True)
+        trailers = "Change-Id: bio-inventory-20261008T100000-ab12\nTest-Exempt: docs"
+        self.assertEqual(check(message("feat(bio-inventory)!: drop x", "BREAKING CHANGE: x.",
+                                       trailers), unit), [])
+        problems = check(message("feat(api)!: drop x", "BREAKING CHANGE: x.", trailers), unit)
+        self.assertTrue(any("scope" in p for p in problems), problems)
+
     def test_an_affects_trailer_in_a_repository_holding_one_service_is_a_problem(self):
         problems = check(message("docs: x", CHANGE_ID + "\nAffects: bioeksen-sds"), SOFTWARE_ID)
         self.assertTrue(any("Affects" in p for p in problems), problems)

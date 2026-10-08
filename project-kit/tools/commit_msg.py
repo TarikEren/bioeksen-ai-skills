@@ -138,6 +138,13 @@ def check(message: str, expected: str | Attribution | None) -> list[str]:
         problems.append("the subject carries ! but there is no BREAKING CHANGE: footer")
     if footer and not breaking:
         problems.append("there is a BREAKING CHANGE: footer but the subject carries no !")
+    if breaking and subject and expected and expected.monorepo:
+        # The scope names the one unit the change breaks; every other unit it
+        # affects counts it by its type, per Versioning in sds-commit/SKILL.md.
+        breakable = expected.affects or (expected.software_id,)
+        if subject["scope"] not in breakable:
+            problems.append("a breaking commit in a monorepo names the unit it breaks as "
+                            f"its scope: one of {', '.join(map(repr, breakable))}")
 
     exemptions = [line for line in lines if line.startswith("Test-Exempt:")]
     if len(exemptions) > 1:
