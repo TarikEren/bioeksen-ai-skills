@@ -35,16 +35,26 @@ This is the normative rule for the value, which `sds-commit` reuses as the
   name, or anything else at the point of use.
 - When it has not been supplied, **ask for it**. An assistant or generator MUST
   NOT invent one, and MUST NOT fall back to a plausible-looking guess.
-- A repository stores its id in one place: the file `.bioeksen/software-id` at
-  its root, holding the id and nothing else; surrounding whitespace is
-  ignored. Everything that needs the id reads it from there — the app's
-  logging configuration, a hook minting a change identifier, an assistant
-  writing a release note. A project generator asks for the id once, at
-  creation, and writes the file.
+- An id is stored in one place: the file `.bioeksen/software-id`, holding the
+  id and nothing else, in the directory of the service it names; surrounding
+  whitespace is ignored.
+  - In a repository that holds one service, that directory is the
+    repository's root.
+  - In a monorepo, each service's directory holds its own, and the root holds
+    the monorepo's own id. That id names no service and appears on no log
+    record.
+  - Everything that needs a path's id reads the nearest such file above the
+    path, never looking past the repository's root: the app's logging
+    configuration, a hook minting a change identifier, an assistant writing
+    a release note. A service's logging refuses the monorepo's own id, the
+    root file of a repository that holds service files below it, rather than
+    label its records with a name no service has.
+  - A project generator asks for the id once, at creation, and writes the
+    file.
 - An app whose runtime cannot read that file — a bundled, standalone or
   serverless build that ships without the repository — MAY carry the id
-  compiled in. The copy is generated from the file at build time, or
-  committed beside it with a test that fails whenever the two differ, and it
+  compiled in. The copy is generated from the service's file at build time,
+  or committed beside it with a test that fails whenever the two differ, and it
   is never edited by hand. The file stays the one place the id is set.
 - A missing or empty file means the id has not been supplied, and the rule
   above applies: ask.
@@ -59,10 +69,10 @@ A guessed id is worse than a missing one. It looks correct, so nothing flags
 it, and the records it labels are filed under a service that does not exist —
 while the real service's records are split across two names.
 
-One fixed location is what lets a tool find the id without being told, and
-what keeps a wrong one visible: it is a one-line file whose history shows who
-set it and when, rather than a value repeated through configuration where a
-typo in one copy goes unnoticed.
+One fixed location per service is what lets a tool find the id without being
+told, and what keeps a wrong one visible: it is a one-line file whose history
+shows who set it and when, rather than a value repeated through configuration
+where a typo in one copy goes unnoticed.
 
 `id` bears no relation to an error code prefix. Prefixes name the kind of
 failure and are shared across the estate, so every app emits many of them; see

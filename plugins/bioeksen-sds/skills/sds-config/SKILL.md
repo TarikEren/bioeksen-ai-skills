@@ -98,7 +98,8 @@ Authentication values take the names in `sds-auth/references/credentials.md`,
 ## Not configuration
 
 The software id is not configuration. It is allocated once, never changed, and
-read from `.bioeksen/software-id`, per `sds-logging/references/log-record.md`.
+read from the nearest `.bioeksen/software-id` above the app's code, per
+`sds-logging/references/log-record.md`.
 An environment variable would let one deployment change it, which severs that
 deployment's records from every record the app wrote before.
 
