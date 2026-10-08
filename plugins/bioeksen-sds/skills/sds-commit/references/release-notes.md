@@ -72,8 +72,9 @@ nothing in this section applies to it.
   against the commit's paths.
 - **History from before the monorepo.** A commit whose tree holds no id at the
   root predates the monorepo: it came in with a history moved there. It
-  belongs to the unit whose directory holds its paths, and it is not checked
-  against these rules, which it was not written under.
+  belongs to the unit its tree holds, the one whose history it came with, even
+  when it changes nothing, and it is not checked against these rules, which it
+  was not written under.
 - **Release range** of a unit's release: the non-merge commits between the
   unit's previous tag and this one,
   `{software-id}/v{previous}..{software-id}/v{version}`, whose affected units

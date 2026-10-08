@@ -90,8 +90,7 @@ def release_units(root: Path, revision: str) -> dict[str, str]:
 
 
 def holding_units(root: Path, revision: str) -> tuple[str, ...]:
-    """The ids of the units whose directories hold a path the revision changes: who a
-    commit from before the monorepo belongs to."""
-    changed = changed_at(root, revision)
-    return tuple(sorted(unit_id for unit, unit_id in release_units(root, revision).items()
-                        if any(p == unit or p.startswith(unit + "/") for p in changed)))
+    """The ids of the units a commit from before the monorepo belongs to: those its
+    tree holds. A history moved in holds the one unit it came with, so an empty
+    commit belongs to it as surely as any other."""
+    return tuple(sorted(release_units(root, revision).values()))

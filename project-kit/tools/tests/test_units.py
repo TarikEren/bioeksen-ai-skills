@@ -37,6 +37,12 @@ class ImportedHistoryTest(RepositoryTest):
         self.assertIsNone(commit_attribution(self.root, sha))
         self.assertEqual(holding_units(self.root, sha), ("bio-kys",))
 
+    def test_an_empty_commit_from_before_the_monorepo_belongs_to_its_history(self):
+        # It changes no path, but the history it came in with is one unit's.
+        self.commit("init\n", {"apps/bio-kys/.bioeksen/software-id": "bio-kys\n"})
+        sha = self.commit("chore: an empty commit\n", {})
+        self.assertEqual(holding_units(self.root, sha), ("bio-kys",))
+
 
 class SingleServiceTest(RepositoryTest):
     def test_a_repository_holding_one_service_gives_every_commit_its_id(self):
