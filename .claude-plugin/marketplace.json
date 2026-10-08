@@ -10,7 +10,7 @@
       "name": "bioeksen-sds",
       "source": "./plugins/bioeksen-sds",
       "description": "Shared BioEksen conventions and practice: API design, auth, logging, configuration, commits, testing, database, reviewing, CI, and Next.js",
-      "version": "0.7.0"
+      "version": "0.8.0"
     }
   ]
 }
