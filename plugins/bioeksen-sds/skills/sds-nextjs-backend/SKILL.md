@@ -276,9 +276,9 @@ you; the tests below are your own unit tests, beside the code
 
 ### Skeleton
 
-In the test-first loop, a plan's skeleton task builds the contract's surface
-before any behaviour, so that the tester can write tests that compile and fail
-for the right reason. A skeleton holds:
+In the stage loop of `sds-planning/SKILL.md`, the stage plan's skeleton task
+builds the contract's surface before any behaviour, so that the tester can
+write tests that compile and fail for the right reason. A skeleton holds:
 
 - **the Zod schemas** the contract names, and the types inferred from them;
 - **service and repository exports** with their final names and signatures,
@@ -287,7 +287,7 @@ for the right reason. A skeleton holds:
   `NotImplemented`;
 - **route handlers** at their final paths, answering `SYS-5000` (500, "Not
   implemented") through the project's error mapping;
-- **the test seams** the plan names.
+- **the test seams** the stage plan names.
 
 No behaviour, and no guessing: every name and type is the contract's. A
 difference is a change to the contract, and goes back to whoever runs the loop.

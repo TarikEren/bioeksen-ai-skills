@@ -1,6 +1,6 @@
 ---
 name: sds-testing
-description: BioEksen test-first development and testing practice. Use before writing or changing behaviour in a BioEksen service — a feature, a bug fix, an endpoint, a log statement, an auth check — to write the failing test first and find the contract test a shared convention requires; and when writing, changing, running or reviewing tests — acceptance tests written ahead of the code and blind to it, cases derived from the specification, the lowest tier that can prove a claim, outcome assertions, fixtures and fakes, known defects, and running database and browser suites safely.
+description: BioEksen test-first development and testing practice. Use before writing or changing behaviour in a BioEksen service — a feature, a bug fix, an endpoint, a log statement, an auth check — to write the failing test first and find the contract test a shared convention requires; and when writing, changing, running or reviewing tests — acceptance tests written ahead of the code and blind to it, each citing the acceptance criteria it proves, cases derived from the specification, the lowest tier that can prove a claim, outcome assertions, fixtures and fakes, known defects, and running database and browser suites safely.
 ---
 
 # Test-First Development
@@ -32,12 +32,15 @@ of `${CLAUDE_SKILL_DIR}`, which is this skill's own directory.
 
 ## Read first
 
-1. **`references/contract-tests.md`**: the cases every service must contain.
-2. **The project's tests README**, if it has one.
-3. **The project's test scripts and runner configs**: which tiers exist, which
+1. **The specification and the stage plan**, per `sds-planning/SKILL.md`: the
+   acceptance criteria are the cases, and the plan names the contract, the
+   tiers and the fixtures.
+2. **`references/contract-tests.md`**: the cases every service must contain.
+3. **The project's tests README**, if it has one.
+4. **The project's test scripts and runner configs**: which tiers exist, which
    files each one matches, its environment and its setup files.
-4. **The existing helpers, fixtures and fakes.** Reuse them.
-5. **The skill for the code under test.** Its rules are what the tests
+5. **The existing helpers, fixtures and fakes.** Reuse them.
+6. **The skill for the code under test.** Its rules are what the tests
    hold the code to.
 
 ## Test quality reference
@@ -128,12 +131,13 @@ Every unit of development — a feature, a sprint, a task — MUST have acceptan
 tests that are red before its code exists, written by someone who has not seen
 that code, for a developer who does not see them:
 
-- **The tester writes them from the specification**: the requirements, the
-  contract the `sds-*` skills define, and the architecture decisions taken for
-  the unit. Never from the code, which the tester does not see.
+- **The tester writes them from the specification**: the acceptance criteria
+  of the unit's items, the contract the `sds-*` skills define, and the stage
+  plan's contract, per `sds-planning/SKILL.md`. Never from the code, which the
+  tester does not see.
 - **The developer MUST NOT see them.** The developer works from each test's
-  name, the references it cites, its description and its result, alongside
-  the same architecture decisions and specifications, and makes it pass.
+  title, the criteria it cites and its result, alongside the same
+  specification and stage plan, and makes it pass.
 - **They land first, red,** in `test` commits on the unit's branch, each seen
   failing for the missing behaviour, not for a missing name: the developer
   first builds the skeleton the tests compile against. They are never marked
@@ -157,20 +161,45 @@ evidence one author cannot give.
 
 | Kind | Where | Owner | Written from |
 |---|---|---|---|
-| Acceptance | The project's acceptance folders | The tester | The requirements and the plan's contract, black-box, one or more per task |
+| Acceptance | The project's acceptance folders | The tester | The acceptance criteria and the stage plan's contract, black-box, one or more per criterion |
 | Unit and component tests of internals | Beside the code | The developer who owns the code | The code's own rules (the code skills' test sections) |
 
 An acceptance test reaches the code only through the contract. It never
 imports anything the contract does not name. A service's internals are the
 developer's to test.
 
+### Criteria and coverage
+
+The acceptance criteria are the cases (`sds-planning/SKILL.md`), and the
+tests and the criteria are held to each other both ways:
+
+- **Each acceptance test MUST cite at least one acceptance criterion that
+  exists**, by its id, `<item>.ACn`. A contract case from
+  `references/contract-tests.md` cites the criterion of the item that adopts
+  the convention, or, where no item does, the document its **Source** column
+  names.
+- **Every acceptance criterion of the unit's items MUST have at least one
+  acceptance test.** A criterion with no test is a rule nobody holds the code
+  to; a test with no criterion asserts what nobody asked for.
+- **A test asserts only what its criteria state.** Where they are silent, the
+  answer is asked, never chosen (**The cases**).
+- **Each acceptance test carries a brief**: a comment stating, in at most 20
+  words, the behaviour of the criteria it cites, and nothing else. It is for
+  the tester and the reviewers, who read the test; the developer does not.
+
+`sds-planning/scripts/check_specs.py`, run with `--tests` over the acceptance
+folders, reports every criterion due by a stage that no test cites, and every
+citation of a criterion that does not exist. An item is complete when
+each of its criteria has an acceptance test that passes.
+
 ### What the developers see
 
-- **Titles are the developers' view of the test.** Each starts with its
-  requirement and task ids, then states the rule:
-  `REQ-0031 T5: refuses a second widget with the same code on one site`. A
-  developer who reads only the title and the failure message must know which
-  rule failed.
+- **Titles are the developers' view of the test.** Each starts with the ids of
+  the criteria it covers, then names the rule:
+  `WID-30.AC6: a return needs a reason`. It never carries the inputs, the
+  expected values or the steps: the criterion holds the detail, and the
+  developer reads it there. A developer who reads only the title, its
+  criteria and the failure message must know which rule failed.
 - **Failure messages carry the evidence without the code.** Assert with
   matchers that print expected and received values, and add a message where
   the matcher's alone would not say which rule failed.
@@ -191,6 +220,30 @@ error, a 500 `SYS-5000` (never a 501, which no SDS code maps to), or the
 element not found. A type error, a missing module or a setup failure is a gap
 in the skeleton or the contract: report it, and never loosen the test to
 compile.
+
+| Red for the right reason | Not red: not run, or a defect of the setup |
+|---|---|
+| The test, its fixtures and its dependencies load | A module cannot be imported, or the code does not compile |
+| The call or the request reaches the skeleton | The database is unavailable, or the environment is wrong |
+| The assertion runs, and fails because the behaviour is absent: the rule's own signal | A fixture is malformed, a dependency is missing, or an exception the skeleton does not throw |
+
+A test in the second column says nothing about the behaviour. It is reported
+as not run, with its reason, and never counted as red.
+
+### The developer's loop
+
+The developers close the unit one criterion at a time, in the order of the
+stage plan's tasks:
+
+1. Take the next criterion of the task.
+2. Implement it, following **The cycle** for the developer's own tests.
+3. Run the acceptance tests that cite it, through the results-only interface,
+   filtered by its id.
+4. If they still fail for the behaviour, go on implementing. If a test seems
+   wrong, report it under **Disputes** and never change it. If they cannot
+   run, fix the environment first: a test that did not run proved nothing.
+5. When they pass, the criterion is closed. Run the whole suite before taking
+   the next.
 
 ### Parallel worktrees
 
@@ -235,6 +288,9 @@ MAY override it and record that it has.
 - **Where the code and the source disagree, that is a defect.** Write the test
   from the source and treat it as a known defect (**Known defects**). Where the
   source is silent or ambiguous, ask. Do not pick an answer and encode it.
+  The question goes to the decision's owner, and the rule in force until the
+  answer comes is recorded as a *Pending* decision, per
+  `sds-planning/SKILL.md`.
 - **List the cases before writing any.** For each rule, go through:
 
 | Case | For example |
@@ -432,10 +488,11 @@ green when its expectation is changed asserts nothing: fix it before going on.
   a real disposable database, a flow end to end. A claim proved low is not
   proved again higher up without a reason, since every tier up is slower and
   fails for more reasons.
-- **Each test names its source** (SHOULD): the requirement it was derived
-  from, or, for a contract case, the document its **Source** column names, in
-  its own title or its suite's, the way the project cites requirements. A test
-  with no source cannot be judged right or wrong when it fails.
+- **Each test names its source.** An acceptance test MUST cite its acceptance
+  criteria (**Criteria and coverage**). Any other test SHOULD name the
+  criterion or the requirement it was derived from, or, for a contract case,
+  the document its **Source** column names, in its own title or its suite's.
+  A test with no source cannot be judged right or wrong when it fails.
 
 ## Running the suites
 
@@ -519,14 +576,18 @@ works in production lets anyone mint an identity.
 ## Before handing back
 
 - Every rule in scope has its case list, and every dropped case has a reason.
+- Every acceptance criterion in scope is cited by an acceptance test, and every
+  citation names a criterion that exists: the checker's `--tests` run passes.
 - Every new test cites its source, asserts an outcome, and has been seen to
   fail for the right reason.
 - The diff has no type escape hatch, `.only`, `.skip` or whole-tree snapshot,
   and no existing test has been weakened.
 - Every known defect has an expected-to-fail test, a precondition test beside
   it, and a line in the report.
-- The typecheck, the linter, and every tier you could run are green. Each tier
-  you could not run is named, with the reason.
+- The typecheck, the linter, the production build, and every tier you could
+  run are green. Each tier you could not run is named, with the reason.
+- Coverage is not below the project's floor, where it sets one. A floor only
+  rises: lowering it to get green is weakening the suite.
 
 ## Rationalizations
 
@@ -540,4 +601,4 @@ works in production lets anyone mint an identity.
 | "Just add a retry" | A retry makes a flaky test pass and the race behind it invisible; find the race |
 | "It passed on the second run" | Then it fails some of the time; report it as flaky |
 | "Skip it for now" | A skipped test is a deleted test nobody reviewed; a known defect is marked expected to fail instead |
-| "I need to read the acceptance test to pass it" | Then the code would fit the test, not the specification; work from its name, its references and the specification |
+| "I need to read the acceptance test to pass it" | Then the code would fit the test, not the specification; work from its title, its criteria and the specification |

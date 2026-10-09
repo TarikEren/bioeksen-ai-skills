@@ -21,15 +21,15 @@ say about itself.
 Every module starts with a block comment that answers three questions:
 
 1. **What is this module?** One sentence.
-2. **What does it implement?** The requirement, spec section or decision, cited
-   the way the project cites them (an ID such as `REQ-2.1.3`, a document and
-   section, an ADR). This is how a change is traced back to why it exists.
+2. **What does it implement?** The build item or the decision, by its id, such
+   as `WID-30` or `DEC-004`, per **Citing** in `sds-planning/SKILL.md`. This is
+   how a change is traced back to why it exists.
 3. **Which choices would a reviewer question?** The non-obvious ones, with the
    reason.
 
 ```typescript
 /**
- * Document lifecycle transitions (REQ-2.1.2).
+ * Widget lifecycle moves (WID-30, DEC-005).
  *
  * The transition table lives here, not in the route handler or the form, so
  * that every entry point (API, server action, job) applies the same rules.

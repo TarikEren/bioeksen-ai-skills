@@ -450,9 +450,9 @@ bug:
 
 ## Skeleton
 
-In the test-first loop, a plan's skeleton task builds the contract's surface
-before any behaviour, so that the tester can write tests that compile and fail
-for the right reason. A UI skeleton holds:
+In the stage loop of `sds-planning/SKILL.md`, the stage plan's skeleton task
+builds the contract's surface before any behaviour, so that the tester can
+write tests that compile and fail for the right reason. A UI skeleton holds:
 
 - **the pages** at their final paths, rendering a stub;
 - **the components** the contract names, at their final module paths and

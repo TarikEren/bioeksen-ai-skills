@@ -7,8 +7,8 @@ It is how that template's tiers, helpers and roles carry out `SKILL.md`, which
 outranks it. Another Next.js app maps the names below to its own.
 
 The project's `/AGENTS.md` and its tests README name what this skill leaves
-open: the runners, the tiers and their folders, the helpers and fixtures, how
-requirements are cited, and the scripts. The tests README wins over this
+open: the runners, the tiers and their folders, the helpers and fixtures, and
+the scripts. The tests README wins over this
 reference where they disagree, and `/AGENTS.md` wins over both; `SKILL.md`, as
 every `sds-*` skill does, wins over all three.
 
@@ -58,6 +58,8 @@ describes it).
 
 - It runs the tiers (all, or those named: `unit`, `component`, `integration`,
   `e2e`), optionally only the tests whose title matches `--grep <regex>`.
+  `--grep 'WID-10\.AC4'` runs one criterion's tests, as the developer's loop
+  does.
 - When a tier with tests could not run, it prints `NOT RUN` and says why, and
   exits 2.
 - It is built on the runners' machine-readable output (Jest's `--json`,
@@ -112,29 +114,29 @@ when an agent runs it.
 
 ## Patterns
 
-The module paths and names below are placeholders: use the contract's. The
+The module paths, names and criterion ids below are placeholders: use the
+contract's and the specification's. The
 envelope, the sign-in and the i18n helpers are the project's own
 (`/tests/README.md`).
 
 **An expected-to-fail test and its precondition** (Jest):
 
 ```ts
-/**
- * Transfers. Source: REQ-0042, a transfer never overdraws the account.
- */
 import { transferService } from "@/lib/services/transfer";
 import { ACCOUNT_ID, ACTOR } from "../helpers/fixtures";
 
-describe("REQ-0042 a transfer never overdraws the account", () => {
+describe("TRF-10 transfers", () => {
   // Precondition for the expected failure below: the setup reaches the check.
-  it("accepts a transfer within the balance", async () => {
+  /** A transfer within the balance is accepted, and lowers the balance by its amount. */
+  it("TRF-10.AC2: a transfer within the balance is accepted", async () => {
     const account = await transferService.transfer(ACTOR, { accountId: ACCOUNT_ID, amount: 50 });
     expect(account.balance).toBe(50);
   });
 
   // Known defect ISSUE-123: the balance is read outside the transaction.
   // Promote to `it` when ISSUE-123 is fixed.
-  it.failing("refuses a transfer above the balance", async () => {
+  /** A transfer above the balance is refused, and the balance stays. */
+  it.failing("TRF-10.AC3: a transfer never overdraws the account", async () => {
     await expect(
       transferService.transfer(ACTOR, { accountId: ACCOUNT_ID, amount: 150 }),
     ).rejects.toMatchObject({ code: "RES-4302" });
@@ -148,8 +150,9 @@ describe("REQ-0042 a transfer never overdraws the account", () => {
 import { GET } from "@/app/api/v1/widgets/[id]/route";
 import { OPERATOR, signedInAs } from "../support/sign-in";
 
-describe("REQ-0013 a widget is read by its numeric id", () => {
-  it("REQ-0013 T4: answers a malformed id as not found, with RES-4200", async () => {
+describe("WID-10 widgets and codes", () => {
+  /** A widget id that does not parse is answered as for a widget that does not exist. */
+  it("WID-10.AC4: an id that does not parse is not found", async () => {
     const request = new Request("http://test/api/v1/widgets/abc", { headers: signedInAs(OPERATOR) });
     const response = await GET(request, { params: Promise.resolve({ id: "abc" }) });
 
@@ -158,7 +161,8 @@ describe("REQ-0013 a widget is read by its numeric id", () => {
     expect(await response.json()).toMatchObject({ status: "fail", code: "RES-4200" });
   });
 
-  it("REQ-0013 T4: asks for a credential with AUTH-4100", async () => {
+  /** A request without a credential is refused, as sds-auth's validation order requires. */
+  it("sds-auth: a request needs a credential", async () => {
     const response = await GET(new Request("http://test/api/v1/widgets/1"), { params: Promise.resolve({ id: "1" }) });
 
     expect(response.status).toBe(401);
@@ -178,8 +182,9 @@ import type { ActionResult } from "@/lib/actions";
 
 const labels = dictionaryFor("en").widgetForm;
 
-describe("REQ-0021 the server's field errors", () => {
-  it("still submits after the server rejects a field", async () => {
+describe("WID-50 the widget form", () => {
+  /** After the server rejects a field, the form shows the error and still submits the corrected value. */
+  it("WID-50.AC3: a rejected field can be corrected and sent again", async () => {
     const action = jest.fn(
       async (_data: FormData): Promise<ActionResult> => ({
         status: "fail",
@@ -203,6 +208,13 @@ describe("REQ-0021 the server's field errors", () => {
   });
 });
 ```
+
+Each title starts with the criteria its test covers and names the rule, and
+the brief above it, a `/** … */` comment, states their behaviour in at most 20
+words (`SKILL.md`, **Criteria and coverage**). The `it` string is the title,
+so the brief carries no `@title` tag. A known defect and a precondition are
+said in `//` comments beside the brief, never in it. The contract case with no
+criterion, the credential check, names its source instead.
 
 The first pattern's code is the one the selection procedure gives a refused
 domain rule, `RES-4302`, per `sds-logging/references/code-prefixes.md`. The

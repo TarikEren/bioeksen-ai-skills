@@ -54,12 +54,13 @@ of `${CLAUDE_SKILL_DIR}`, which is this skill's own directory.
   as a data contract (§ 7), then the code that uses it.
 - **In the test-first loop,** the tests of constraints, database objects and
   raw SQL are acceptance tests, written by the tester before the change
-  from the plan's data contract, and hidden from the developers, per
+  from the acceptance criteria and the stage plan's data contract
+  (`sds-planning/SKILL.md`), and hidden from the developers, per
   **Acceptance tests** in `sds-testing/SKILL.md`.
 
 ### Skeleton
 
-A plan's skeleton task for the data model holds the models, columns and types
+The stage plan's skeleton task for the data model holds the models, columns and types
 the contract names, with the migration that creates them, so that the
 generated client gives the tests and the server code their types.
 Constraints, indexes, triggers and seeds belong to the implementation task,

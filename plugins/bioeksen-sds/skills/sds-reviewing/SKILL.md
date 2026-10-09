@@ -188,11 +188,16 @@ tests before any implementation (`sds-testing`, **Acceptance tests**). There
 is no code yet, only the skeleton, so the tests are the thing under review.
 The passes, in order:
 
-1. **Traceability.**
-   - Every *Done when* item of the implementation tasks has at least one test.
-   - Every test title starts with its requirement and task ids.
-   - A test that asserts what no source states is a finding: it would make
-     the developers build behaviour nobody asked for.
+1. **Traceability**, per **Criteria and coverage** in `sds-testing/SKILL.md`.
+   - Every acceptance criterion the stage plan's tasks close has at least one
+     test, and every criterion a test cites exists. Run
+     `sds-planning/scripts/check_specs.py` with `--tests` over the acceptance
+     folders and `--through` the stage; report its output.
+   - Every test title starts with the ids of the criteria it covers and names
+     the rule, without inputs or expected values, and every test has its
+     brief. A contract case with no criterion names its source instead.
+   - A test that asserts what its criteria do not state is a finding: it
+     would make the developers build behaviour nobody asked for.
 2. **Correctness against the source.** Expected values come from the
    requirement or the contract, not from a guess; boundaries are tested on
    both sides; every case the source states is there.
