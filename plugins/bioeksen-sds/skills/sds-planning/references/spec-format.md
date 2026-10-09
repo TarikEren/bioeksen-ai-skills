@@ -189,7 +189,15 @@ system refuses the action with its reason, and no row changes.}
 ```
 
 - **What.**, **Rules.** and **Acceptance.** are required; the checker reports
-  an item without one.
+  an item without one. A part, an item that is not the first of its group,
+  needs only **Acceptance.**, under its own heading:
+
+```markdown
+### {PREFIX}-{n1} {Title}
+
+**Acceptance.**
+- **AC1.** ...
+```
 - **The criteria's numbers rise, and each is used once.** A removed criterion
   leaves its number unused, as a removed item does: renumbering the ones after
   it would silently re-point every test that cites them.

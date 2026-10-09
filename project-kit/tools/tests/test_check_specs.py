@@ -15,7 +15,9 @@ EXAMPLE = SKILL / "references" / "example"
 # Every acceptance criterion of the example set, by the stage its item is due in.
 B0 = ["FND-01.AC1", "FND-01.AC2", "FND-02.AC1", "FND-02.AC2"]
 B1 = ["WID-10.AC1", "WID-10.AC2", "WID-10.AC3", "WID-10.AC4", "WID-20.AC1", "WID-20.AC2"]
-B2 = [f"WID-30.AC{n}" for n in range(1, 8)] + ["WID-40.AC1", "WID-40.AC2", "WID-40.AC3"]
+# WID-41 is a part of WID-40: listed in no stage, it is built in WID-40's.
+B2 = ([f"WID-30.AC{n}" for n in range(1, 8)] + ["WID-40.AC1", "WID-40.AC2", "WID-40.AC3"]
+      + ["WID-41.AC1", "WID-41.AC2"])
 
 
 def load():
@@ -67,7 +69,7 @@ class ConsistentSetTest(SpecTest):
     def test_the_skills_example_set_is_consistent(self):
         status, out = self.run_check()
         self.assertEqual(status, 0, out)
-        self.assertIn("7 decisions, 6 items and 20 acceptance criteria", out)
+        self.assertIn("7 decisions, 7 items and 22 acceptance criteria", out)
 
     def test_a_missing_directory_is_not_run(self):
         out = io.StringIO()
@@ -168,6 +170,26 @@ class ItemTest(SpecTest):
         self.assertEqual(status, 0, out)
 
 
+class PartTest(SpecTest):
+    """An item that is not the first of its group is a part of the group's main item."""
+
+    def test_a_part_shares_its_main_items_what_rules_and_stages(self):
+        # WID-41 has only its criteria, and no stage lists it.
+        status, out = self.run_check()
+        self.assertEqual(status, 0, out)
+
+    def test_a_part_is_due_with_its_main_item(self):
+        tests = self.citing_tests(*B0, *B1)
+        status, out = self.run_check("--tests", str(tests), "--through", "B1")
+        self.assertEqual(status, 0, out)
+        self.assertFinding("WID-41.AC1", args=("--tests", str(tests), "--through", "B2"))
+
+    def test_an_item_whose_group_has_no_main_item_stands_alone(self):
+        self.edit("widgets.md", "### WID-41 Retire notices", "### WID-51 Retire notices")
+        self.assertFinding("WID-51 has no **What.** block", "WID-51 has no **Rules.** block",
+                           "WID-51 is in no stage")
+
+
 class BuildOrderTest(SpecTest):
     def test_every_item_is_in_a_stage(self):
         self.edit("README.md", "WID-30 (the moves 4 and 5), WID-40 |", "WID-30 (the moves 4 and 5) |")
@@ -201,7 +223,7 @@ class CitationTest(SpecTest):
     def test_every_criterion_cited(self):
         status, out = self.run_check("--tests", str(self.citing_tests(*B0, *B1, *B2)))
         self.assertEqual(status, 0, out)
-        self.assertIn("20 of 20", out)
+        self.assertIn("22 of 22", out)
 
     def test_an_uncited_criterion(self):
         tests = self.citing_tests(*B0, *B1, *[ref for ref in B2 if ref != "WID-30.AC6"])
@@ -209,7 +231,7 @@ class CitationTest(SpecTest):
 
     def test_a_citation_of_a_criterion_that_does_not_exist(self):
         tests = self.citing_tests(*B0, *B1, *B2, "WID-30.AC8")
-        self.assertFinding("widgets.test.ts:21", "WID-30.AC8, which does not exist",
+        self.assertFinding("widgets.test.ts:23", "WID-30.AC8, which does not exist",
                            args=("--tests", str(tests)))
 
     def test_only_the_stages_so_far_are_due(self):

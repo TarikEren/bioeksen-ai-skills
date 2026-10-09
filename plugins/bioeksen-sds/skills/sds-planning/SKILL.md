@@ -78,8 +78,9 @@ the answer comes is written down as a *Pending* decision.
 
 - **Item numbers come in groups of ten.** The first number of a group is the
   main item of a subject, and the other numbers of the group are its parts:
-  `WID-30` and `WID-31`. A group leaves room for parts found later without
-  renumbering anything.
+  `WID-40` and `WID-41`. A group leaves room for parts found later without
+  renumbering anything. An item whose group has no main item, such as
+  `FND-01` where no `FND-00` exists, stands alone.
 - **Ids are unique across the files**, and the README says which file holds
   each prefix's items and each range of decisions.
 - **An id is never renumbered and never reused.** A removed decision, item or
@@ -133,6 +134,11 @@ blocks, each a paragraph opening with its bold label:
 | **Acceptance.** | Yes | The acceptance criteria, `- **AC1.**` onwards |
 | **Trace.** | No | Where the item came from, as for a decision |
 
+A part MAY hold its **Acceptance.** block alone: it shares its main item's
+**What.** and **Rules.**, and is built in its main item's stages unless the
+build order lists it. A part is how a subject's criteria grow without the main
+item growing past what one reader can hold.
+
 ## Acceptance criteria
 
 The acceptance criteria are the cases. A tester writes the tests from them
@@ -170,6 +176,8 @@ The README orders the build into stages:
 - **Each stage has an exit criterion that can be checked**, in the stage table
   beside its items. A stage is complete when its exit criterion passes and
   each acceptance criterion of its items has a test that passes.
+- **Every item is in a stage**: listed in the stage table, or, for a part,
+  through its main item.
 - **An item split across stages names its part, in parentheses, in each**:
   `WID-30 (the moves 4 and 5)`. Its criteria are due at the last stage that
   lists it.
@@ -290,10 +298,11 @@ The first form checks the set itself:
   that is `—` or a question, and affected items that exist;
 - every *Pending* row names its question, and the **Open decisions** list holds
   exactly the *Pending* rows, each with a stage or phase that exists;
-- every item has its **What.**, **Rules.** and **Acceptance.** blocks, and
-  criteria whose numbers rise, each used once;
-- every item is in a stage, and an item in several stages names its part in
-  each.
+- every item has its **What.**, **Rules.** and **Acceptance.** blocks, a part
+  at least its **Acceptance.**, and criteria whose numbers rise, each used
+  once;
+- every item is in a stage, a part through its main item where no stage lists
+  it, and an item in several stages names its part in each.
 
 The second form also reads every file under the test paths for criterion ids.
 Each one cited must exist, and every criterion due by `--through`, the last

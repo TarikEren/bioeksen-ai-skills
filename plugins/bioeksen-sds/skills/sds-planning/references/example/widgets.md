@@ -158,3 +158,9 @@ creator.
 - **AC3.** If QA rejects without a reason, the rejection fails.
 
 **Trace.** §3.5
+
+### WID-41 Retire notices
+
+**Acceptance.**
+- **AC1.** When QA decides a retire request, the creator gets a notice.
+- **AC2.** When a widget gets `RETIRED`, its reviewer gets a notice.

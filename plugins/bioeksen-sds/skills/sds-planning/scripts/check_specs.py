@@ -11,7 +11,10 @@ This script checks what can be checked without reading the prose for its
 meaning: every id is defined once and every reference to one resolves; every
 decision row is complete; every item has its blocks and its criteria, and sits
 in the file the README names; the open decisions are exactly the Pending
-rows; and every item is in a stage of the build order.
+rows; and every item is in a stage of the build order. An item that is not the
+first of its group, such as WID-41 beside WID-40, is a part of the group's main
+item: it needs only its criteria, and it is built in the main item's stages
+unless a stage lists it.
 
 Given --tests, it also reads every file under those paths for criterion ids
 such as WID-30.AC6. Each one cited must exist, and every criterion of the
@@ -72,6 +75,7 @@ class Item(NamedTuple):
     file: str
     line: int
     criteria: list[int]
+    blocks: list[str]
 
 
 class Listing(NamedTuple):
@@ -174,6 +178,7 @@ class Specification:
         self.read_homes()
         self.read_decisions()
         self.read_items()
+        self.check_items()
         self.read_build_order()
         self.check_open_decisions()
         self.check_references()
@@ -297,13 +302,7 @@ class Specification:
                     continue
                 following = HEADING.search(text, match.end())
                 body = text[match.end():following.start() if following else len(text)]
-                blocks = BLOCK.findall(body)
-                for block in REQUIRED_BLOCKS:
-                    if block not in blocks:
-                        self.find(name, line, f"{item} has no **{block}.** block")
                 numbers = [int(number) for number in CRITERION.findall(body)]
-                if "Acceptance" in blocks and not numbers:
-                    self.find(name, line, f"{item} has no acceptance criterion")
                 if any(later <= earlier for earlier, later in zip(numbers, numbers[1:])):
                     given = ", ".join(f"AC{number}" for number in numbers)
                     self.find(name, line, f"{item} numbers its criteria {given}; the numbers "
@@ -312,7 +311,30 @@ class Specification:
                 if home and home != name:
                     self.find(name, line, f"{item} is in {name}; the README puts the "
                                           f"`{prefix}` items in {home}")
-                self.items[item] = Item(name, line, numbers)
+                self.items[item] = Item(name, line, numbers, BLOCK.findall(body))
+
+    def main_of(self, item: str) -> str | None:
+        """The main item of the group a part belongs to; None for an item that is
+        its group's main item, or whose group has none."""
+        prefix, number = item.split("-")
+        main = f"{prefix}-{int(number) // 10 * 10:0{len(number)}d}"
+        return main if main != item and main in self.items else None
+
+    def check_items(self) -> None:
+        """Each item's blocks. A part shares its main item's What and Rules."""
+        for item, where in self.items.items():
+            required = ("Acceptance",) if self.main_of(item) else REQUIRED_BLOCKS
+            for block in required:
+                if block not in where.blocks:
+                    self.find(where.file, where.line, f"{item} has no **{block}.** block")
+            if "Acceptance" in where.blocks and not where.criteria:
+                self.find(where.file, where.line, f"{item} has no acceptance criterion")
+
+    def stages_of(self, item: str) -> list[Listing]:
+        """Where an item is built: where the build order lists it, or, for a part
+        it does not list, where it lists the part's main item."""
+        main = self.main_of(item)
+        return self.listed.get(item) or (self.listed.get(main, []) if main else [])
 
     def read_build_order(self) -> None:
         span = section(self.readme, "Build order")
@@ -400,7 +422,7 @@ class Specification:
     def check_stages(self) -> None:
         for item, where in self.items.items():
             listings = self.listed.get(item, [])
-            if not listings:
+            if not self.stages_of(item):
                 self.find(where.file, where.line, f"{item} is in no stage of the build order")
             elif len(listings) > 1 and not all(listing.names_part for listing in listings):
                 whole = next(listing for listing in listings if not listing.names_part)
@@ -410,11 +432,11 @@ class Specification:
                           "stages names its part, in parentheses, in each")
 
     def due(self, through: int) -> list[str]:
-        """The criteria of every item due by a stage: listed there or before, and
+        """The criteria of every item due by a stage: built there or before, and
         nowhere later."""
         return [f"{item}.AC{number}" for item, where in self.items.items()
-                if self.listed.get(item)
-                and max(listing.stage for listing in self.listed[item]) <= through
+                if self.stages_of(item)
+                and max(listing.stage for listing in self.stages_of(item)) <= through
                 for number in where.criteria]
 
     def check_citations(self, files: list[Path], through: int) -> int:
