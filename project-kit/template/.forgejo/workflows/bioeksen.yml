@@ -17,7 +17,7 @@ on:
     tags: ["v*"]
 
 env:
-  KIT: /opt/bioeksen-sds/v0.8.0/project-kit
+  KIT: /opt/bioeksen-sds/v0.9.0/project-kit
 
 jobs:
   conventions:

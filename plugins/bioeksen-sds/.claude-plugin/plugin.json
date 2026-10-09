@@ -1,6 +1,6 @@
 {
   "name": "bioeksen-sds",
   "description": "Shared BioEksen conventions and practice: API design, auth, logging, configuration, commits, testing, database, reviewing, CI, and Next.js",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "author": { "name": "BioEksen Ar-Ge Teknolojileri A.Ş." }
 }
