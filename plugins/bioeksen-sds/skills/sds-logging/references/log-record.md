@@ -294,7 +294,10 @@ from the change it describes:
 - **The record outbox** holds every record but `AUDIT`. It is a local
   database on the app's own volume, such as an SQLite file, at the path
   `LOG_OUTBOX_PATH` names, per **Transport** in `SKILL.md`. It is never on a
-  shared database server, so it survives the failure it may be recording.
+  shared database server, so it survives the failure it may be recording. A
+  component that runs only inside jobs keeps it on its runner host's volume,
+  so that what one run could not deliver is still there for the next, per
+  `sds-api-design/references/standard-api-endpoints.md`.
 - **The audit outbox** holds the `AUDIT` records, in a table in the app's own
   database, written in the same transaction as the change each one describes.
   The change and its record commit or roll back together, so a crash between

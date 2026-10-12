@@ -41,6 +41,11 @@ Every value MUST be validated at startup, before the app reports ready:
   `sds-api-design/references/standard-api-endpoints.md`. Configuration does
   not recover by itself, so it is a failure, not `not-ready`.
 
+A component that runs only inside jobs has no readiness probe, per
+`sds-api-design/references/standard-api-endpoints.md`. While either code
+holds, it does no work: it writes the `FATAL` record and fails its run, so the
+failed job is what reports it.
+
 Validation MUST NOT be deferred to first use. Where a framework's build step
 loads the code without the runtime configuration, as a Next.js build does, the
 values are validated when the process starts: not at build time, where they

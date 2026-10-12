@@ -33,6 +33,10 @@ Every app MUST expose these five, with identical paths and schemas:
 All five MUST be served with `Cache-Control: no-store`. The principal column is
 `sds-auth`'s; the schemas and status codes are in the references below.
 
+A component that runs only inside jobs serves no endpoints, these included:
+there is no process between runs to serve them. Its outbox is on its runner
+host, per `references/standard-api-endpoints.md`.
+
 - `references/standard-api-endpoints.md` — the conventions and the reasoning
   behind them.
 - `references/openapi.yaml` — the normative OpenAPI 3.1 definition, takes precedence over the markdown.

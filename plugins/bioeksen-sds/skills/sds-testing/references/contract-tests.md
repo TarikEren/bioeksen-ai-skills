@@ -139,6 +139,8 @@ it logs and what it calls.
 | Aggregator down | An unreachable aggregator | A request is handled | It succeeds, and no slower than with the aggregator up | `sds-logging/references/log-record.md` |
 | Malformed record | An aggregator that answers 400 | The submission is handled | It is not retried, and the app records `LOG-4000` locally | `sds-logging/references/log-record.md` |
 | Aggregator unavailable | An aggregator that answers 503 | Records keep coming | They stay pending in the outbox, and are retried behind the breaker | `sds-logging/references/log-record.md` |
+| Delivered before a run ends | A component that runs only inside jobs, with pending records | Its run ends | It has submitted them first, and any the aggregator did not store are still in the outbox on the runner host | `sds-api-design/references/standard-api-endpoints.md` |
+| Left over, sent first | Records an earlier run left pending on the runner host | The next run starts | They are submitted before that run's own records | `sds-api-design/references/standard-api-endpoints.md` |
 | Batch rejected | A batch answered 400 naming two records | The app resubmits | Without those two, under a new `Idempotency-Key` | `sds-logging/references/aggregator-api.md` |
 
 ## Client errors
@@ -179,6 +181,7 @@ For a bridge that logs third-party software.
 | Checked at startup | A required value unset | The app starts, before any request arrives | `GET /api/health/ready` already answers 503, not only after a request needs the value | `sds-config/SKILL.md` |
 | Value not echoed | An unusable secret | The failure is logged | The record names the variable and never contains its value | `sds-config/SKILL.md` |
 | Test seam refused | A production deployment with a test seam's setting | The app starts | It does not report ready, with `CFG-5001`, and accepts no test credential | `sds-config/SKILL.md` |
+| Job fails on its configuration | A component that runs only inside jobs, with a required value unset | Its run starts | It does no work, writes a `FATAL` record carrying `CFG-5000`, and its job fails | `sds-config/SKILL.md` |
 
 ## Retention
 

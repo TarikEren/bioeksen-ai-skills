@@ -8,6 +8,21 @@ documented in the owning app's own API spec.
 - All requests and responses are `application/json; charset=utf-8`.
 - The keywords MUST, SHOULD and MAY are used as in RFC 2119.
 
+A component that runs only inside jobs, such as an AI task's wrapper started
+by a CI runner for one run, is not a web app, and serves no endpoints, these
+included. Nothing can probe a process that exists for one run, and between
+runs there is no process to ask. What these endpoints give a web app it gets
+another way:
+
+- **Its health is its job's result.** A run that cannot work fails, and the
+  CI service reports the failed job.
+- **Its records still go through an outbox**, per **The outbox** in
+  `sds-logging/references/log-record.md`, kept on the runner host's volume at
+  `LOG_OUTBOX_PATH`. The component delivers it before a run ends, and sends
+  whatever is still undelivered at the start of the next run, before its own
+  records. With no `GET /api/admin/logs` to read it, an operator reads the
+  aggregator, or the outbox on the runner host.
+
 ## Conventions
 
 ### Versioning
