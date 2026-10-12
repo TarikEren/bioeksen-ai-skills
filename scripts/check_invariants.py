@@ -85,6 +85,9 @@ TICKED_PATH = re.compile(
 LINK = re.compile(r"\]\(([^)\s]+)\)")
 # The same paths as they appear in plain YAML description text.
 PLAIN_PATH = re.compile(r"(?<![\w./-])((?:[\w-]+/)*[\w-]+\.(?:md|yaml))\b")
+# "... whose roles hold logs.write." — the role a security scheme requires.
+SCHEME_ROLE = re.compile(r"roles hold ([\w-]+(?:\.[\w-]+)*)")
+HTTP_METHODS = {"get", "put", "post", "delete", "patch", "head", "options", "trace"}
 # `---\nname: ...\n---` — the frontmatter block that decides when a skill loads.
 FRONTMATTER = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.S)
 
@@ -441,6 +444,50 @@ def main() -> int:
         fail("invariant 13", f"aggregator-api.yaml's ChangeId pattern is {stated!r}; "
                              f"mint_change_id.py mints {minted!r}")
 
+    # 14. sds-auth's Requirements by endpoint table restates every endpoint
+    # the schemas define, with the principal each requires. A reader protects
+    # an endpoint from that table, so an endpoint missing from it, or listed
+    # with another principal, is one protected differently from its schema.
+    # A security scheme's principal is the role its description says the
+    # credential's roles hold; an empty security list is "None".
+    schemes = {}
+    for source, doc in ((OPENAPI, spec), (AGGREGATOR_YAML, agg)):
+        for name, scheme in doc["components"]["securitySchemes"].items():
+            held = SCHEME_ROLE.search(" ".join(scheme.get("description", "").split()))
+            if not held:
+                fail("invariant 14", f"{source.name}: security scheme {name} names no role "
+                                     "its credential's roles hold")
+            schemes[(source, name)] = held.group(1) if held else name
+    defined = {}
+    for source, doc in ((OPENAPI, spec), (AGGREGATOR_YAML, agg)):
+        for path, item in doc["paths"].items():
+            for method, operation in item.items():
+                if method in HTTP_METHODS:
+                    defined[f"{method.upper()} {path}"] = {
+                        schemes[(source, scheme)] for requirement in operation.get("security", [])
+                        for scheme in requirement}
+    listed = {}
+    for row in table_rows(section(au, "Requirements by endpoint")):
+        principal = row.get("Principal", "")
+        roles = set() if principal == "None" else (
+            set(ticked(principal)) | ({"operator"} if "Operator" in principal else set()))
+        for endpoint in ticked(row.get("Endpoint", "")):
+            endpoint = re.sub(r":(\w+)", r"{\1}", endpoint.replace("HOST/", "/"))
+            listed[endpoint] = roles
+    if not listed:
+        fail("invariant 14", "no Requirements by endpoint table found in sds-auth/SKILL.md")
+    for endpoint in sorted(defined.keys() - listed.keys()):
+        fail("invariant 14", f"sds-auth's Requirements by endpoint table has no row for "
+                             f"{endpoint}, which a schema defines")
+    for endpoint in sorted(listed.keys() - defined.keys()):
+        fail("invariant 14", f"sds-auth's Requirements by endpoint table lists {endpoint}, "
+                             "which no schema defines")
+    for endpoint in sorted(defined.keys() & listed.keys()):
+        if defined[endpoint] != listed[endpoint]:
+            fail("invariant 14", f"sds-auth lets {sorted(listed[endpoint]) or 'anyone'} call "
+                                 f"{endpoint}; its schema lets "
+                                 f"{sorted(defined[endpoint]) or 'anyone'}")
+
     # Every skill needs the frontmatter that decides when it loads, and its
     # name must be its directory's.
     for skill in sorted(SKILLS.glob("*/SKILL.md")):
@@ -481,6 +528,8 @@ def main() -> int:
           "step, and pair each code with its status; the exemptions are listed once")
     print(f"OK - README.md's Skills table lists exactly the {len(skill_dirs)} skills")
     print("OK - the aggregator's ChangeId pattern is the one mint_change_id.py mints")
+    print(f"OK - sds-auth lists the {len(defined)} endpoints the schemas define, each with "
+          "the principal its schema requires")
     print("OK - every skill's frontmatter names its directory and has a description")
     return 0
 

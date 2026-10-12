@@ -278,6 +278,44 @@ paths:
         "503":
           $ref: "#/components/responses/NotReady"
 
+  /api/v1/codes:
+    get:
+      summary: List the error codes this aggregator accepts
+      description: >-
+        The registry the aggregator was built from. Release verification reads
+        it, and refuses a release whose build carries a code missing here,
+        since the aggregator would refuse that code's records and they would
+        never reach the archive. Open to an app holding logs.write, which is
+        what submits records, and to an operator.
+      operationId: listCodes
+      tags: [codes]
+      security:
+        - appAuth: []
+        - operatorAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RequestId"
+        - $ref: "#/components/parameters/RequestDeadline"
+      responses:
+        "200":
+          description: Every code accepted, each once, in ascending order.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CodeList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/NotReady"
+
   /api/v1/groups/{groupId}/issue:
     put:
       summary: Move an error group along its lifecycle, with the issue that tracks it
@@ -788,6 +826,25 @@ components:
             properties:
               label:
                 type: "null"
+
+    # The codes are checked against the code format, never against the
+    # ErrorCode enum: the list exists to compare two registries, so a reader
+    # built from an older release must still read one holding a newer code.
+    CodeList:
+      type: object
+      additionalProperties: false
+      required: [status, codes]
+      properties:
+        status:
+          type: string
+          const: ok
+        codes:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            pattern: '^[A-Z][A-Z0-9]{1,7}-[45][0-9]{3}$'
 
     # One count entry: the records of a group deleted past its cap in one
     # hour or one day, starting at start. Days begin at midnight UTC+03:00.

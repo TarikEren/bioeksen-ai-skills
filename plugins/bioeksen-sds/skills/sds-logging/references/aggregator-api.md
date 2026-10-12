@@ -219,6 +219,43 @@ git service's integration calls it, to find the group of a record a
 | 500 | Query failed |
 | 503 | Not ready |
 
+## `GET HOST/api/v1/codes`
+
+Returns every error code this aggregator accepts: the registry in
+`code-prefixes.md` of the `bioeksen-sds` release it was built from.
+
+The aggregator refuses a record whose code it does not list with 400
+`VAL-4002`, and a refused record never reaches the archive. An app's release
+can carry a code its own registry gained after the running aggregator was
+built, so release verification reads this endpoint, and refuses a release
+whose build carries a code missing from it, per `sds-ci/SKILL.md`. The
+aggregator is then always deployed first, and a new code is never refused.
+
+The codes are checked against the code format, never against the `ErrorCode`
+enumeration: the list exists to compare two registries, so a reader built from
+an older release must still read one that holds a newer code.
+
+### Response
+
+```json
+{
+    "status": "ok",
+    "codes": ["AUTH-4100", "AUTH-4101", "AUTH-4102"]
+}
+```
+
+`codes` holds every code accepted, each once, in ascending order.
+
+### Responses
+
+| HTTP | When |
+|------|------|
+| 200 | The codes this aggregator accepts |
+| 401 | No credential, or one that does not validate |
+| 403 | Authenticated, but neither an app holding `logs.write` nor an operator |
+| 429 | Over the caller's allowance — `RATE-4400`, carrying `Retry-After` |
+| 503 | Not ready |
+
 ## Groups
 
 The aggregator assigns every `ERROR` and `FATAL` record to an error **group**
@@ -512,6 +549,10 @@ highest-value read target in the estate. One exception: an app holding
 `logs.resolve` MAY also call `GET HOST/api/v1/logs/:recordId`, which is how
 the git service's integration finds the group of a record a `Fixes-Log:`
 trailer names. It reads only the records commits name.
+
+`GET HOST/api/v1/codes` MUST require an app credential holding `logs.write`,
+or an operator credential. It returns the registry, which holds no record, and
+an app that submits records is what has to know which codes are accepted.
 
 `PUT HOST/api/v1/groups/:groupId/issue` MUST require an app credential holding
 `logs.resolve`, which only the git service's integration holds. An operator

@@ -163,6 +163,13 @@ in CI on every push and pull request, and locally when you run it.
     `mint_change_id.py`, and the `ChangeId` schema in `aggregator-api.yaml`
     carries the same pattern, Python's named groups aside. A fix's Change-Id is
     stored on the group it resolves, so the format has to be one format.
+14. `sds-auth/SKILL.md`'s **Requirements by endpoint** table lists exactly the
+    endpoints the two OpenAPI files define, each with the principal its
+    operation's security requires: `None` for an empty list, `Operator` for
+    the operator scheme, and an app by the role its scheme's description says
+    the credential's roles hold. A reader protects an endpoint from that table,
+    so a row missing or wrong is an endpoint protected differently from its
+    schema.
 
 Every `SKILL.md` must also open with frontmatter whose `name` is its
 directory's and whose `description` is not empty — the description is what

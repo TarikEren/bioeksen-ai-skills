@@ -212,7 +212,7 @@ Roles are a closed list, like error codes, and this table is it:
 | Role | Assignable to | Defined on | Grants |
 |------|---------------|------------|--------|
 | `operator` | Users only | Every app's registration | Every operator endpoint in the estate: the full health report, an app's own `GET /api/admin/logs`, and the aggregator's read endpoints |
-| `logs.write` | Applications only | The aggregator's registration | Submitting log records, `POST /api/v1/logs` and `POST /api/v1/logs/batch` |
+| `logs.write` | Applications only | The aggregator's registration | Submitting log records, `POST /api/v1/logs` and `POST /api/v1/logs/batch`, and reading the codes the aggregator accepts, `GET /api/v1/codes` |
 | `logs.resolve` | Applications only | The aggregator's registration | Moving an error group along its lifecycle with the issue that tracks it, `PUT /api/v1/groups/{groupId}/issue`, and reading a record to find its group, `GET /api/v1/logs/{recordId}`. Held by the git service's integration alone |
 
 "Assignable to" is the app role's allowed member type in the directory. It is

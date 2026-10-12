@@ -280,5 +280,35 @@
     "schema": "aggregator-api.yaml#/components/schemas/StoredLogPage",
     "valid": true,
     "instance": {"status": "ok", "page": 1, "count": 1, "totalCount": 137, "logs": [{"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21", "group": "01J9Z4K7XQ2M8N3P5R6S7T8V9W"}], "filterParams": {"id": null, "severity": null, "type": null, "code": null, "startDate": "2026-06-05T00:00:00Z", "endDate": "2026-09-03T23:59:59Z", "page": 1, "limit": 50}}
+  },
+  {
+    "name": "the codes an aggregator accepts",
+    "schema": "aggregator-api.yaml#/components/schemas/CodeList",
+    "valid": true,
+    "instance": {"status": "ok", "codes": ["AUTH-4100", "DB-5001", "SYS-5000"]}
+  },
+  {
+    "name": "a code newer than the reader's registry",
+    "schema": "aggregator-api.yaml#/components/schemas/CodeList",
+    "valid": true,
+    "instance": {"status": "ok", "codes": ["AUTH-4100", "PERM-4153"]}
+  },
+  {
+    "name": "a code listed twice",
+    "schema": "aggregator-api.yaml#/components/schemas/CodeList",
+    "valid": false,
+    "instance": {"status": "ok", "codes": ["AUTH-4100", "AUTH-4100"]}
+  },
+  {
+    "name": "a code in lower case",
+    "schema": "aggregator-api.yaml#/components/schemas/CodeList",
+    "valid": false,
+    "instance": {"status": "ok", "codes": ["auth-4100"]}
+  },
+  {
+    "name": "no codes at all",
+    "schema": "aggregator-api.yaml#/components/schemas/CodeList",
+    "valid": false,
+    "instance": {"status": "ok", "codes": []}
   }
 ]

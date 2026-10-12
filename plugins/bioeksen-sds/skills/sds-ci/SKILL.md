@@ -133,7 +133,9 @@ production at a moment the estate can name.
     `git log --no-merges {previous}..{tag}` in a repository holding one
     service;
   - once an aggregator runs, it accepts every error code the release's build
-    contains, so that no record the release writes is refused and lost.
+    contains, as `GET /api/v1/codes` in
+    `sds-logging/references/aggregator-api.md` lists them, so that no record
+    the release writes is refused and lost.
 
   A release failing any check is not deployed. The refusal is logged as
   `JOB-4000`, its check in the structured tail, e.g. `reason=version-mismatch`,

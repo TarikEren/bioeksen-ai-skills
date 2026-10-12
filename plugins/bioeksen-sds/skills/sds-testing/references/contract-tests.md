@@ -190,6 +190,17 @@ For the aggregator. Every case submits records as an app holding `logs.write`, a
 | Link without the role | An app credential without `logs.resolve`, or an operator's | It links a group to an issue | 403 `PERM-4150` | `sds-auth/references/credentials.md` |
 | Record read to find its group | An app credential holding `logs.resolve` | It reads a record by its `recordId` | 200, the record with its `group` | `sds-auth/references/credentials.md` |
 
+## Codes
+
+For the aggregator.
+
+| Case | Given | When | Then | Source |
+|------|-------|------|------|--------|
+| Codes for an app | An app credential holding `logs.write` | `GET /api/v1/codes` is called | 200, every code of the aggregator's registry, each once, in ascending order | `sds-logging/references/aggregator-api.md` |
+| Codes for an operator | An operator credential | `GET /api/v1/codes` is called | 200, the same codes | `sds-auth/references/credentials.md` |
+| Codes without the role | An app credential without `logs.write` | `GET /api/v1/codes` is called | 403 `PERM-4150` | `sds-auth/references/credentials.md` |
+| Unlisted code refused | A record whose code `GET /api/v1/codes` does not list | It is submitted | 400 `VAL-4002`, and nothing is stored | `sds-logging/references/aggregator-api.md` |
+
 ## Health
 
 | Case | Given | When | Then | Source |
