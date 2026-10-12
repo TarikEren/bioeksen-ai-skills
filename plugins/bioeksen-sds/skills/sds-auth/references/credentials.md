@@ -361,7 +361,12 @@ a missing one is `CFG-5000` at startup, a present but unusable one is
 These names are fixed for every app, as `LOG_LEVEL` is, so an operator finds
 a setting under the same name everywhere.
 
-An app MUST fail to start when any value required of it is missing, rather
-than starting and rejecting every request it receives. A service that is up but can
-authenticate nobody is harder to diagnose than one that never came up, and it
-stays in the load balancer's rotation while it does it.
+A value required of an app that is missing or unusable is handled as every
+configuration value is, per **When it is validated** in `sds-config/SKILL.md`,
+which is normative for it: the app does not report ready,
+`GET /api/health/ready` answers 503 `fail`, and a `FATAL` record carrying
+`CFG-5000` or `CFG-5001` names the variable, never its value. An app that
+reported ready while it could authenticate nobody would stay in the load
+balancer's rotation, and answer every caller with a 401 that blames the
+caller's own credential. An app that is not ready leaves the rotation, and its
+record says why.
