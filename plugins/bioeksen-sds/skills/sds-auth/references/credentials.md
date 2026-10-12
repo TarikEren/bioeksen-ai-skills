@@ -42,6 +42,18 @@ belongs to which software id. The aggregator needs exactly that mapping to
 refuse a record submitted under another app's `id` — see
 `sds-logging/references/aggregator-api.md`.
 
+Every app's registration MUST also set:
+
+- **`requestedAccessTokenVersion: 2`**, in its manifest. A version 1 token
+  carries no `azp`, which the aggregator needs to tell which app sent a
+  record. It also names its issuer `https://sts.windows.net/{tenantId}/`, so
+  it fails the `iss` check and is refused with `AUTH-4101`.
+- **Assignment required: Yes**, on its enterprise application. Without it,
+  any account in the tenant, guests included, can sign in to the app and get
+  a token for it. With it, only the people and the apps assigned one of the
+  app's roles can, so the directory's assignments are the app's first check,
+  before any of its code runs.
+
 ### Principal type
 
 The claims table requires a token to say which principal it carries. Entra does
@@ -107,7 +119,8 @@ literal `typ` claim from a protocol mapper instead of being derived.
 | Claim | Meaning | Rule |
 |-------|---------|------|
 | `iss` | Issuer | MUST match the configured issuer exactly |
-| `sub` | The principal | App id for an app, stable user id for an operator |
+| `oid` | The principal's object id | MUST be present. With `tid`, the one key a principal is stored, compared and logged under: the person's, or the calling app's service principal's |
+| `sub` | The subject | Never a key: Entra gives the same person a different `sub` in every app registration |
 | `azp` | The calling client | MUST be present. The client id of the application the token was issued to — for an app principal, the calling app itself |
 | `aud` | Intended audience | MUST name the receiving app; a token for one service MUST NOT be accepted by another |
 | `exp` | Expiry | MUST be present; see lifetimes |
@@ -120,6 +133,13 @@ operator requirement" checkable. Without it, that rule depends on inspecting
 `sub` formats, which is guesswork. It is a derived value rather than a claim
 named `typ` only because the issuer cannot emit one on an app-only token; the
 requirement is identical.
+
+A principal is keyed by `oid` with `tid`, never by `sub`. Entra's `sub` is
+pairwise: the same person carries a different one in every app, so a person
+keyed by it in one app is a stranger in the next, and two apps' records of
+them cannot be joined. `oid` is the same in every app of the tenant, and it is
+what `user=` carries in a log record, per
+`sds-logging/references/log-record.md`.
 
 `tid` and `iss` are redundant in a single-tenant configuration, which is the
 point of checking both. `iss` is a string comparison that a copied
@@ -194,7 +214,7 @@ Revoking an app credential means rotating that app's client secret or
 certificate, disabling its service principal, or removing its app role
 assignment. **None of those invalidates a token already issued.** The revocation
 window is therefore the token lifetime, up to 90 minutes. An incident that
-cannot wait that long needs the receiving app to stop accepting the `sub`
+cannot wait that long needs the receiving app to stop accepting the `oid`
 itself — a deny list, which is a different mechanism from a credential rotation
 and belongs to whoever runs the incident.
 
@@ -273,7 +293,7 @@ endpoint, so it presents the person's delegated token instead:
   it for one addressed to the target app with the on-behalf-of flow, again
   requesting the target's operator scope.
 
-Either way the token that arrives carries the person's `sub`, `scp` and
+Either way the token that arrives carries the person's `oid`, `scp` and
 `roles`, so the receiving app sees an operator — or refuses a person who is not
 one — exactly as if the person had called it directly. A tool MUST NOT fall
 back to its own credential when the person's is unavailable: an app credential

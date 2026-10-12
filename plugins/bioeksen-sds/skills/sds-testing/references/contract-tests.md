@@ -102,6 +102,8 @@ it logs and what it calls.
 | Expired and forged | An expired token that also carries a bad signature | A protected endpoint is called | 401 `AUTH-4102`, because expiry is checked first | `sds-auth/SKILL.md` |
 | Bad signature | An unexpired token signed by a key the verifier does not trust | A protected endpoint is called | 401 `AUTH-4101` | `sds-auth/SKILL.md` |
 | Wrong audience | An unexpired token whose `aud` names another app | It is presented here | 401 `AUTH-4101` | `sds-auth/references/credentials.md` |
+| Version 1 token | An unexpired version 1 token from the configured tenant | A protected endpoint is called | 401 `AUTH-4101` | `sds-auth/references/credentials.md` |
+| Keyed by oid | Two tokens for one person, with the same `oid` and `tid` and different `sub` values | Each is presented | The app treats them as one person, and its records name them by the same `user=` | `sds-auth/references/credentials.md` |
 | Issuer unreachable | A token with an unknown `kid` while the key fetch fails | A protected endpoint is called | 503 `AUTH-5500` | `sds-auth/references/credentials.md` |
 | Foreign origin | A request whose `Origin` is another site's | An endpoint that accepts only its app's own origin is called | 403 `PERM-4153` | `sds-auth/SKILL.md` |
 | Origin before role | A non-operator's request from another site | An operator endpoint that accepts only its app's own origin is called | 403 `PERM-4153`, not `PERM-4151` | `sds-logging/references/code-prefixes.md` |
