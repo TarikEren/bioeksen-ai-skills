@@ -85,6 +85,8 @@ the plugin is installed or the repository is being read directly.
 - **The aggregator's own endpoints** — `sds-logging/references/aggregator-api.yaml`,
   normative on the same terms. It references the schemas above rather than
   copying them, so the two cannot drift apart.
+- **The employee directory** — `sds-auth/references/employees-api.yaml`, the
+  endpoints every app reads its employees from, normative on the same terms.
 - **Calling another service** — `sds-api-design/references/service-calls.md`.
   What a caller does when a call is slow, fails, or must not be repeated.
 

@@ -25,10 +25,11 @@ jobs:
       - name: Check cross-file invariants
         run: python scripts/check_invariants.py
 
-      - name: Validate both schemas against OpenAPI 3.1
+      - name: Validate the three schemas against OpenAPI 3.1
         run: |
           openapi-spec-validator plugins/bioeksen-sds/skills/sds-api-design/references/openapi.yaml
           openapi-spec-validator plugins/bioeksen-sds/skills/sds-logging/references/aggregator-api.yaml
+          openapi-spec-validator plugins/bioeksen-sds/skills/sds-auth/references/employees-api.yaml
 
       - name: Check the fixtures, and the conformance check against its stub
         run: python project-kit/conformance/check_service.py --self-test

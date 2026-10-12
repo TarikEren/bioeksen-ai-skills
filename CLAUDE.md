@@ -5,7 +5,7 @@ skills are the shared specifications every BioEksen service is built against,
 the shared practice built on them, and the Next.js skills that carry both out.
 
 There is no application code here — nothing for an LSP to navigate. It is
-Markdown and two OpenAPI files, so grep is the right tool, with Python in three
+Markdown and three OpenAPI files, so grep is the right tool, with Python in three
 places: `scripts/check_invariants.py`, which enforces the invariants below; the
 scripts a skill tells an assistant to run; and the tools in `project-kit/`,
 which carry their own unit tests.
@@ -16,7 +16,7 @@ Run it before committing any change to a skill:
 python scripts/check_invariants.py
 ```
 
-CI additionally validates both OpenAPI files against the 3.1 specification,
+CI additionally validates the three OpenAPI files against the 3.1 specification,
 runs the conformance self-test and the kit tools' unit tests, and checks every
 commit's message, every `feat` and `fix` commit's test, and every release note
 with the tools in `project-kit/`. To run the first three locally,
@@ -80,6 +80,8 @@ one is normative and the other says so:
 | Standard endpoint schemas | `sds-api-design/references/openapi.yaml` — the markdown beside it is rationale |
 | Outbound call behaviour | `sds-api-design/references/service-calls.md` — timeouts, retries, breakers, idempotency |
 | Aggregator endpoint schemas | `sds-logging/references/aggregator-api.yaml` — the markdown beside it is rationale |
+| Employee directory endpoint schemas | `sds-auth/references/employees-api.yaml` — the markdown beside it is rationale |
+| The roles and the company roles | `sds-auth/references/credentials.md`, its **Roles** and **Company roles** tables |
 | The test-first rule and its exemptions | `sds-testing/SKILL.md` — `sds-commit/SKILL.md` defines only the trailer that names an exemption |
 | Configuration: one module, validation before ready, declared values, secrets | `sds-config/SKILL.md` — the variable names are fixed where their values are defined: `LOG_LEVEL` and the transport's in `sds-logging/SKILL.md`, the authentication values' in `sds-auth/references/credentials.md`; and `sds-logging/references/log-record.md` keeps the software id out of configuration |
 | Contract test cases | `sds-testing/references/contract-tests.md` — each case restates one assertion; its code, status or field stays normative in the source the case names |
@@ -107,15 +109,16 @@ in CI on every push and pull request, and locally when you run it.
 4. The five standard endpoints in `openapi.yaml` are exactly `/api/health`,
    `/api/health/live`, `/api/health/ready`, `/api/admin/logs` and
    `/api/client-errors`, unversioned;
-   every endpoint in `aggregator-api.md` is served under `/api/v{major}/`.
+   every endpoint in `aggregator-api.md` and `employees-api.md` is served
+   under `/api/v{major}/`.
    Those five are the only unversioned paths in the estate.
 5. The retry classification in `sds-api-design/references/service-calls.md`
    covers exactly the two server-fault ranges of `error-codes.md`, and calls
    the 503 range retryable and the 500 range not. Retry policy is derived from
    the code numbering rather than kept as a second list.
 6. Every `$ref` in every OpenAPI file resolves, across files as well as within
-   one. The aggregator schema references the shared enumerations and log record
-   fields rather than copying them, so a rename that breaks the link has to
+   one. The aggregator and directory schemas reference the shared enumerations, log record
+   fields and envelopes rather than copying them, so a rename that breaks the link has to
    fail loudly — a second copy that silently drifts is what this avoids.
 
 7. The plugin version in `marketplace.json`'s `plugins` entry equals the one in
@@ -165,7 +168,7 @@ in CI on every push and pull request, and locally when you run it.
     carries the same pattern, Python's named groups aside. A fix's Change-Id is
     stored on the group it resolves, so the format has to be one format.
 14. `sds-auth/SKILL.md`'s **Requirements by endpoint** table lists exactly the
-    endpoints the two OpenAPI files define, each with the principal its
+    endpoints the three OpenAPI files define, each with the principal its
     operation's security requires: `None` for an empty list, `Operator` for
     the operator scheme, and an app by the role its scheme's description says
     the credential's roles hold. A reader protects an endpoint from that table,
@@ -177,7 +180,8 @@ directory's and whose `description` is not empty — the description is what
 decides when the skill loads.
 
 The endpoints in `aggregator-api.md` and `aggregator-api.yaml` must also be the
-same set, which invariant 4 checks. The prose writes a path parameter as
+same set, and so must those in `employees-api.md` and `employees-api.yaml`,
+which invariant 4 checks. The prose writes a path parameter as
 `:recordId` and the schema as `{recordId}`; the checker normalises between them.
 
 ## Rules for editing

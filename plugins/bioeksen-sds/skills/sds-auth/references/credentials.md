@@ -1,11 +1,11 @@
 # Credentials
 
-Token format, claims and lifetimes for the two principals defined in
-`SKILL.md`.
+Token format, claims and lifetimes for the three principals defined in
+`SKILL.md`, and the roles they hold.
 
 ## Format
 
-Both credential types are JWTs, signed (never `alg: none`, never symmetric
+Every credential is a JWT, signed (never `alg: none`, never symmetric
 keys shared between services). A JWT is chosen over an opaque token for one
 reason that the specs already depend on: `AUTH-4102` requires distinguishing
 *expired* from *invalid* without a call to the issuer, which needs a readable
@@ -13,8 +13,8 @@ reason that the specs already depend on: `AUTH-4102` requires distinguishing
 
 ## Issuer
 
-Tokens are issued by **Microsoft Entra ID**, from one tenant, for both
-principal types.
+Tokens are issued by **Microsoft Entra ID**, from one tenant, for every
+principal type.
 
 Entra was chosen because BioEksen operators already have managed accounts in
 it. Operator identity, MFA, conditional access and offboarding arrive with the
@@ -64,7 +64,7 @@ from claims Entra does emit**:
 |-------|-----------|
 | `scp` absent, `roles` present | App |
 | `scp` holds the configured operator scope, and `roles` holds `operator` | Operator |
-| `scp` present otherwise | A person who is not an operator. No endpoint in these specs accepts one |
+| `scp` present otherwise | An employee: a person signed in to the app as themselves. Only the app's own endpoints accept one, per **Company roles** |
 | Neither present | Rejected, `AUTH-4101` |
 
 This is the distinction the issuer itself draws between a delegated and an
@@ -87,6 +87,8 @@ What an endpoint answers follows from the principal it requires:
 | Operator | An app, or a person who is not an operator | `PERM-4151` |
 | App | An app holding the role the endpoint requires | Proceeds |
 | App | An app without it, or any person | `PERM-4150` |
+| Employee | An employee holding the company role the endpoint requires, or any employee when it requires none | Proceeds |
+| Employee | An employee without that role, or an app | `PERM-4150` |
 
 `scp` rather than `roles` is the discriminator because a delegated token can
 carry both: operator roles are app roles assigned to a person, and they arrive
@@ -227,12 +229,15 @@ and belongs to whoever runs the incident.
 
 ## Roles
 
-Roles are a closed list, like error codes, and this table is it:
+Roles are a closed list, like error codes, and this table is it, with the
+company roles in **Company roles** below:
 
 | Role | Assignable to | Defined on | Grants |
 |------|---------------|------------|--------|
 | `operator` | Users only | Every app's registration | Every operator endpoint in the estate: the full health report, an app's own `GET /api/admin/logs`, and the aggregator's read endpoints |
 | `logs.write` | Applications only | The aggregator's registration | Submitting log records, `POST /api/v1/logs` and `POST /api/v1/logs/batch`, and reading the codes the aggregator accepts, `GET /api/v1/codes` |
+| `monitor` | Users only | `bio-softop`'s registration | Read-only use of `bio-softop`'s own pages: health, logs, error groups, tasks, deploys and the registry. No endpoint in these specs, and no action |
+| `employees.read` | Applications only | `bio-softop`'s registration, which serves the employee directory | Reading the employee directory, `GET /api/v1/employees` and `GET /api/v1/employees/{oid}`, per `employees-api.md` |
 | `logs.resolve` | Applications only | The aggregator's registration | Moving an error group along its lifecycle with the issue that tracks it, `PUT /api/v1/groups/{groupId}/issue`, and reading a record to find its group, `GET /api/v1/logs/{recordId}`. Held by the git service's integration alone |
 
 "Assignable to" is the app role's allowed member type in the directory. It is
@@ -245,7 +250,7 @@ role that means the same thing on every app.
 
 A role is added to this table by a human, in the same commit as the spec of
 the endpoint that requires it, and only then created on the owning app's
-registration. An app MUST NOT require a role this table does not list: a role
+registration. An app MUST NOT require a role neither table lists: a role
 defined in one service is an authorization decision in a place nobody auditing
 access will look for it.
 
@@ -279,6 +284,36 @@ A second operator role is added to the table above on the same terms as any
 role, assignable to users only. Because an app ignores roles it does not
 check for, adding one cannot break anything deployed, which is what makes
 keeping one role today a cheap decision rather than a commitment.
+
+### Company roles
+
+A company role says what an employee does in the company, such as
+`lab-manager`, and is what an app's own endpoints require of an employee. An
+employee is given one once, not once per app:
+
+- **The company roles are a closed list**, the table below, on the same terms
+  as the roles above: a human adds one, in the same commit as the
+  specification of the first endpoint that requires it. Each is a kebab-case
+  noun, taken from the roles the apps' own users tables held before the
+  employee directory.
+- **Each is an Entra security group**, named `bio-role-{role}`. An employee
+  holds the role by being a member of its group, and is added once.
+- **With Entra ID P1**, every app's registration defines the company roles its
+  endpoints require as app roles, assignable to users only, and each is
+  assigned to its group once, when the app is created. Tokens then carry the
+  role names in `roles`, and no employee is ever assigned to an app by hand.
+- **Without P1**, a group cannot be assigned to an app role. The app reads an
+  employee's roles from the employee directory instead,
+  `GET /api/v1/employees/{oid}` in `employees-api.md`, as an app holding
+  `employees.read`.
+
+`@bioeksen/sdk` hides which of the two is in use, so an app checks role
+names either way, and, as with every role, ignores the ones it does not
+require.
+
+| Company role | Means |
+|--------------|-------|
+| None yet | The list is filled from the apps' existing users tables as they move to the directory |
 
 ## Acting for a person
 
@@ -320,6 +355,7 @@ a missing one is `CFG-5000` at startup, a present but unusable one is
 | Operator scope | `ENTRA_OPERATOR_SCOPE` | Every app | The `scp` value marking a delegated token as an operator |
 | Clock skew | `AUTH_CLOCK_SKEW_SECONDS` | Every app | 60 seconds, per **Validation** |
 | Client id to software id | — | The aggregator | Served by `bio-softop`'s registry; not configuration |
+| Employee directory | `DIRECTORY_URL` | Apps that read the employee directory | Where the directory is served, `HOST` in `employees-api.md` |
 | Trusted proxies | `TRUSTED_PROXIES` | Apps behind a proxy | The addresses whose `X-Forwarded-For` entries are believed when finding a request's source, per the rate limiting rule in `SKILL.md` |
 
 These names are fixed for every app, as `LOG_LEVEL` is, so an operator finds

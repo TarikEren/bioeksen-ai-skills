@@ -34,7 +34,9 @@ AGGREGATOR = SKILLS / "sds-logging" / "references" / "aggregator-api.md"
 SERVICE_CALLS = SKILLS / "sds-api-design" / "references" / "service-calls.md"
 OPENAPI = SKILLS / "sds-api-design" / "references" / "openapi.yaml"
 AGGREGATOR_YAML = SKILLS / "sds-logging" / "references" / "aggregator-api.yaml"
-SCHEMAS = (OPENAPI, AGGREGATOR_YAML)
+EMPLOYEES = SKILLS / "sds-auth" / "references" / "employees-api.md"
+EMPLOYEES_YAML = SKILLS / "sds-auth" / "references" / "employees-api.yaml"
+SCHEMAS = (OPENAPI, AGGREGATOR_YAML, EMPLOYEES_YAML)
 LOG_RECORD = SKILLS / "sds-logging" / "references" / "log-record.md"
 LOGGING_SKILL = SKILLS / "sds-logging" / "SKILL.md"
 STANDARD_ENDPOINTS = SKILLS / "sds-api-design" / "references" / "standard-api-endpoints.md"
@@ -65,7 +67,7 @@ SELECT_ROW = re.compile(r"^\|\s*\d+\s*\|\s*.+?\s*\|\s*`([A-Z0-9-]+)`\s*\|\s*$", 
 AUTH_ROW = re.compile(r"^\|\s*\d+\s*\|\s*.+?\s*\|\s*`([A-Z0-9-]+)`\s*\|\s*\d{3}\s*\|\s*$", re.M)
 # `| `4100-4149` | 401 | Missing or invalid credential |` — the range table.
 RANGE_ROW = re.compile(r"^\|\s*`(\d{4})-(\d{4})`\s*\|\s*(\d{3})\s*\|", re.M)
-# '## `POST HOST/api/v1/logs`' — an aggregator endpoint heading.
+# '## `POST HOST/api/v1/logs`' — an aggregator or directory endpoint heading.
 AGG_PATH = re.compile(r"^##\s+`(?:GET|POST|PUT|PATCH|DELETE)\s+HOST(/\S*?)`\s*$", re.M)
 # `| `5500-5999` | 503 | Yes |` — the retry classification.
 RETRY_ROW = re.compile(r"^\|\s*`(\d{4})-(\d{4})`\s*\|\s*(\d{3})\s*\|\s*(Yes|No)\s*\|", re.M)
@@ -216,18 +218,24 @@ def main() -> int:
         for missing in sorted(STANDARD_PATHS - paths):
             fail("invariant 4", f"openapi.yaml no longer defines {missing}")
     agg = yaml.safe_load(read(AGGREGATOR_YAML))
-    # `:recordId` in the prose is `{recordId}` in the schema; same endpoint.
-    documented_paths = {re.sub(r":(\w+)", r"{\1}", p)
-                        for p in AGG_PATH.findall(read(AGGREGATOR))}
-    if not documented_paths:
-        fail("invariant 4", "no endpoint headings found in aggregator-api.md")
-    for path in documented_paths | set(agg["paths"]):
-        if not re.match(r"^/api/v\d+/", path):
-            fail("invariant 4", f"aggregator endpoint {path} is app-specific and "
-                                "must be served under /api/v{major}/")
-    if documented_paths != set(agg["paths"]):
-        fail("invariant 4", f"aggregator-api.md documents {sorted(documented_paths)}, "
-                            f"aggregator-api.yaml defines {sorted(agg['paths'])}")
+    emp = yaml.safe_load(read(EMPLOYEES_YAML))
+    # The aggregator and the employee directory are each documented in prose
+    # beside their schema. `:recordId` in the prose is `{recordId}` in the
+    # schema; same endpoint.
+    documented_paths = set()
+    for prose, schema, doc in ((AGGREGATOR, AGGREGATOR_YAML, agg),
+                               (EMPLOYEES, EMPLOYEES_YAML, emp)):
+        documented = {re.sub(r":(\w+)", r"{\1}", p) for p in AGG_PATH.findall(read(prose))}
+        documented_paths |= documented
+        if not documented:
+            fail("invariant 4", f"no endpoint headings found in {prose.name}")
+        for path in documented | set(doc["paths"]):
+            if not re.match(r"^/api/v\d+/", path):
+                fail("invariant 4", f"{prose.stem} endpoint {path} is app-specific and "
+                                    "must be served under /api/v{major}/")
+        if documented != set(doc["paths"]):
+            fail("invariant 4", f"{prose.name} documents {sorted(documented)}, "
+                                f"{schema.name} defines {sorted(doc['paths'])}")
 
     # 5. Retryable is exactly the 503 range, non-retryable exactly the 500 range.
     retry = {(int(a), int(b), int(h)): yes == "Yes"
@@ -242,7 +250,7 @@ def main() -> int:
             fail("invariant 5", f"service-calls.md calls {lo}-{hi} ({http}) {verb}")
 
     # 6. Every $ref in every schema file resolves, across files as well as within.
-    loaded = {OPENAPI: spec, AGGREGATOR_YAML: agg}
+    loaded = {OPENAPI: spec, AGGREGATOR_YAML: agg, EMPLOYEES_YAML: emp}
     refs = 0
     for source in SCHEMAS:
         for ref in iter_refs(loaded[source]):
@@ -451,7 +459,7 @@ def main() -> int:
     # A security scheme's principal is the role its description says the
     # credential's roles hold; an empty security list is "None".
     schemes = {}
-    for source, doc in ((OPENAPI, spec), (AGGREGATOR_YAML, agg)):
+    for source, doc in ((OPENAPI, spec), (AGGREGATOR_YAML, agg), (EMPLOYEES_YAML, emp)):
         for name, scheme in doc["components"]["securitySchemes"].items():
             held = SCHEME_ROLE.search(" ".join(scheme.get("description", "").split()))
             if not held:
@@ -459,7 +467,7 @@ def main() -> int:
                                      "its credential's roles hold")
             schemes[(source, name)] = held.group(1) if held else name
     defined = {}
-    for source, doc in ((OPENAPI, spec), (AGGREGATOR_YAML, agg)):
+    for source, doc in ((OPENAPI, spec), (AGGREGATOR_YAML, agg), (EMPLOYEES_YAML, emp)):
         for path, item in doc["paths"].items():
             for method, operation in item.items():
                 if method in HTTP_METHODS:
@@ -515,7 +523,7 @@ def main() -> int:
           f"{len(db_rows)} database failures name each step's own code")
     print("OK - every code's HTTP status matches the range table")
     print(f"OK - the {len(STANDARD_PATHS)} standard endpoints are unversioned and "
-          f"the {len(documented_paths)} aggregator paths are not")
+          f"the {len(documented_paths)} aggregator and directory paths are not")
     print("OK - retryable codes are exactly the 503 range, per error-codes.md")
     print(f"OK - all {refs} $refs across {len(SCHEMAS)} schema files resolve")
     print("OK - manifests parse and agree on the plugin version, and the project "

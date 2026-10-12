@@ -111,6 +111,8 @@ it logs and what it calls.
 | Person without the role | A delegated token with the operator scope and no `operator` role | An operator endpoint is called | 403 `PERM-4151` | `sds-auth/references/credentials.md` |
 | Another principal's resource | A submitted log record whose `id` is another app's | It reaches the aggregator | 403 `PERM-4152` | `sds-logging/references/aggregator-api.md` |
 | Missing role | An app credential without the role the endpoint requires | The endpoint is called | 403 `PERM-4150` | `sds-auth/references/credentials.md` |
+| Employee without the company role | An employee's token without the company role an endpoint of the app requires | The endpoint is called | 403 `PERM-4150` | `sds-auth/references/credentials.md` |
+| App at an employee endpoint | A valid app credential | An endpoint that requires an employee is called | 403 `PERM-4150` | `sds-auth/references/credentials.md` |
 | Says nothing more | Any 401 or 403 | The response is sent | `message` and `details` name no claim, and reveal nothing about the target or the principal | `sds-auth/SKILL.md` |
 | Refresh lead | An app credential whose lifetime, read from `exp`, is L | The app keeps running | It refreshes at 75% of L, before any request is rejected | `sds-auth/references/credentials.md` |
 | Open probes | A request with no credential | `GET /api/health/live` or `GET /api/health/ready` is called | It is answered without a 401 | `sds-auth/SKILL.md` |
@@ -236,6 +238,19 @@ For the aggregator.
 | Codes for an operator | An operator credential | `GET /api/v1/codes` is called | 200, the same codes | `sds-auth/references/credentials.md` |
 | Codes without the role | An app credential without `logs.write` | `GET /api/v1/codes` is called | 403 `PERM-4150` | `sds-auth/references/credentials.md` |
 | Unlisted code refused | A record whose code `GET /api/v1/codes` does not list | It is submitted | 400 `VAL-4002`, and nothing is stored | `sds-logging/references/aggregator-api.md` |
+
+## Employee directory
+
+For the directory, and for an app that reads it.
+
+| Case | Given | When | Then | Source |
+|------|-------|------|------|--------|
+| Directory for an app | An app credential holding `employees.read` | `GET /api/v1/employees` is called | 200, a page of employees ordered by `oid` | `sds-auth/references/employees-api.md` |
+| Directory without the role | An app credential without `employees.read` | `GET /api/v1/employees` is called | 403 `PERM-4150` | `sds-auth/references/credentials.md` |
+| Unknown employee | An `oid` no employee has | `GET /api/v1/employees/:oid` is called | 404 `RES-4200` | `sds-auth/references/employees-api.md` |
+| Unknown company role | A `role` filter the company roles list does not hold | `GET /api/v1/employees` is called | 400 `VAL-4002` | `sds-auth/references/employees-api.md` |
+| Erased employee | An employee whose data was erased | They are fetched by `oid` | 200, `state: erased`, every personal field `null`, and no role | `sds-auth/references/employees-api.md` |
+| Roles without P1 | An app on a tenant without Entra ID P1, and an employee in a `bio-role-*` group | The employee calls an endpoint requiring that role | The app finds the role through the directory, and the call proceeds | `sds-auth/references/credentials.md` |
 
 ## Audit chain
 
