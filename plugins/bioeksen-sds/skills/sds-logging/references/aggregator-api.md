@@ -24,7 +24,9 @@ row on write. It is not part of a submitted record, and it is not the record's
 `id` field, which names the emitting app. It is returned by every endpoint
 below and is what `GET HOST/api/v1/logs/:recordId` takes. `group` is the
 `groupId` of the error group an `ERROR` or `FATAL` record belongs to, per
-**Groups**, and `null` on every other record.
+**Groups**, and `null` on every other record. `chain` is an `AUDIT` record's
+place in its day's hash chain, per **Audit records**, and `null` on every
+other record.
 
 ## `POST HOST/api/v1/logs`
 
@@ -57,7 +59,7 @@ one of which the schema enforces:
 - `code` MUST NOT be null when `severity` is `ERROR` or `FATAL`
 - `severity` MUST NOT be `DEBUG`: a `DEBUG` record never leaves the app that
   wrote it, per `log-record.md`, so one submitted is refused with `VAL-4006`
-- A submission carrying `recordId` or `group` MUST be rejected with
+- A submission carrying `recordId`, `group` or `chain` MUST be rejected with
   `VAL-4007`, as any field outside the six is. The aggregator assigns both; an
   app that believes it chooses them should find that out at once rather than
   have the value silently dropped
@@ -183,7 +185,8 @@ it, so a listing can be followed to a single record.
             "type": "APP",
             "code": "DB-5001",
             "message": "write failed request=8c21",
-            "group": "01J9Z4K7XQ2M8N3P5R6S7T8V9W"
+            "group": "01J9Z4K7XQ2M8N3P5R6S7T8V9W",
+            "chain": null
         }
     ],
     "filterParams": {
@@ -475,7 +478,8 @@ on what the record is:
   quota, and never summarised. Every other record is kept whole until its
   window ends, then deleted, except a grouped record its group's cap counts
   instead, per **Cap and counts**. A store MAY keep counts of what it
-  deleted, but nothing replaces an `AUDIT` record.
+  deleted, but nothing replaces an `AUDIT` record, which is also chained and
+  never altered, per **Audit records**.
 
 Each row answers the question its records are read for, for as long as that
 question is asked:
@@ -522,6 +526,55 @@ A grouped record is kept as its group's state says, within its group's cap:
 A group itself, its state and its count entries, is never deleted. A record
 that arrives years later is matched against it, and a regression is only a
 regression while the fix it undoes is remembered.
+
+## Audit records
+
+An `AUDIT` record is the estate's accountability. It is kept forever, per
+**Retention**, never grouped, capped or counted, per **Groups**, and never
+altered:
+
+- **Nothing deletes or alters one.** No endpoint, job or database role can.
+  The aggregator's database user holds `INSERT` and `SELECT` on its table of
+  audit records, and nothing else, so not even a defect in the aggregator can
+  change one.
+- **People are named only by `user=` and their oid**, per `log-record.md`:
+  never by a name, an email, a UPN or free text about them. When a person's
+  data is erased, the employee directory is anonymised, and every audit record
+  stays exactly as written while it no longer identifies anyone. Any other
+  form would force a choice between breaking the rule above and keeping
+  personal data forever.
+- **The records of each day form a hash chain.** A day is the UTC+03:00
+  calendar day a record arrives on. The aggregator gives each audit record a
+  `chain`, and an app sends none:
+  - `day` is that day;
+  - `prev` is the `hash` of the record before it on that day. The day's first
+    record carries the anchor of the last earlier day with audit records, and
+    the first audit record of all carries 64 zeros;
+  - `hash` is the SHA-256 digest, in lowercase hex, of the record's canonical
+    JSON per RFC 8785: the record as `GET HOST/api/v1/logs/:recordId` returns
+    it, without `chain.hash`.
+- **A day's anchor is the `hash` of its last record.** The next day's first
+  record carries it as `prev`, and when the day ends the aggregator emails it,
+  with the day and the number of records, to a mailbox IT owns and the
+  platform's administrators cannot alter.
+
+Tampering is then detectable even by someone with full database access. An
+altered record no longer hashes to its `hash`; a removed or inserted one breaks
+the next record's `prev`; and a chain rewritten whole ends on an anchor other
+than the one IT's mailbox received. Because the chain is cut into whole days,
+old days can one day be removed without leaving the rest unverifiable: the
+first remaining record still names an anchor IT holds.
+
+These rules cannot change once the first audit record is written. Every record
+written before the change would stop verifying, or keep the personal data the
+change was meant to remove.
+
+### Removing old days
+
+Not built. When it is, it removes whole days, never single records. It needs
+a requester and a different approver, under BioEksen's deletion policy, and it
+writes an `AUDIT` record naming the days removed, their anchors, the requester
+and the approver. Building it amends this section.
 
 ## Authorization
 

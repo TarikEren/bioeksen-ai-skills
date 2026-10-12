@@ -201,6 +201,20 @@ For the aggregator.
 | Codes without the role | An app credential without `logs.write` | `GET /api/v1/codes` is called | 403 `PERM-4150` | `sds-auth/references/credentials.md` |
 | Unlisted code refused | A record whose code `GET /api/v1/codes` does not list | It is submitted | 400 `VAL-4002`, and nothing is stored | `sds-logging/references/aggregator-api.md` |
 
+## Audit chain
+
+For the aggregator. Time passes on an injected clock.
+
+| Case | Given | When | Then | Source |
+|------|-------|------|------|--------|
+| Chained within a day | Two `AUDIT` records stored on one day | They are read back | The second's `chain.prev` is the first's `chain.hash`, and each `chain.hash` is the SHA-256 of its record's canonical JSON without `chain.hash` | `sds-logging/references/aggregator-api.md` |
+| Chained across days | `AUDIT` records stored on one day, and one stored on the next | The next day's is read back | Its `chain.prev` is the earlier day's anchor, the `chain.hash` of that day's last record | `sds-logging/references/aggregator-api.md` |
+| Anchor sent | A day with `AUDIT` records | The day ends | Its anchor, the day and the number of records reach the configured mailbox | `sds-logging/references/aggregator-api.md` |
+| Only chained when audit | An `APP` record | It is read back | Its `chain` is `null` | `sds-logging/references/aggregator-api.md` |
+| Chain submitted | A record carrying `chain` | It is submitted | 400 `VAL-4007`, and nothing is stored | `sds-logging/references/aggregator-api.md` |
+| No deletion | The aggregator's database user | It deletes or updates a stored `AUDIT` record | The database refuses, and the record is unchanged | `sds-logging/references/aggregator-api.md` |
+| Tampering detected | A stored `AUDIT` record whose `message` was changed in the database | The chain is verified | Verification fails at that record | `sds-logging/references/aggregator-api.md` |
+
 ## Health
 
 | Case | Given | When | Then | Source |

@@ -628,14 +628,15 @@ components:
         and not the record's id field, which names the emitting app.
 
     # The six fields plus what the aggregator adds: the assigned identifier,
-    # and the error group the record belongs to. Composed from LogFields
-    # rather than restating it, with unevaluatedProperties because
-    # additionalProperties cannot see through allOf.
+    # the error group the record belongs to, and an AUDIT record's place in
+    # its day's chain. Composed from LogFields rather than restating it, with
+    # unevaluatedProperties because additionalProperties cannot see through
+    # allOf.
     StoredRecord:
       allOf:
         - $ref: "../../sds-api-design/references/openapi.yaml#/components/schemas/LogFields"
         - type: object
-          required: [recordId, group]
+          required: [recordId, group, chain]
           properties:
             recordId:
               $ref: "#/components/schemas/RecordId"
@@ -643,6 +644,24 @@ components:
               anyOf:
                 - $ref: "#/components/schemas/GroupId"
                 - type: "null"
+            chain:
+              anyOf:
+                - $ref: "#/components/schemas/ChainLink"
+                - type: "null"
+        # An AUDIT record is chained, and no other record is.
+        - if:
+            required: [type]
+            properties:
+              type:
+                const: AUDIT
+          then:
+            properties:
+              chain:
+                $ref: "#/components/schemas/ChainLink"
+          else:
+            properties:
+              chain:
+                type: "null"
         # Every ERROR and FATAL record is in a group, except an AUDIT one,
         # which is never grouped, capped or counted. Every other record is in
         # none.
@@ -663,6 +682,28 @@ components:
               group:
                 type: "null"
       unevaluatedProperties: false
+
+    # An AUDIT record's place in the chain of the day it arrived on, per
+    # aggregator-api.md: the hash it follows, and its own, which the next
+    # record follows. The aggregator computes both; an app sends neither.
+    ChainLink:
+      type: object
+      additionalProperties: false
+      required: [day, prev, hash]
+      properties:
+        day:
+          type: string
+          format: date
+          description: The UTC+03:00 calendar day the record arrived on.
+        prev:
+          $ref: "#/components/schemas/ChainHash"
+        hash:
+          $ref: "#/components/schemas/ChainHash"
+
+    ChainHash:
+      type: string
+      pattern: '^[0-9a-f]{64}$'
+      description: A SHA-256 digest, in lowercase hex.
 
     # A ULID, assigned when the group's first record arrives, so groupIds sort
     # by the time each failure was first seen.

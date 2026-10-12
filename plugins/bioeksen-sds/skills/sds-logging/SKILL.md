@@ -81,7 +81,7 @@ Rules:
 |------|---------|
 | `APP` | General application behavior; the default when nothing else fits |
 | `SECURITY` | Authentication, authorization, credential changes, suspected abuse |
-| `AUDIT` | Deliberate record of who changed what, kept for accountability: forever, so never at `DEBUG` |
+| `AUDIT` | Deliberate record of who changed what, kept for accountability: forever, so never at `DEBUG`. It names a person only by `user=` and their oid, and the aggregator chains it so that it cannot be altered, per **Audit records** in `references/aggregator-api.md` |
 | `ACCESS` | Request-level records: method, path, status, duration |
 | `JOB` | Scheduled and background work |
 

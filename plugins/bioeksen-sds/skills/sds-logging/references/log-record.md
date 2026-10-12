@@ -173,7 +173,10 @@ Each stack skill lists the values its binding sets; a Next.js app's are in
 employee directory has erased the person's data, so every record naming them
 stays as written and no longer identifies anyone. A name, an email or a UPN
 would be personal data in records that nothing may delete, `AUDIT` records
-above all, which the aggregator keeps forever. The schema enforces the format:
+above all, which the aggregator keeps forever and chains so that none can be
+altered, per **Audit records** in `aggregator-api.md`. An `AUDIT` record
+therefore names a person nowhere but under `user`: not in its prose, and not
+under another key. The schema enforces the format:
 `LogFields` in `sds-api-design/references/openapi.yaml` refuses a record whose
 `user=` value is anything but a lowercase oid, so the app's own check refuses
 it as `LOG-4000`, and the aggregator, were it submitted, as `VAL-4006`.
