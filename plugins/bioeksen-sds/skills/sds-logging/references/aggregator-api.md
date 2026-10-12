@@ -586,7 +586,7 @@ forgery would pass every check that looks only at the credential.
 
 The aggregator therefore resolves the token's `azp` — the client id of the
 calling app — to a software id, and refuses a record whose `id` differs with
-403 `PERM-4152`. That is step 8 of the selection procedure, so it takes
+403 `PERM-4152`. That is step 9 of the selection procedure, so it takes
 precedence over any validation fault in the same record. An `azp` that
 resolves to no app is refused with `PERM-4150`: it names nothing the estate
 knows.

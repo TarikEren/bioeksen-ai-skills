@@ -103,6 +103,8 @@ it logs and what it calls.
 | Bad signature | An unexpired token signed by a key the verifier does not trust | A protected endpoint is called | 401 `AUTH-4101` | `sds-auth/SKILL.md` |
 | Wrong audience | An unexpired token whose `aud` names another app | It is presented here | 401 `AUTH-4101` | `sds-auth/references/credentials.md` |
 | Issuer unreachable | A token with an unknown `kid` while the key fetch fails | A protected endpoint is called | 503 `AUTH-5500` | `sds-auth/references/credentials.md` |
+| Foreign origin | A request whose `Origin` is another site's | An endpoint that accepts only its app's own origin is called | 403 `PERM-4153` | `sds-auth/SKILL.md` |
+| Origin before role | A non-operator's request from another site | An operator endpoint that accepts only its app's own origin is called | 403 `PERM-4153`, not `PERM-4151` | `sds-logging/references/code-prefixes.md` |
 | App at an operator endpoint | A valid app credential | An operator endpoint is called | 403 `PERM-4151` | `sds-auth/SKILL.md` |
 | Person without the role | A delegated token with the operator scope and no `operator` role | An operator endpoint is called | 403 `PERM-4151` | `sds-auth/references/credentials.md` |
 | Another principal's resource | A submitted log record whose `id` is another app's | It reaches the aggregator | 403 `PERM-4152` | `sds-logging/references/aggregator-api.md` |

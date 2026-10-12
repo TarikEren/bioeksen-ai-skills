@@ -53,8 +53,8 @@ Authorization: Bearer <token>
 Validate in exactly this order and stop at the first failure. The order is
 fixed by the error code selection procedure in
 `sds-logging/references/code-prefixes.md`, which is normative: this table
-restates steps 1-9 of it with the HTTP status added, and where the two disagree
-that file wins and this one MUST be corrected.
+restates steps 1-10 of it with the HTTP status added, and where the two
+disagree that file wins and this one MUST be corrected.
 
 | Step | Condition | Code | HTTP |
 |------|-----------|------|------|
@@ -64,19 +64,21 @@ that file wins and this one MUST be corrected.
 | 4 | Token parses, `exp` is in the past | `AUTH-4102` | 401 |
 | 5 | Token parses, unexpired, signature or claims rejected | `AUTH-4101` | 401 |
 | 6 | Verification needs the identity provider and it is unreachable | `AUTH-5500` | 503 |
-| 7 | Authenticated; endpoint requires operator, caller is not one — an app, or a person without the operator scope and role | `PERM-4151` | 403 |
-| 8 | Authenticated; target belongs to another principal | `PERM-4152` | 403 |
-| 9 | Authenticated; not permitted for any other reason | `PERM-4150` | 403 |
+| 7 | The endpoint accepts only some origins, and the request's `Origin` is not one of them | `PERM-4153` | 403 |
+| 8 | Authenticated; endpoint requires operator, caller is not one — an app, or a person without the operator scope and role | `PERM-4151` | 403 |
+| 9 | Authenticated; target belongs to another principal | `PERM-4152` | 403 |
+| 10 | Authenticated; not permitted for any other reason | `PERM-4150` | 403 |
 
 Expiry is checked before signature validity so that an expired token yields
 `AUTH-4102` rather than `AUTH-4101`. The distinction matters operationally:
 one means a client needs to refresh, the other means something is wrong. That
 ordering is internal to this table.
 
-The two orderings this table inherits — rate limiting before authentication,
-and authentication before request validation, which keeps an unauthenticated
-caller from learning the shape of the payload — are argued where the procedure
-is normative, in `sds-logging/references/code-prefixes.md`.
+The three orderings this table inherits — rate limiting before authentication,
+authentication before request validation, which keeps an unauthenticated
+caller from learning the shape of the payload, and the origin before the
+checks that depend on who the caller is — are argued where the procedure is
+normative, in `sds-logging/references/code-prefixes.md`.
 
 Each step is a test to write before the check it covers: the Auth table in
 `sds-testing/references/contract-tests.md` has a case for every one.

@@ -66,6 +66,12 @@
     "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "AUTH-5999", "message": "something failed"}
   },
   {
+    "name": "a request refused for its origin",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": true,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "WARNING", "type": "SECURITY", "code": "PERM-4153", "message": "origin not allowed origin=\"https://example.com\" request=8c21"}
+  },
+  {
     "name": "a person named by an oid",
     "schema": "openapi.yaml#/components/schemas/LogRecord",
     "valid": true,

@@ -107,7 +107,7 @@ class Handler(BaseHTTPRequestHandler):
                 raise Fault("RES-4200")
             needs_operator, handler = routes[url.path]
             if needs_operator:
-                self.authenticate()  # steps 2-9, before the method (step 10)
+                self.authenticate()  # steps 2-10, before the method (step 11)
             if method != "GET":
                 raise Fault("RES-4500")
             status, body = handler(query)

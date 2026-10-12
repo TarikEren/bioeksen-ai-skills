@@ -50,8 +50,8 @@ TEMPLATE_WORKFLOW = TEMPLATE / ".forgejo" / "workflows" / "bioeksen.yml"
 # Where the CI image carries a bioeksen-sds release's project kit, per sds-ci.
 KIT_PATH = re.compile(r"/opt/bioeksen-sds/(v[^/\s]+)/project-kit")
 
-# sds-auth restates exactly steps 1-9 of the selection procedure.
-AUTH_STEPS = 9
+# sds-auth restates exactly steps 1-10 of the selection procedure.
+AUTH_STEPS = 10
 
 # The only unversioned paths in the estate; everything else carries /api/v{major}/.
 STANDARD_PATHS = {"/api/health", "/api/health/live", "/api/health/ready",
@@ -172,7 +172,7 @@ def main() -> int:
     if len(enum) != len(set(enum)):
         fail("invariant 1", "ErrorCode enum contains duplicates")
 
-    # 2. sds-auth restates steps 1-9 of the selection procedure, codes and order.
+    # 2. sds-auth restates steps 1-10 of the selection procedure, codes and order.
     # The counts are asserted first: a table the pattern stops matching would
     # otherwise compare an empty list with an empty slice and pass.
     auth = AUTH_ROW.findall(au)

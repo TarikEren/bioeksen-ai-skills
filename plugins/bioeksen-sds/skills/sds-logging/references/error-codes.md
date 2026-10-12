@@ -115,7 +115,7 @@ A response carries exactly one code even when several things are wrong. Which
 one is not a judgement: run the selection procedure in `code-prefixes.md` over
 every fault detected and take the first that holds. A request that is missing
 one field and carries an unknown enumeration value in another is `VAL-4001` —
-step 14 precedes step 15 — with both faults listed in `details`.
+step 15 precedes step 16 — with both faults listed in `details`.
 
 Note that `VAL-4000` is not the general validation code. It means the body did
 not parse at all, so no field-level faults exist to report; a body that parsed

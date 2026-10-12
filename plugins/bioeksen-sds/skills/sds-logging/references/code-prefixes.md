@@ -54,46 +54,47 @@ entries under that one code. See the rule in `error-codes.md`.
 | 4 | Credential parses, expiry is in the past | `AUTH-4102` |
 | 5 | Credential parses, not expired, not accepted | `AUTH-4101` |
 | 6 | Identity provider could not be reached to verify | `AUTH-5500` |
-| 7 | Authenticated; endpoint requires operator, caller is not | `PERM-4151` |
-| 8 | Authenticated; target belongs to another principal | `PERM-4152` |
-| 9 | Authenticated; not permitted for any other reason | `PERM-4150` |
-| 10 | Path exists; the method is not one it serves | `RES-4500` |
-| 11 | Request body larger than the endpoint accepts | `VAL-4550` |
-| 12 | Request body in a media type the endpoint does not accept | `VAL-4600` |
-| 13 | Request body present but unparseable | `VAL-4000` |
-| 14 | Required field absent from body | `VAL-4001` |
-| 15 | Field present, value outside its enumeration | `VAL-4002` |
-| 16 | Query parameter present but unparseable | `VAL-4003` |
-| 17 | `endDate` earlier than `startDate` | `VAL-4004` |
-| 18 | `page` below 1, or `limit` outside 1 to its maximum | `VAL-4005` |
-| 19 | Field or query parameter parses; value invalid for its type, format or range, or names a related record that does not exist | `VAL-4006` |
-| 20 | Body carries a field the endpoint does not define | `VAL-4007` |
-| 21 | Resource the request addresses does not exist | `RES-4200` |
-| 22 | Resource being created, or a unique key a write sets, already exists | `RES-4300` |
-| 23 | Resource changed under a concurrent write | `RES-4301` |
-| 24 | Resource exists; its current state does not allow the operation | `RES-4302` |
-| 25 | Required configuration value absent at startup | `CFG-5000` |
-| 26 | Configuration value present but unusable | `CFG-5001` |
-| 27 | Database connection could not be established | `DB-5500` |
-| 28 | Connection pool exhausted before a connection was free | `DB-5501` |
-| 29 | Connection held; read statement failed | `DB-5000` |
-| 30 | Connection held; write statement failed | `DB-5001` |
-| 31 | Transaction rolled back | `DB-5002` |
-| 32 | Cache connection could not be established | `CACHE-5500` |
-| 33 | Cache reachable; operation failed | `CACHE-5000` |
-| 34 | Upstream service returned no response | `UP-5500` |
-| 35 | Upstream service exceeded the call timeout | `UP-5501` |
-| 36 | Upstream responded; body unusable or unexpected | `UP-5000` |
-| 37 | Job invoked with unusable parameters | `JOB-4000` |
-| 38 | Job exceeded its time budget | `JOB-5001` |
-| 39 | Job failed for any other reason | `JOB-5000` |
-| 40 | Log record rejected as malformed | `LOG-4000` |
-| 41 | Log aggregator could not be reached | `LOG-5500` |
-| 42 | Log submission rejected for any other reason | `LOG-5000` |
-| 43 | App not yet ready to serve | `SYS-5500` |
-| 44 | Anything else | `SYS-5000` |
+| 7 | Request's `Origin` is not one the endpoint accepts | `PERM-4153` |
+| 8 | Authenticated; endpoint requires operator, caller is not | `PERM-4151` |
+| 9 | Authenticated; target belongs to another principal | `PERM-4152` |
+| 10 | Authenticated; not permitted for any other reason | `PERM-4150` |
+| 11 | Path exists; the method is not one it serves | `RES-4500` |
+| 12 | Request body larger than the endpoint accepts | `VAL-4550` |
+| 13 | Request body in a media type the endpoint does not accept | `VAL-4600` |
+| 14 | Request body present but unparseable | `VAL-4000` |
+| 15 | Required field absent from body | `VAL-4001` |
+| 16 | Field present, value outside its enumeration | `VAL-4002` |
+| 17 | Query parameter present but unparseable | `VAL-4003` |
+| 18 | `endDate` earlier than `startDate` | `VAL-4004` |
+| 19 | `page` below 1, or `limit` outside 1 to its maximum | `VAL-4005` |
+| 20 | Field or query parameter parses; value invalid for its type, format or range, or names a related record that does not exist | `VAL-4006` |
+| 21 | Body carries a field the endpoint does not define | `VAL-4007` |
+| 22 | Resource the request addresses does not exist | `RES-4200` |
+| 23 | Resource being created, or a unique key a write sets, already exists | `RES-4300` |
+| 24 | Resource changed under a concurrent write | `RES-4301` |
+| 25 | Resource exists; its current state does not allow the operation | `RES-4302` |
+| 26 | Required configuration value absent at startup | `CFG-5000` |
+| 27 | Configuration value present but unusable | `CFG-5001` |
+| 28 | Database connection could not be established | `DB-5500` |
+| 29 | Connection pool exhausted before a connection was free | `DB-5501` |
+| 30 | Connection held; read statement failed | `DB-5000` |
+| 31 | Connection held; write statement failed | `DB-5001` |
+| 32 | Transaction rolled back | `DB-5002` |
+| 33 | Cache connection could not be established | `CACHE-5500` |
+| 34 | Cache reachable; operation failed | `CACHE-5000` |
+| 35 | Upstream service returned no response | `UP-5500` |
+| 36 | Upstream service exceeded the call timeout | `UP-5501` |
+| 37 | Upstream responded; body unusable or unexpected | `UP-5000` |
+| 38 | Job invoked with unusable parameters | `JOB-4000` |
+| 39 | Job exceeded its time budget | `JOB-5001` |
+| 40 | Job failed for any other reason | `JOB-5000` |
+| 41 | Log record rejected as malformed | `LOG-4000` |
+| 42 | Log aggregator could not be reached | `LOG-5500` |
+| 43 | Log submission rejected for any other reason | `LOG-5000` |
+| 44 | App not yet ready to serve | `SYS-5500` |
+| 45 | Anything else | `SYS-5000` |
 
-The order is deliberate at three points.
+The order is deliberate at four points.
 
 Rate limiting is evaluated first, so a caller past its allowance receives
 `RATE-4400` rather than a repetition of the failure it is retrying — otherwise
@@ -104,12 +105,17 @@ Authentication is then evaluated before validation, so an unauthenticated
 caller MUST NOT receive an error that describes the shape of the payload —
 including `VAL-4000`, which would otherwise reveal whether the body parsed.
 
+The origin is then evaluated before the checks that depend on who the caller
+is, so a request sent from a site the endpoint does not accept is refused for
+that alone, and that site learns nothing about what the endpoint requires of a
+caller.
+
 Method, size and media type are then evaluated before the body is parsed,
 because a body the endpoint will not read cannot be validated — and still
 after authentication, so an unauthenticated caller learns neither which
 methods a path serves nor what an endpoint accepts.
 
-`sds-auth/SKILL.md` restates steps 1-9 as its validation order, for readers
+`sds-auth/SKILL.md` restates steps 1-10 as its validation order, for readers
 protecting an endpoint. **This table is the normative one**; where the two
 disagree, this file wins and `sds-auth/SKILL.md` MUST be corrected. Changing a
 condition here means changing it there in the same commit.
@@ -124,24 +130,24 @@ by number; where it and the procedure disagree, the procedure wins.
 
 | Database condition | Step | Code |
 |--------------------|------|------|
-| A unique or primary key violation | 22 | `RES-4300` |
-| The row an update or delete addresses does not exist | 21 | `RES-4200` |
-| A foreign key names a record that does not exist | 19 | `VAL-4006` |
-| A delete refused because other rows still reference the row | 24 | `RES-4302` |
-| A serialization failure, or an optimistic version that no longer matches | 23 | `RES-4301` |
-| A transaction rolled back for any other reason | 31 | `DB-5002` |
-| No pooled connection free within the pool's timeout | 28 | `DB-5501` |
-| The database refused or dropped the connection | 27 | `DB-5500` |
-| A check or not-null constraint violated | 30 | `DB-5001` |
-| Any other failed read | 29 | `DB-5000` |
-| Any other failed write | 30 | `DB-5001` |
+| A unique or primary key violation | 23 | `RES-4300` |
+| The row an update or delete addresses does not exist | 22 | `RES-4200` |
+| A foreign key names a record that does not exist | 20 | `VAL-4006` |
+| A delete refused because other rows still reference the row | 25 | `RES-4302` |
+| A serialization failure, or an optimistic version that no longer matches | 24 | `RES-4301` |
+| A transaction rolled back for any other reason | 32 | `DB-5002` |
+| No pooled connection free within the pool's timeout | 29 | `DB-5501` |
+| The database refused or dropped the connection | 28 | `DB-5500` |
+| A check or not-null constraint violated | 31 | `DB-5001` |
+| Any other failed read | 30 | `DB-5000` |
+| Any other failed write | 31 | `DB-5001` |
 
 A foreign key is a field's value, not the resource the request addresses.
 `POST /api/v1/widgets` naming a `siteId` no site has addresses a collection
 that exists, so a 404 would tell the caller the endpoint is missing. The field
-is what is wrong: step 19 holds, before step 21 is reached, and `details` names
+is what is wrong: step 20 holds, before step 22 is reached, and `details` names
 the field. A referenced record that exists but belongs to another principal is
-step 8, `PERM-4152`, earlier still.
+step 9, `PERM-4152`, earlier still.
 
 A check or not-null violation reaching the database means the app wrote a
 value its own validation should have refused with `VAL-4001` or `VAL-4006`.
@@ -227,6 +233,7 @@ is logged as `endDate earlier than startDate request=8c21`, not
 | `PERM-4150` | 403 | Not permitted |
 | `PERM-4151` | 403 | Operator role required |
 | `PERM-4152` | 403 | Resource belongs to another principal |
+| `PERM-4153` | 403 | Origin not allowed |
 
 ## VAL — request validation
 
@@ -353,7 +360,7 @@ behaves differently because of it, not by the failure being interesting.
 An operation the contract names but no code implements yet — a stub written so
 that its tests can be seen failing first, per `sds-testing/SKILL.md` — is
 `SYS-5000`, answered 500. No earlier condition in the procedure holds, so step
-44 decides.
+45 decides.
 
 It is never 501. No range in `error-codes.md` maps to 501, and a code added
 for a state every operation leaves before it ships would stay in the registry

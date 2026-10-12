@@ -74,7 +74,7 @@ one is normative and the other says so:
 | Fact | Normative in |
 |------|--------------|
 | The error code list | `sds-logging/references/code-prefixes.md` |
-| Error code selection order | `sds-logging/references/code-prefixes.md` — `sds-auth/SKILL.md` restates steps 1-9, and its own **Database failures** table restates the steps a driver's failures meet |
+| Error code selection order | `sds-logging/references/code-prefixes.md` — `sds-auth/SKILL.md` restates steps 1-10, and its own **Database failures** table restates the steps a driver's failures meet |
 | The log record contract | `sds-logging/references/log-record.md` |
 | Log retention | `sds-logging/references/aggregator-api.md`, its **Retention** table — `sds-api-design/references/standard-api-endpoints.md` keeps only an app's own window |
 | Standard endpoint schemas | `sds-api-design/references/openapi.yaml` — the markdown beside it is rationale |
@@ -94,10 +94,10 @@ When two disagree, the normative one is right and the other gets corrected.
 These MUST hold after any change. `scripts/check_invariants.py` enforces them,
 in CI on every push and pull request, and locally when you run it.
 
-1. The same 44 error codes appear in all three of: the per-prefix tables in
+1. The same 45 error codes appear in all three of: the per-prefix tables in
    `code-prefixes.md`, the selection procedure in the same file, and the
    `ErrorCode` enum in `sds-api-design/references/openapi.yaml`.
-2. Steps 1-9 of that selection procedure and the validation order in
+2. Steps 1-10 of that selection procedure and the validation order in
    `sds-auth/SKILL.md` list the same codes in the same order. Compare the
    **codes**, not the prose — the conditions deliberately differ in wording,
    one being credential-agnostic and the other JWT-specific. The
