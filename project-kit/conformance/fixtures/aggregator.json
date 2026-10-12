@@ -1,81 +1,231 @@
 [
   {
-    "name": "a stored record no issue names",
+    "name": "a stored failure in its group",
     "schema": "aggregator-api.yaml#/components/schemas/StoredRecord",
     "valid": true,
-    "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21", "issue": null}
+    "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21", "group": "01J9Z4K7XQ2M8N3P5R6S7T8V9W"}
   },
   {
-    "name": "a stored record without its issue field",
+    "name": "a stored INFO record in no group",
+    "schema": "aggregator-api.yaml#/components/schemas/StoredRecord",
+    "valid": true,
+    "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "INFO", "type": "JOB", "code": null, "message": "job completed job=7f2a", "group": null}
+  },
+  {
+    "name": "a stored AUDIT failure in no group",
+    "schema": "aggregator-api.yaml#/components/schemas/StoredRecord",
+    "valid": true,
+    "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "AUDIT", "code": "DB-5001", "message": "write failed request=8c21", "group": null}
+  },
+  {
+    "name": "a stored record without its group field",
     "schema": "aggregator-api.yaml#/components/schemas/StoredRecord",
     "valid": false,
     "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21"}
   },
   {
-    "name": "a stored record an open issue names",
-    "schema": "aggregator-api.yaml#/components/schemas/StoredRecord",
-    "valid": true,
-    "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21", "issue": {"ref": "bio-inventory#42", "state": "open", "changedAt": "2026-10-07T07:15:00.000Z"}}
-  },
-  {
-    "name": "a stored record a fix resolved",
-    "schema": "aggregator-api.yaml#/components/schemas/StoredRecord",
-    "valid": true,
-    "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21", "issue": {"ref": "bio-inventory#42", "state": "resolved", "resolvedBy": "auth-service-20261007T101500-a3f9", "changedAt": "2026-10-09T12:00:00.000Z"}}
-  },
-  {
-    "name": "a stored issue without the time its state changed",
+    "name": "a stored record carrying an issue, which a group now holds",
     "schema": "aggregator-api.yaml#/components/schemas/StoredRecord",
     "valid": false,
-    "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21", "issue": {"ref": "bio-inventory#42", "state": "open"}}
+    "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21", "issue": null}
   },
   {
-    "name": "an issue link as an issue opens",
-    "schema": "aggregator-api.yaml#/components/schemas/IssueLink",
+    "name": "a stored failure in no group",
+    "schema": "aggregator-api.yaml#/components/schemas/StoredRecord",
+    "valid": false,
+    "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21", "group": null}
+  },
+  {
+    "name": "a stored INFO record in a group",
+    "schema": "aggregator-api.yaml#/components/schemas/StoredRecord",
+    "valid": false,
+    "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "INFO", "type": "JOB", "code": null, "message": "job completed job=7f2a", "group": "01J9Z4K7XQ2M8N3P5R6S7T8V9W"}
+  },
+  {
+    "name": "a stored AUDIT failure in a group",
+    "schema": "aggregator-api.yaml#/components/schemas/StoredRecord",
+    "valid": false,
+    "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "AUDIT", "code": "DB-5001", "message": "write failed request=8c21", "group": "01J9Z4K7XQ2M8N3P5R6S7T8V9W"}
+  },
+  {
+    "name": "a stored failure whose group is not a ULID",
+    "schema": "aggregator-api.yaml#/components/schemas/StoredRecord",
+    "valid": false,
+    "instance": {"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21", "group": "42"}
+  },
+  {
+    "name": "a group linked as its issue opens",
+    "schema": "aggregator-api.yaml#/components/schemas/GroupLink",
     "valid": true,
-    "instance": {"ref": "bio-inventory#42", "state": "open"}
+    "instance": {"state": "linked", "issue": "bio-inventory#42"}
   },
   {
-    "name": "an issue link resolved by a fix",
-    "schema": "aggregator-api.yaml#/components/schemas/IssueLink",
+    "name": "a group whose fix merged",
+    "schema": "aggregator-api.yaml#/components/schemas/GroupLink",
     "valid": true,
-    "instance": {"ref": "bio-inventory#42", "state": "resolved", "resolvedBy": "auth-service-20261007T101500-a3f9"}
+    "instance": {"state": "fix_merged", "issue": "bio-inventory#42", "changeId": "auth-service-20261007T101500-a3f9"}
   },
   {
-    "name": "an issue link resolved by an identifier minted before UTC+03:00",
-    "schema": "aggregator-api.yaml#/components/schemas/IssueLink",
+    "name": "a group whose fix merged, by an identifier minted before UTC+03:00",
+    "schema": "aggregator-api.yaml#/components/schemas/GroupLink",
     "valid": true,
-    "instance": {"ref": "bio-inventory#42", "state": "resolved", "resolvedBy": "auth-service-20260929T132418Z-e830"}
+    "instance": {"state": "fix_merged", "issue": "bio-inventory#42", "changeId": "auth-service-20260929T132418Z-e830"}
   },
   {
-    "name": "a resolved issue link without the fix's Change-Id",
-    "schema": "aggregator-api.yaml#/components/schemas/IssueLink",
-    "valid": false,
-    "instance": {"ref": "bio-inventory#42", "state": "resolved"}
+    "name": "a group resolved by a deployed fix",
+    "schema": "aggregator-api.yaml#/components/schemas/GroupLink",
+    "valid": true,
+    "instance": {"state": "resolved", "issue": "bio-inventory#42", "changeId": "auth-service-20261007T101500-a3f9"}
   },
   {
-    "name": "an open issue link carrying a Change-Id",
-    "schema": "aggregator-api.yaml#/components/schemas/IssueLink",
-    "valid": false,
-    "instance": {"ref": "bio-inventory#42", "state": "open", "resolvedBy": "auth-service-20261007T101500-a3f9"}
+    "name": "a group closed as external",
+    "schema": "aggregator-api.yaml#/components/schemas/GroupLink",
+    "valid": true,
+    "instance": {"state": "closed", "issue": "bio-inventory#42", "label": "close:external"}
   },
   {
-    "name": "an issue link resolved by a hand-written identifier",
-    "schema": "aggregator-api.yaml#/components/schemas/IssueLink",
+    "name": "a merged fix without its Change-Id",
+    "schema": "aggregator-api.yaml#/components/schemas/GroupLink",
     "valid": false,
-    "instance": {"ref": "bio-inventory#42", "state": "resolved", "resolvedBy": "fixed in PR 42"}
+    "instance": {"state": "fix_merged", "issue": "bio-inventory#42"}
   },
   {
-    "name": "an issue link in a state that does not exist",
-    "schema": "aggregator-api.yaml#/components/schemas/IssueLink",
+    "name": "a linked group carrying a Change-Id",
+    "schema": "aggregator-api.yaml#/components/schemas/GroupLink",
     "valid": false,
-    "instance": {"ref": "bio-inventory#42", "state": "wontfix"}
+    "instance": {"state": "linked", "issue": "bio-inventory#42", "changeId": "auth-service-20261007T101500-a3f9"}
   },
   {
-    "name": "an issue link setting the time its state changed, which the aggregator assigns",
-    "schema": "aggregator-api.yaml#/components/schemas/IssueLink",
+    "name": "a fix named by a hand-written identifier",
+    "schema": "aggregator-api.yaml#/components/schemas/GroupLink",
     "valid": false,
-    "instance": {"ref": "bio-inventory#42", "state": "open", "changedAt": "2026-10-07T07:15:00.000Z"}
+    "instance": {"state": "fix_merged", "issue": "bio-inventory#42", "changeId": "fixed in PR 42"}
+  },
+  {
+    "name": "a closure without its label",
+    "schema": "aggregator-api.yaml#/components/schemas/GroupLink",
+    "valid": false,
+    "instance": {"state": "closed", "issue": "bio-inventory#42"}
+  },
+  {
+    "name": "a closure under a label that does not exist",
+    "schema": "aggregator-api.yaml#/components/schemas/GroupLink",
+    "valid": false,
+    "instance": {"state": "closed", "issue": "bio-inventory#42", "label": "wontfix"}
+  },
+  {
+    "name": "a label on a group that is not closed",
+    "schema": "aggregator-api.yaml#/components/schemas/GroupLink",
+    "valid": false,
+    "instance": {"state": "linked", "issue": "bio-inventory#42", "label": "close:obsolete"}
+  },
+  {
+    "name": "the open state, which only the aggregator enters",
+    "schema": "aggregator-api.yaml#/components/schemas/GroupLink",
+    "valid": false,
+    "instance": {"state": "open", "issue": "bio-inventory#42"}
+  },
+  {
+    "name": "a link without its issue",
+    "schema": "aggregator-api.yaml#/components/schemas/GroupLink",
+    "valid": false,
+    "instance": {"state": "linked"}
+  },
+  {
+    "name": "a link setting the time its state changed, which the aggregator assigns",
+    "schema": "aggregator-api.yaml#/components/schemas/GroupLink",
+    "valid": false,
+    "instance": {"state": "linked", "issue": "bio-inventory#42", "changedAt": "2026-10-07T07:15:00.000Z"}
+  },
+  {
+    "name": "an open group, which no issue names yet",
+    "schema": "aggregator-api.yaml#/components/schemas/Group",
+    "valid": true,
+    "instance": {"groupId": "01J9Z4K7XQ2M8N3P5R6S7T8V9W", "id": "auth-service", "code": "DB-5001", "op": "POST /api/v1/orders/[id]", "signature": "9f86d081884c7d65", "state": "open", "issue": null, "changeId": null, "label": null, "changedAt": "2026-10-07T07:15:00.000Z", "firstSeen": "2026-10-07T07:15:00.000Z", "lastSeen": "2026-10-09T12:00:00.000Z"}
+  },
+  {
+    "name": "a group whose records carry no op",
+    "schema": "aggregator-api.yaml#/components/schemas/Group",
+    "valid": true,
+    "instance": {"groupId": "01J9Z4K7XQ2M8N3P5R6S7T8V9W", "id": "auth-service", "code": "DB-5001", "op": null, "signature": "9f86d081884c7d65", "state": "open", "issue": null, "changeId": null, "label": null, "changedAt": "2026-10-07T07:15:00.000Z", "firstSeen": "2026-10-07T07:15:00.000Z", "lastSeen": "2026-10-09T12:00:00.000Z"}
+  },
+  {
+    "name": "a group resolved by a fix",
+    "schema": "aggregator-api.yaml#/components/schemas/Group",
+    "valid": true,
+    "instance": {"groupId": "01J9Z4K7XQ2M8N3P5R6S7T8V9W", "id": "auth-service", "code": "DB-5001", "op": "POST /api/v1/orders/[id]", "signature": "9f86d081884c7d65", "state": "resolved", "issue": "bio-inventory#42", "changeId": "auth-service-20261007T101500-a3f9", "label": null, "changedAt": "2026-10-07T07:15:00.000Z", "firstSeen": "2026-10-07T07:15:00.000Z", "lastSeen": "2026-10-09T12:00:00.000Z"}
+  },
+  {
+    "name": "a group closed as not reproducible",
+    "schema": "aggregator-api.yaml#/components/schemas/Group",
+    "valid": true,
+    "instance": {"groupId": "01J9Z4K7XQ2M8N3P5R6S7T8V9W", "id": "auth-service", "code": "DB-5001", "op": "POST /api/v1/orders/[id]", "signature": "9f86d081884c7d65", "state": "closed", "issue": "bio-inventory#42", "changeId": null, "label": "close:not-reproducible", "changedAt": "2026-10-07T07:15:00.000Z", "firstSeen": "2026-10-07T07:15:00.000Z", "lastSeen": "2026-10-09T12:00:00.000Z"}
+  },
+  {
+    "name": "the overflow group of one id, code and op",
+    "schema": "aggregator-api.yaml#/components/schemas/Group",
+    "valid": true,
+    "instance": {"groupId": "01J9Z4K7XQ2M8N3P5R6S7T8V9W", "id": "auth-service", "code": "DB-5001", "op": "POST /api/v1/orders/[id]", "signature": "overflow", "state": "open", "issue": null, "changeId": null, "label": null, "changedAt": "2026-10-07T07:15:00.000Z", "firstSeen": "2026-10-07T07:15:00.000Z", "lastSeen": "2026-10-09T12:00:00.000Z"}
+  },
+  {
+    "name": "an open group naming an issue",
+    "schema": "aggregator-api.yaml#/components/schemas/Group",
+    "valid": false,
+    "instance": {"groupId": "01J9Z4K7XQ2M8N3P5R6S7T8V9W", "id": "auth-service", "code": "DB-5001", "op": "POST /api/v1/orders/[id]", "signature": "9f86d081884c7d65", "state": "open", "issue": "bio-inventory#42", "changeId": null, "label": null, "changedAt": "2026-10-07T07:15:00.000Z", "firstSeen": "2026-10-07T07:15:00.000Z", "lastSeen": "2026-10-09T12:00:00.000Z"}
+  },
+  {
+    "name": "a linked group without its issue",
+    "schema": "aggregator-api.yaml#/components/schemas/Group",
+    "valid": false,
+    "instance": {"groupId": "01J9Z4K7XQ2M8N3P5R6S7T8V9W", "id": "auth-service", "code": "DB-5001", "op": "POST /api/v1/orders/[id]", "signature": "9f86d081884c7d65", "state": "linked", "issue": null, "changeId": null, "label": null, "changedAt": "2026-10-07T07:15:00.000Z", "firstSeen": "2026-10-07T07:15:00.000Z", "lastSeen": "2026-10-09T12:00:00.000Z"}
+  },
+  {
+    "name": "a resolved group without its Change-Id",
+    "schema": "aggregator-api.yaml#/components/schemas/Group",
+    "valid": false,
+    "instance": {"groupId": "01J9Z4K7XQ2M8N3P5R6S7T8V9W", "id": "auth-service", "code": "DB-5001", "op": "POST /api/v1/orders/[id]", "signature": "9f86d081884c7d65", "state": "resolved", "issue": "bio-inventory#42", "changeId": null, "label": null, "changedAt": "2026-10-07T07:15:00.000Z", "firstSeen": "2026-10-07T07:15:00.000Z", "lastSeen": "2026-10-09T12:00:00.000Z"}
+  },
+  {
+    "name": "a closed group without its label",
+    "schema": "aggregator-api.yaml#/components/schemas/Group",
+    "valid": false,
+    "instance": {"groupId": "01J9Z4K7XQ2M8N3P5R6S7T8V9W", "id": "auth-service", "code": "DB-5001", "op": "POST /api/v1/orders/[id]", "signature": "9f86d081884c7d65", "state": "closed", "issue": "bio-inventory#42", "changeId": null, "label": null, "changedAt": "2026-10-07T07:15:00.000Z", "firstSeen": "2026-10-07T07:15:00.000Z", "lastSeen": "2026-10-09T12:00:00.000Z"}
+  },
+  {
+    "name": "a group whose signature is a whole hash",
+    "schema": "aggregator-api.yaml#/components/schemas/Group",
+    "valid": false,
+    "instance": {"groupId": "01J9Z4K7XQ2M8N3P5R6S7T8V9W", "id": "auth-service", "code": "DB-5001", "op": "POST /api/v1/orders/[id]", "signature": "9f86d081884c7d65a8a5b9f1d2e0c3b7", "state": "open", "issue": null, "changeId": null, "label": null, "changedAt": "2026-10-07T07:15:00.000Z", "firstSeen": "2026-10-07T07:15:00.000Z", "lastSeen": "2026-10-09T12:00:00.000Z"}
+  },
+  {
+    "name": "a group whose groupId is not a ULID",
+    "schema": "aggregator-api.yaml#/components/schemas/Group",
+    "valid": false,
+    "instance": {"groupId": "42", "id": "auth-service", "code": "DB-5001", "op": "POST /api/v1/orders/[id]", "signature": "9f86d081884c7d65", "state": "open", "issue": null, "changeId": null, "label": null, "changedAt": "2026-10-07T07:15:00.000Z", "firstSeen": "2026-10-07T07:15:00.000Z", "lastSeen": "2026-10-09T12:00:00.000Z"}
+  },
+  {
+    "name": "a group's occurrences past its cap",
+    "schema": "aggregator-api.yaml#/components/schemas/Occurrences",
+    "valid": true,
+    "instance": {"status": "ok", "groupId": "01J9Z4K7XQ2M8N3P5R6S7T8V9W", "hourly": [{"start": "2026-10-09T12:00:00.000+03:00", "count": 48213, "firstSeen": "2026-10-09T12:00:00.004+03:00", "lastSeen": "2026-10-09T12:59:59.870+03:00"}], "daily": [{"start": "2026-09-30T00:00:00.000+03:00", "count": 48213, "firstSeen": "2026-10-09T12:00:00.004+03:00", "lastSeen": "2026-10-09T12:59:59.870+03:00"}]}
+  },
+  {
+    "name": "a group no record has left the cap of",
+    "schema": "aggregator-api.yaml#/components/schemas/Occurrences",
+    "valid": true,
+    "instance": {"status": "ok", "groupId": "01J9Z4K7XQ2M8N3P5R6S7T8V9W", "hourly": [], "daily": []}
+  },
+  {
+    "name": "a count entry of no records",
+    "schema": "aggregator-api.yaml#/components/schemas/Occurrences",
+    "valid": false,
+    "instance": {"status": "ok", "groupId": "01J9Z4K7XQ2M8N3P5R6S7T8V9W", "hourly": [{"start": "2026-10-09T12:00:00.000+03:00", "count": 0, "firstSeen": "2026-10-09T12:00:00.004+03:00", "lastSeen": "2026-10-09T12:59:59.870+03:00"}], "daily": []}
+  },
+  {
+    "name": "occurrences without their daily entries",
+    "schema": "aggregator-api.yaml#/components/schemas/Occurrences",
+    "valid": false,
+    "instance": {"status": "ok", "groupId": "01J9Z4K7XQ2M8N3P5R6S7T8V9W", "hourly": []}
   },
   {
     "name": "a stored record without its recordId",
@@ -129,6 +279,6 @@
     "name": "a page of stored records",
     "schema": "aggregator-api.yaml#/components/schemas/StoredLogPage",
     "valid": true,
-    "instance": {"status": "ok", "page": 1, "count": 1, "totalCount": 137, "logs": [{"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21", "issue": null}], "filterParams": {"id": null, "severity": null, "type": null, "code": null, "startDate": "2026-06-05T00:00:00Z", "endDate": "2026-09-03T23:59:59Z", "page": 1, "limit": 50}}
+    "instance": {"status": "ok", "page": 1, "count": 1, "totalCount": 137, "logs": [{"recordId": "01J9Z4K7XQ2M8N", "id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "DB-5001", "message": "write failed request=8c21", "group": "01J9Z4K7XQ2M8N3P5R6S7T8V9W"}], "filterParams": {"id": null, "severity": null, "type": null, "code": null, "startDate": "2026-06-05T00:00:00Z", "endDate": "2026-09-03T23:59:59Z", "page": 1, "limit": 50}}
   }
 ]

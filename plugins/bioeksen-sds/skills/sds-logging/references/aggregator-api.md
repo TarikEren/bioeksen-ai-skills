@@ -22,9 +22,9 @@ Record fields and their rules are defined in `log-record.md`. The aggregator
 adds two values of its own. `recordId` is the identifier it assigns to a stored
 row on write. It is not part of a submitted record, and it is not the record's
 `id` field, which names the emitting app. It is returned by every endpoint
-below and is what `GET HOST/api/v1/logs/:recordId` takes. `issue` is the link
-to the issue that names the record, `null` until one does, set through
-`PUT HOST/api/v1/logs/:recordId/issue`.
+below and is what `GET HOST/api/v1/logs/:recordId` takes. `group` is the
+`groupId` of the error group an `ERROR` or `FATAL` record belongs to, per
+**Groups**, and `null` on every other record.
 
 ## `POST HOST/api/v1/logs`
 
@@ -57,7 +57,7 @@ one of which the schema enforces:
 - `code` MUST NOT be null when `severity` is `ERROR` or `FATAL`
 - `severity` MUST NOT be `DEBUG`: a `DEBUG` record never leaves the app that
   wrote it, per `log-record.md`, so one submitted is refused with `VAL-4006`
-- A submission carrying `recordId` or `issue` MUST be rejected with
+- A submission carrying `recordId` or `group` MUST be rejected with
   `VAL-4007`, as any field outside the six is. The aggregator assigns both; an
   app that believes it chooses them should find that out at once rather than
   have the value silently dropped
@@ -183,7 +183,7 @@ it, so a listing can be followed to a single record.
             "type": "APP",
             "code": "DB-5001",
             "message": "write failed request=8c21",
-            "issue": null
+            "group": "01J9Z4K7XQ2M8N3P5R6S7T8V9W"
         }
     ],
     "filterParams": {
@@ -205,54 +205,166 @@ A page beyond the last one returns 200 with an empty `logs` array and the true
 ## `GET HOST/api/v1/logs/:recordId`
 
 Returns a single stored record. The path parameter is the `recordId` defined at
-the top of this document, not the record's `id` field.
+the top of this document, not the record's `id` field. Besides an operator, the
+git service's integration calls it, to find the group of a record a
+`Fixes-Log:` trailer names (**Authorization**).
 
 | HTTP | When |
 |------|------|
 | 200 | Found; body is the record |
-| 401 | No operator credential, or one that does not validate |
-| 403 | Authenticated, but not an operator |
-| 404 | No record with that `recordId` — `RES-4200` |
+| 401 | No credential, or one that does not validate |
+| 403 | Authenticated, but neither an operator nor an app holding `logs.resolve` |
+| 404 | No record with that `recordId`: none was stored, or it was deleted when its window ended or when its group's cap counted it — `RES-4200` |
 | 429 | Over the caller's allowance — `RATE-4400`, carrying `Retry-After` |
 | 500 | Query failed |
 | 503 | Not ready |
 
-## `PUT HOST/api/v1/logs/:recordId/issue`
+## Groups
 
-Records which issue names a record, and which fix resolved it. How long the
-record is kept from then on follows from that link, per **Retention**.
+The aggregator assigns every `ERROR` and `FATAL` record to an error **group**
+when it stores the record, except an `AUDIT` record, which is never grouped. A
+group is one failure, however often it happens:
 
-The aggregator is connected to the local git service, whose integration calls
-this endpoint as an app holding `logs.resolve`:
+```
+group     = (id, code, op, signature)
+signature = the first 16 hex digits of sha256(normalize(error) + " <- " + normalize(cause))
+```
+
+- `op`, `error` and `cause` are the record's reserved tail keys, per
+  `log-record.md`. A key the record does not carry counts as empty, and a
+  record without `op` is in a group whose `op` is null.
+- Normalisation keeps error names, and replaces numbers, UUIDs, hex strings
+  and quoted strings with placeholders, so two occurrences of one failure that
+  differ only in the values they name share a signature. That is why every
+  error class sets its name explicitly, per `log-record.md`.
+- The aggregator computes the signature, and an app sends no hash. One
+  implementation means the normalisation can be improved without redeploying
+  any app.
+- One `(id, code, op)` holds at most 20 signatures. Every further signature
+  joins that triple's `overflow` group, so a failure whose text varies in a way
+  the normalisation misses cannot create groups without limit.
+- A group's `groupId` is a ULID, assigned when its first record arrives, and
+  every record of the group carries it as `group`.
+
+### States
+
+| State | Entered when |
+|-------|--------------|
+| `open` | The group's first record arrives. The aggregator alerts its operators |
+| `linked` | An issue naming the group opens, or reopens |
+| `fix_merged` | A pull request merges, bringing a commit whose `Fixes-Log:` trailer names a record of the group |
+| `resolved` | A release carrying that commit's Change-Id is deployed |
+| `closed` | The issue closes without a merged fix, with exactly one closure label |
+
+An issue links to a group, never to single records: every record of the
+group carries the link, those already stored and those still to come. An issue
+names its group with a `Group: {groupId}` line, written when the issue is
+opened from the group.
+
+The aggregator enters `open` itself. Every other state comes from the git
+service, through `PUT HOST/api/v1/groups/:groupId/issue`.
+
+### Closure labels
+
+| Label | Means |
+|-------|-------|
+| `close:external` | Caused outside BioEksen's code and configuration: an upstream or third-party service, the host, the network or power, or the user's browser environment |
+| `close:wont-fix` | Our defect, deliberately not fixed. The closing comment states its impact and why |
+| `close:obsolete` | The code no longer exists. The closing comment names the Change-Id that removed it |
+| `close:not-reproducible` | It cannot be reproduced, and has not recurred |
+
+An issue closed without exactly one of these is not a closure: the git
+service's integration reopens it with a comment, and the group stays as it
+was. The label is required because a closed failure that comes back means
+something different for each: an outside cause recurs while our code is
+right, but an obsolete or unreproducible failure that recurs proves the
+closure wrong.
+
+Three failures are never closed this way, because they are ours to fix:
+
+- A caller's bad input is not an `ERROR` at all. It is a `WARNING` with a
+  4xxx code, per `SKILL.md`.
+- A caller's input that produces an `ERROR` means validation is missing. It
+  is fixed and resolved, never `close:external`.
+- An expected condition logged as `ERROR` is a logging defect, and is fixed
+  too.
+
+### Recurrence
+
+| The group is | A new record of it arrives | Then |
+|--------------|----------------------------|------|
+| `open` or `linked` | At any time | It is stored, and nothing changes |
+| `fix_merged` | Before the fix's release is deployed | It belongs to the fix, and nothing changes |
+| `resolved` | After the fix's release was deployed | **A regression.** The group returns to `linked`, its issue is reopened, and the aggregator alerts its operators |
+| `closed` with `close:not-reproducible` or `close:obsolete` | At any time | The group returns to `linked`, and its issue is reopened |
+| `closed` with `close:external` or `close:wont-fix` | At any time | It is stored, and nothing changes |
+
+A group that returns to `linked` loses its Change-Id and its label. Its issue
+keeps the history.
+
+### Cap and counts
+
+A group keeps whole its first 100 records and its latest 100. Every record is
+stored when it arrives, so a 201 is always true. When a record leaves the
+latest 100, and is not one of the first 100, it is deleted and counted instead:
+
+- in an hourly count entry, `{start, count, firstSeen, lastSeen}`, kept for 7
+  days;
+- then merged into a daily count entry of the same form, kept as long as the
+  group. A day begins at midnight UTC+03:00.
+
+A group's first count entry makes the aggregator alert its operators: the
+failure is repeating beyond its cap. `GET HOST/api/v1/groups/:groupId/occurrences`
+serves the entries, and a view of the logs shows them inline, as
+`48,213 more DB-5001 (op="POST /api/v1/orders/[id]") 14:00–15:00`.
+
+The first 100 are the failure as it began, which a fix is written from. The
+latest 100 are the failure as it is now, which shows whether it changed.
+Between them, a failure repeating a million times is the same record a million
+times, so it costs a count, not a copy.
+
+## `PUT HOST/api/v1/groups/:groupId/issue`
+
+Moves a group to the state its issue is in, per **States**. The aggregator is
+connected to the local git service, whose integration calls this endpoint as
+an app holding `logs.resolve`:
 
 | When, in the git service | Body |
 |--------------------------|------|
-| An issue naming the record by its `recordId` opens | `{"ref": "<the issue>", "state": "open"}` |
-| A pull request is merged, bringing a commit whose `Fixes-Log:` trailer names the record | `{"ref": "<the issue>", "state": "resolved", "resolvedBy": "<that commit's Change-Id>"}` |
-| The issue closes without a merged fix | `{"ref": "<the issue>", "state": "closed"}` |
+| An issue naming the group by its `Group:` line opens, or reopens | `{"state": "linked", "issue": "<the issue>"}` |
+| A pull request merges, bringing a commit whose `Fixes-Log:` trailer names a record of the group | `{"state": "fix_merged", "issue": "<the issue>", "changeId": "<that commit's Change-Id>"}` |
+| A release carrying that Change-Id is deployed | `{"state": "resolved", "issue": "<the issue>", "changeId": "<the same Change-Id>"}` |
+| The issue closes without a merged fix, with one closure label | `{"state": "closed", "issue": "<the issue>", "label": "<the label>"}` |
 
-- `ref` names the issue as the git service does, by its URL or its key. For a
-  fix no issue tracked, it names the pull request.
-- `resolvedBy` is the Change-Id of the commit whose trailer named the record,
-  per `sds-commit/SKILL.md`. It is present exactly when the state is
-  `resolved`, and ties the record to the change that fixed it, as that
-  change's release-note entry ties it to its commit.
-- A PUT replaces the record's link, and the aggregator stamps it with
-  `changedAt`, the moment its state last changed.
-- A `resolved` record stays resolved. The git service closes an issue when its
-  fixing pull request merges, so a `closed` arriving after `resolved` for the
-  same issue leaves the record unchanged, and is answered 200 with the record
-  as it is.
-- Nothing else about a stored record changes. Its six fields and its
-  `recordId` are fixed when it is written; only its link moves.
+- `issue` names the issue as the git service does, by its URL or its key. For
+  a fix no issue tracked, it names the pull request.
+- The integration finds the group of a record a `Fixes-Log:` trailer names
+  with `GET HOST/api/v1/logs/:recordId`. The trailer SHOULD name one of the
+  group's first 100 records, which stay while the group is unresolved; one of
+  the latest 100 can be counted away before the fix merges, and then names
+  nothing.
+- `changeId` is the Change-Id of the commit whose trailer named the record,
+  per `sds-commit/SKILL.md`. It is present exactly in `fix_merged` and
+  `resolved`, and ties the group to the change that fixed it, as that change's
+  release-note entry ties it to its commit.
+- `resolved` is entered only from `fix_merged`, with the same Change-Id.
+  Anything else is refused with 409 `RES-4302`: a group is resolved by
+  deploying the fix merged for it, and by nothing else.
+- A group a fix has reached stays on the fix's path. The git service closes an
+  issue when its fixing pull request merges, so a `closed` for a group in
+  `fix_merged` or `resolved` leaves it unchanged, and is answered 200 with the
+  group as it is.
+- When a group's state changes, the aggregator stamps it with `changedAt`.
+  Nothing else about its records changes: their six fields and their
+  `recordId` are fixed when they are written.
 
 ### Request
 
 ```json
 {
-    "ref": "https://git.bioeksen.local/bio-inventory/issues/42",
-    "state": "resolved",
-    "resolvedBy": "bio-inventory-20261007T101500-a3f9"
+    "state": "fix_merged",
+    "issue": "https://git.bioeksen.local/bio-inventory/issues/42",
+    "changeId": "bio-inventory-20261007T101500-a3f9"
 }
 ```
 
@@ -260,13 +372,50 @@ this endpoint as an app holding `logs.resolve`:
 
 | HTTP | When |
 |------|------|
-| 200 | The record, carrying its link |
+| 200 | The group, in the state it is now in |
 | 400 | The link failed validation; `details` names the field |
 | 401 | No app credential, or one that does not validate |
 | 403 | Authenticated, but not an app holding `logs.resolve` — `PERM-4150`, which an operator credential never is |
-| 404 | No record with that `recordId`, or one already deleted — `RES-4200` |
+| 404 | No group with that `groupId` — `RES-4200` |
+| 409 | `resolved` for a group not in `fix_merged` by the same Change-Id — `RES-4302` |
 | 429 | Over the caller's allowance — `RATE-4400`, carrying `Retry-After` |
 | 500 | The write failed — `DB-5001` |
+| 503 | Not ready |
+
+## `GET HOST/api/v1/groups/:groupId/occurrences`
+
+Returns a group's count entries, per **Cap and counts**: `hourly` for the last
+7 days and `daily` for every earlier day, each oldest first, and each an empty
+array when no record left the cap in that span.
+
+### Response
+
+```json
+{
+    "status": "ok",
+    "groupId": "01J9Z4K7XQ2M8N3P5R6S7T8V9W",
+    "hourly": [
+        {
+            "start": "2026-10-09T14:00:00.000+03:00",
+            "count": 48213,
+            "firstSeen": "2026-10-09T14:00:00.004+03:00",
+            "lastSeen": "2026-10-09T14:59:59.870+03:00"
+        }
+    ],
+    "daily": []
+}
+```
+
+### Responses
+
+| HTTP | When |
+|------|------|
+| 200 | The group's count entries |
+| 401 | No operator credential, or one that does not validate |
+| 403 | Authenticated, but not an operator |
+| 404 | No group with that `groupId` — `RES-4200` |
+| 429 | Over the caller's allowance — `RATE-4400`, carrying `Retry-After` |
+| 500 | The query failed |
 | 503 | Not ready |
 
 ## Retention
@@ -276,24 +425,20 @@ on what the record is:
 
 | Type | `INFO` | `WARNING` | `ERROR`, `FATAL` |
 |------|--------|-----------|------------------|
-| `APP`, `JOB` | 30 days | 90 days | Until its issue is resolved or closed, plus 30 days; 90 days when no issue names it |
+| `APP`, `JOB` | 30 days | 90 days | As its group keeps it, per **Grouped records** |
 | `ACCESS` | 14 days | 90 days | As for `APP` |
-| `SECURITY` | 1 year | 1 year | As for `APP`, and never less than 1 year |
-| `AUDIT` | Forever | Forever | Forever |
+| `SECURITY` | 1 year | 1 year | As for `APP`, and never less than 1 year, unless its group's cap counts it |
+| `AUDIT` | Forever | Forever | Forever, and never grouped |
 
-- A window runs from the record's `timestamp`. The 30 days after an issue run
-  from the moment the issue was resolved or closed, the link's `changedAt`.
-- A record an open issue names is never deleted, however old it is. The issue
-  has to name it while it is still kept: an issue opened after a record's
-  window has ended finds it gone, and its link is answered 404.
-- Whether an issue names a record, and whether a fix resolved it, is what
-  `PUT HOST/api/v1/logs/:recordId/issue` records.
+- A window runs from the record's `timestamp`. The 30 days after a group is
+  resolved or closed run from the group's `changedAt`.
 - `DEBUG` is not in the table. A `DEBUG` record never reaches the aggregator,
   per `log-record.md`, which refuses one with `VAL-4006`.
 - Forever means never deleted, never sampled, never capped by a storage
   quota, and never summarised. Every other record is kept whole until its
-  window ends, then deleted. A store MAY keep counts of what it deleted, but
-  nothing replaces an `AUDIT` record.
+  window ends, then deleted, except a grouped record its group's cap counts
+  instead, per **Cap and counts**. A store MAY keep counts of what it
+  deleted, but nothing replaces an `AUDIT` record.
 
 Each row answers the question its records are read for, for as long as that
 question is asked:
@@ -310,10 +455,10 @@ question is asked:
   since; a year is also what an audit of access commonly asks for.
 - **`ERROR` and `FATAL`** are the evidence a fix is written from. Deleted on a
   fixed date, they can vanish while the fix is still being written; kept
-  forever, the noise stays forever too. So a failure's records are kept for as
-  long as an issue tracks them, and 30 days beyond, for a regression to be
-  compared against; a failure nobody opened an issue for is kept a quarter, so
-  it is still there for the quarterly review.
+  whole forever, the noise stays forever too. So a failure's records are kept
+  while its group is unresolved, and 30 days beyond, for a regression to be
+  compared against, and the cap keeps a failure that repeats to its first and
+  latest hundred records, so the noise costs a count, not a copy.
 - **`AUDIT`** is kept forever, because accountability does not expire: who
   changed what is asked years later, and a count cannot answer it.
 
@@ -325,6 +470,21 @@ included, and `filterParams` echoes the value as requested.
 
 An app's own `GET /api/admin/logs` reads a different store with a shorter
 window. The two disagreeing is expected, not data loss.
+
+### Grouped records
+
+A grouped record is kept as its group's state says, within its group's cap:
+
+| A group's records | Kept |
+|-------------------|------|
+| While the group is `open`, `linked` or `fix_merged` | Kept |
+| Once the group is `resolved` or `closed` | Deleted 30 days after the state changed, unless the group returns to `linked` first |
+| Arriving after a closure as `close:external` or `close:wont-fix` | Kept. Such a group keeps recurring without reopening, and its cap is what bounds it |
+| A group's count entries | As long as the group |
+
+A group itself, its state and its count entries, is never deleted. A record
+that arrives years later is matched against it, and a regression is only a
+regression while the fix it undoes is remembered.
 
 ## Authorization
 
@@ -345,12 +505,16 @@ The resolution is not the aggregator's configuration: it is served by
 `bio-softop`'s registry, per **Configuration** in
 `sds-auth/references/credentials.md`.
 
-The two read endpoints
-MUST require an operator credential — the aggregator holds every app's logs,
-which makes it the highest-value read target in the estate.
+The read endpoints, `GET HOST/api/v1/logs`, `GET HOST/api/v1/logs/:recordId`
+and `GET HOST/api/v1/groups/:groupId/occurrences`, MUST require an operator
+credential — the aggregator holds every app's logs, which makes it the
+highest-value read target in the estate. One exception: an app holding
+`logs.resolve` MAY also call `GET HOST/api/v1/logs/:recordId`, which is how
+the git service's integration finds the group of a record a `Fixes-Log:`
+trailer names. It reads only the records commits name.
 
-`PUT HOST/api/v1/logs/:recordId/issue` MUST require an app credential holding
+`PUT HOST/api/v1/groups/:groupId/issue` MUST require an app credential holding
 `logs.resolve`, which only the git service's integration holds. An operator
-credential never satisfies it: a record's link follows its issue, so the place
+credential never satisfies it: a group's link follows its issue, so the place
 to change it is the issue, in the git service, where the change is recorded
 with the rest of the issue's history.

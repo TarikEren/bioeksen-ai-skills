@@ -162,7 +162,7 @@ in CI on every push and pull request, and locally when you run it.
 13. The Change-Id format is defined once in code, `CHANGE_ID` in `sds-commit`'s
     `mint_change_id.py`, and the `ChangeId` schema in `aggregator-api.yaml`
     carries the same pattern, Python's named groups aside. A fix's Change-Id is
-    stored on the records it resolves, so the format has to be one format.
+    stored on the group it resolves, so the format has to be one format.
 
 Every `SKILL.md` must also open with frontmatter whose `name` is its
 directory's and whose `description` is not empty — the description is what

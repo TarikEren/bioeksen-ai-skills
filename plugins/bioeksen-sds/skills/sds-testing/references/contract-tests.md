@@ -157,18 +157,38 @@ For the aggregator. Time passes on an injected clock.
 |------|-------|------|------|--------|
 | INFO window | An `APP` `INFO` record | 30 days pass | It is deleted | `sds-logging/references/aggregator-api.md` |
 | ACCESS window | An `ACCESS` `INFO` record | 14 days pass | It is deleted | `sds-logging/references/aggregator-api.md` |
-| Unnamed failure | An `ERROR` record no issue names | 90 days pass | It is deleted | `sds-logging/references/aggregator-api.md` |
-| Open issue | An `ERROR` record an open issue names | 90 days pass | It is still kept | `sds-logging/references/aggregator-api.md` |
-| Resolved by a fix | A record a merged fix resolved | 30 days pass after the merge | It is deleted, and until then carries the fix's Change-Id as `resolvedBy` | `sds-logging/references/aggregator-api.md` |
-| Security floor | A `SECURITY` `ERROR` record resolved a month after its `timestamp` | 30 days pass | It is still kept, until a year after its `timestamp` | `sds-logging/references/aggregator-api.md` |
-| Resolved stays resolved | A resolved record | The git service sends `closed` for its issue | 200, and the record is still `resolved` | `sds-logging/references/aggregator-api.md` |
-| Link without the role | An app credential without `logs.resolve`, or an operator's | It links a record to an issue | 403 `PERM-4150` | `sds-auth/references/credentials.md` |
-| Link too late | A record whose window has ended | An issue naming it opens | 404 `RES-4200` | `sds-logging/references/aggregator-api.md` |
+| Unresolved group | An `ERROR` record whose group is `open`, `linked` or `fix_merged` | 90 days pass | It is still kept | `sds-logging/references/aggregator-api.md` |
+| Resolved group | A group resolved by a deployed fix | 30 days pass after it was resolved | Its records are deleted, and the group and its count entries are kept | `sds-logging/references/aggregator-api.md` |
+| Security floor | A `SECURITY` `ERROR` record whose group was resolved a month after its `timestamp` | 30 days pass | It is still kept, until a year after its `timestamp` | `sds-logging/references/aggregator-api.md` |
 | Security year | A `SECURITY` `WARNING` record | 90 days pass | It is still kept, until a year after its `timestamp` | `sds-logging/references/aggregator-api.md` |
 | Audit forever | An `AUDIT` record | Any time passes | It is never deleted | `sds-logging/references/aggregator-api.md` |
 | DEBUG refused | A `DEBUG` record | It is submitted | 400 `VAL-4006`, and nothing is stored | `sds-logging/references/aggregator-api.md` |
 | Person by email refused | A record whose `user=` is an email | It is submitted | 400 `VAL-4006`, and nothing is stored | `sds-logging/references/aggregator-api.md` |
 | Not clamped | Records older than 90 days still kept | `GET /api/v1/logs` is called with a `startDate` a year ago | Every record kept since then is returned, and `filterParams` echoes that `startDate` | `sds-logging/references/aggregator-api.md` |
+
+## Groups
+
+For the aggregator. Every case submits records as an app holding `logs.write`, and links as one holding `logs.resolve`.
+
+| Case | Given | When | Then | Source |
+|------|-------|------|------|--------|
+| One failure, one group | Two `ERROR` records with the same `id`, `code` and `op`, whose `error=` values differ only in a number | Both are stored | Both carry the same `group` | `sds-logging/references/aggregator-api.md` |
+| Names tell apart | Two `ERROR` records alike but for the error name in `error=` | Both are stored | They carry different groups | `sds-logging/references/aggregator-api.md` |
+| Not grouped | A `WARNING` record, and an `AUDIT` record at `ERROR` | Both are stored | Each carries `group: null` | `sds-logging/references/aggregator-api.md` |
+| Signature cap | One `id`, `code` and `op` with 20 signatures already grouped | A record with a 21st signature is stored | It joins the `overflow` group of that `id`, `code` and `op` | `sds-logging/references/aggregator-api.md` |
+| First and latest kept | A group of 250 records | `GET /api/v1/groups/:groupId/occurrences` is called | Its entries count 50; the first 100 and the latest 100 records are still returned by their `recordId`, and a counted one is 404 `RES-4200` | `sds-logging/references/aggregator-api.md` |
+| Fix merged | A `linked` group | A fix naming one of its records merges | The group is `fix_merged`, carrying the fix's Change-Id | `sds-logging/references/aggregator-api.md` |
+| Resolved only by its fix | A `linked` group | The git service sends `resolved` for it | 409 `RES-4302`, and the group is still `linked` | `sds-logging/references/aggregator-api.md` |
+| Closure needs a label | A `linked` group | The git service sends `closed` without a label | 400 `VAL-4001`, and the group is still `linked` | `sds-logging/references/aggregator-api.md` |
+| Fixed stays fixed | A group in `fix_merged` or `resolved` | The git service sends `closed` for its issue | 200, and the group's state is unchanged | `sds-logging/references/aggregator-api.md` |
+| Regression | A `resolved` group | A new record of it arrives | The group is `linked` again, without its Change-Id | `sds-logging/references/aggregator-api.md` |
+| Fix not yet deployed | A `fix_merged` group | A new record of it arrives | The group is still `fix_merged` | `sds-logging/references/aggregator-api.md` |
+| Closed as not reproducible | A group closed `close:not-reproducible` | A new record of it arrives | The group is `linked` again | `sds-logging/references/aggregator-api.md` |
+| Closed as external | A group closed `close:external` | A new record of it arrives | It is stored, and the group is still `closed` | `sds-logging/references/aggregator-api.md` |
+| Unknown group | A `groupId` no group has | The git service links it | 404 `RES-4200` | `sds-logging/references/aggregator-api.md` |
+| Group submitted | A record carrying `group` | It is submitted | 400 `VAL-4007`, and nothing is stored | `sds-logging/references/aggregator-api.md` |
+| Link without the role | An app credential without `logs.resolve`, or an operator's | It links a group to an issue | 403 `PERM-4150` | `sds-auth/references/credentials.md` |
+| Record read to find its group | An app credential holding `logs.resolve` | It reads a record by its `recordId` | 200, the record with its `group` | `sds-auth/references/credentials.md` |
 
 ## Health
 

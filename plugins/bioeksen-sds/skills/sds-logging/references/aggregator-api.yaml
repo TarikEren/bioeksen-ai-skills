@@ -235,11 +235,14 @@ paths:
       summary: Fetch one stored record
       description: >-
         The path parameter is the aggregator-assigned recordId, not the
-        record's id field, which names the emitting app.
+        record's id field, which names the emitting app. The git service's
+        integration also calls it, as an app holding logs.resolve, to find the
+        group of a record a Fixes-Log trailer names.
       operationId: getLog
       tags: [logs]
       security:
         - operatorAuth: []
+        - resolverAuth: []
       parameters:
         - $ref: "#/components/parameters/RequestId"
         - $ref: "#/components/parameters/RequestDeadline"
@@ -275,39 +278,36 @@ paths:
         "503":
           $ref: "#/components/responses/NotReady"
 
-  /api/v1/logs/{recordId}/issue:
+  /api/v1/groups/{groupId}/issue:
     put:
-      summary: Record the issue that names a record, and the fix that resolves it
+      summary: Move an error group along its lifecycle, with the issue that tracks it
       description: >-
-        Called by the git service's integration: open when an issue naming
-        the record opens, resolved with the fixing commit's Change-Id when a
-        pull request bringing a commit whose Fixes-Log trailer names the
-        record is merged, and closed when the issue closes without a fix. A
-        resolved record stays resolved. How long the record is then kept is
-        the Retention table in aggregator-api.md.
-      operationId: linkIssue
-      tags: [logs]
+        Called by the git service's integration: linked when an issue naming
+        the group opens or reopens, fix_merged with the fixing commit's
+        Change-Id when a pull request bringing a commit whose Fixes-Log
+        trailer names a record of the group is merged, resolved when a release
+        carrying that Change-Id is deployed, and closed, with one closure
+        label, when the issue closes without a fix. A group a fix has reached
+        is not closed by its issue closing. Every record of the group carries
+        the link. How long they are kept is the Retention section of
+        aggregator-api.md.
+      operationId: linkGroup
+      tags: [groups]
       security:
         - resolverAuth: []
       parameters:
         - $ref: "#/components/parameters/RequestId"
         - $ref: "#/components/parameters/RequestDeadline"
-        - name: recordId
-          in: path
-          required: true
-          description: The identifier assigned on write.
-          schema:
-            type: string
-            minLength: 1
+        - $ref: "#/components/parameters/GroupId"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/IssueLink"
+              $ref: "#/components/schemas/GroupLink"
       responses:
         "200":
-          description: The record, carrying its link.
+          description: The group, in the state it is now in.
           headers:
             Cache-Control:
               $ref: "#/components/headers/NoStore"
@@ -316,13 +316,56 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/StoredRecord"
+                $ref: "#/components/schemas/Group"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/ResolveForbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/StateConflict"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/NotReady"
+
+  /api/v1/groups/{groupId}/occurrences:
+    get:
+      summary: Count a group's records past its cap
+      description: >-
+        A group keeps its first 100 and its latest 100 records whole. Every
+        record that leaves the latest 100 is deleted and counted here instead:
+        in hourly entries for 7 days, then merged into daily entries kept as
+        long as the group.
+      operationId: getGroupOccurrences
+      tags: [groups]
+      security:
+        - operatorAuth: []
+      parameters:
+        - $ref: "#/components/parameters/RequestId"
+        - $ref: "#/components/parameters/RequestDeadline"
+        - $ref: "#/components/parameters/GroupId"
+      responses:
+        "200":
+          description: The group's count entries, oldest first.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Occurrences"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
         "429":
@@ -356,8 +399,8 @@ components:
       bearerFormat: JWT
       description: >-
         App credential whose roles hold logs.resolve: the git service's
-        integration, which opens and closes the issues records are linked to.
-        No delegated token satisfies it, an operator's included.
+        integration, which opens and closes the issues error groups are
+        linked to. No delegated token satisfies it, an operator's included.
 
   headers:
     NoStore:
@@ -376,6 +419,13 @@ components:
       $ref: "../../sds-api-design/references/openapi.yaml#/components/parameters/RequestDeadline"
     IdempotencyKey:
       $ref: "../../sds-api-design/references/openapi.yaml#/components/parameters/IdempotencyKey"
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      description: The identifier the aggregator assigned to the group.
+      schema:
+        $ref: "#/components/schemas/GroupId"
 
   responses:
     BadRequest:
@@ -424,7 +474,7 @@ components:
     ResolveForbidden:
       description: >-
         PERM-4150 when the caller is not an app holding logs.resolve. An
-        operator credential never satisfies this endpoint: a record's link
+        operator credential never satisfies this endpoint: a group's link
         follows its issue, which is changed in the git service.
       headers:
         X-Request-Id:
@@ -434,7 +484,10 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
     NotFound:
-      description: No record with that recordId, or one already deleted.
+      description: >-
+        RES-4200. No record or group with that identifier. A record is
+        deleted when its window ends, or when it leaves its group's latest 100
+        records and is counted instead.
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestId"
@@ -458,6 +511,17 @@ components:
         RES-4301. The Idempotency-Key is already spent on a different body, or
         the original request is still in flight when the deadline runs out.
         Not retryable: a changed resubmission needs a fresh key.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    StateConflict:
+      description: >-
+        RES-4302. The group's state does not allow the one requested:
+        resolved is entered only from fix_merged, by the same Change-Id.
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestId"
@@ -526,23 +590,47 @@ components:
         and not the record's id field, which names the emitting app.
 
     # The six fields plus what the aggregator adds: the assigned identifier,
-    # and the link to the issue that names the record, null when none does.
-    # Composed from LogFields rather than restating it, with
-    # unevaluatedProperties because additionalProperties cannot see through
-    # allOf.
+    # and the error group the record belongs to. Composed from LogFields
+    # rather than restating it, with unevaluatedProperties because
+    # additionalProperties cannot see through allOf.
     StoredRecord:
       allOf:
         - $ref: "../../sds-api-design/references/openapi.yaml#/components/schemas/LogFields"
         - type: object
-          required: [recordId, issue]
+          required: [recordId, group]
           properties:
             recordId:
               $ref: "#/components/schemas/RecordId"
-            issue:
+            group:
               anyOf:
-                - $ref: "#/components/schemas/StoredIssue"
+                - $ref: "#/components/schemas/GroupId"
                 - type: "null"
+        # Every ERROR and FATAL record is in a group, except an AUDIT one,
+        # which is never grouped, capped or counted. Every other record is in
+        # none.
+        - if:
+            required: [severity, type]
+            properties:
+              severity:
+                enum: [ERROR, FATAL]
+              type:
+                not:
+                  const: AUDIT
+          then:
+            properties:
+              group:
+                $ref: "#/components/schemas/GroupId"
+          else:
+            properties:
+              group:
+                type: "null"
       unevaluatedProperties: false
+
+    # A ULID, assigned when the group's first record arrives, so groupIds sort
+    # by the time each failure was first seen.
+    GroupId:
+      type: string
+      pattern: '^[0-9A-HJKMNP-TV-Z]{26}$'
 
     # The Change-Id format of sds-commit/references/release-notes.md, as
     # sds-commit's mint_change_id.py mints it: invariant 13 keeps this pattern
@@ -551,52 +639,198 @@ components:
       type: string
       pattern: '^([a-z0-9]+(?:-[a-z0-9]+)*)-(\d{8}T\d{6}Z?)-([a-z0-9]{4,})$'
 
-    # What the git service sends, shared by the request and the stored link.
-    # resolvedBy is the Change-Id of the commit whose Fixes-Log trailer named
-    # the record, and is carried exactly when a fix resolved it.
-    IssueLinkFields:
+    GroupState:
+      type: string
+      enum: [open, linked, fix_merged, resolved, closed]
+      description: >-
+        open when the group's first record arrives; linked when an issue
+        names it; fix_merged when a fix for it merges; resolved when a release
+        carrying that fix is deployed; closed when its issue closes without a
+        fix.
+
+    ClosureLabel:
+      type: string
+      enum: [close:external, close:wont-fix, close:obsolete, close:not-reproducible]
+      description: >-
+        Why an issue closed without a fix. Exactly one is required to close
+        one, and it decides whether a new record reopens the group.
+
+    IssueRef:
+      type: string
+      minLength: 1
+      maxLength: 512
+      description: >-
+        The issue as the git service names it, its URL or its key; for a fix
+        no issue tracked, the pull request.
+
+    # What the git service sends. The aggregator alone enters open, when a
+    # group's first record arrives. changeId is the fix's from fix_merged on,
+    # and label is carried exactly when the group closes.
+    GroupLink:
       type: object
-      required: [ref, state]
+      additionalProperties: false
+      required: [state, issue]
       properties:
-        ref:
-          type: string
-          minLength: 1
-          maxLength: 512
-          description: >-
-            The issue as the git service names it, its URL or its key; for a
-            fix no issue tracked, the pull request.
         state:
           type: string
-          enum: [open, resolved, closed]
-        resolvedBy:
+          enum: [linked, fix_merged, resolved, closed]
+        issue:
+          $ref: "#/components/schemas/IssueRef"
+        changeId:
           $ref: "#/components/schemas/ChangeId"
-      if:
-        properties:
-          state:
-            const: resolved
-      then:
-        required: [resolvedBy]
-      else:
-        not:
-          required: [resolvedBy]
-
-    IssueLink:
+        label:
+          $ref: "#/components/schemas/ClosureLabel"
       allOf:
-        - $ref: "#/components/schemas/IssueLinkFields"
-      unevaluatedProperties: false
+        - if:
+            properties:
+              state:
+                enum: [fix_merged, resolved]
+          then:
+            required: [changeId]
+          else:
+            not:
+              required: [changeId]
+        - if:
+            properties:
+              state:
+                const: closed
+          then:
+            required: [label]
+          else:
+            not:
+              required: [label]
 
-    # The link as stored: what the git service sent, and when its state last
-    # changed, from which the 30 days after an issue run.
-    StoredIssue:
+    # A group as the aggregator keeps it: its key, its state and link, when
+    # the state last changed, from which the 30 days after resolving or
+    # closing run, and the first and last time a record of it arrived.
+    # Every link field is present and null when it does not apply, so a
+    # client never has to tell "none" from "not reported".
+    Group:
+      type: object
+      additionalProperties: false
+      required: [groupId, id, code, op, signature, state, issue, changeId, label,
+                 changedAt, firstSeen, lastSeen]
+      properties:
+        groupId:
+          $ref: "#/components/schemas/GroupId"
+        id:
+          $ref: "#/components/schemas/SoftwareId"
+        code:
+          $ref: "#/components/schemas/ErrorCode"
+        op:
+          type: [string, "null"]
+          minLength: 1
+          description: The records' op= value, or null when they carry none.
+        signature:
+          type: string
+          pattern: '^([0-9a-f]{16}|overflow)$'
+          description: >-
+            Computed by the aggregator from the records' error= and cause=
+            values, per aggregator-api.md; overflow for the group that takes
+            every signature past the twentieth of one id, code and op.
+        state:
+          $ref: "#/components/schemas/GroupState"
+        issue:
+          anyOf:
+            - $ref: "#/components/schemas/IssueRef"
+            - type: "null"
+        changeId:
+          anyOf:
+            - $ref: "#/components/schemas/ChangeId"
+            - type: "null"
+        label:
+          anyOf:
+            - $ref: "#/components/schemas/ClosureLabel"
+            - type: "null"
+        changedAt:
+          type: string
+          format: date-time
+        firstSeen:
+          type: string
+          format: date-time
+        lastSeen:
+          type: string
+          format: date-time
       allOf:
-        - $ref: "#/components/schemas/IssueLinkFields"
-        - type: object
-          required: [changedAt]
-          properties:
-            changedAt:
-              type: string
-              format: date-time
-      unevaluatedProperties: false
+        - if:
+            properties:
+              state:
+                const: open
+          then:
+            properties:
+              issue:
+                type: "null"
+          else:
+            properties:
+              issue:
+                $ref: "#/components/schemas/IssueRef"
+        - if:
+            properties:
+              state:
+                enum: [fix_merged, resolved]
+          then:
+            properties:
+              changeId:
+                $ref: "#/components/schemas/ChangeId"
+          else:
+            properties:
+              changeId:
+                type: "null"
+        - if:
+            properties:
+              state:
+                const: closed
+          then:
+            properties:
+              label:
+                $ref: "#/components/schemas/ClosureLabel"
+          else:
+            properties:
+              label:
+                type: "null"
+
+    # One count entry: the records of a group deleted past its cap in one
+    # hour or one day, starting at start. Days begin at midnight UTC+03:00.
+    CountEntry:
+      type: object
+      additionalProperties: false
+      required: [start, count, firstSeen, lastSeen]
+      properties:
+        start:
+          type: string
+          format: date-time
+        count:
+          type: integer
+          minimum: 1
+        firstSeen:
+          type: string
+          format: date-time
+        lastSeen:
+          type: string
+          format: date-time
+
+    Occurrences:
+      type: object
+      additionalProperties: false
+      required: [status, groupId, hourly, daily]
+      properties:
+        status:
+          type: string
+          const: ok
+        groupId:
+          $ref: "#/components/schemas/GroupId"
+        hourly:
+          type: array
+          description: The last 7 days, oldest first. Empty, never null.
+          items:
+            $ref: "#/components/schemas/CountEntry"
+        daily:
+          type: array
+          description: >-
+            Every earlier day, merged from its hourly entries, oldest first.
+            Empty, never null.
+          items:
+            $ref: "#/components/schemas/CountEntry"
 
     SubmitResult:
       type: object
