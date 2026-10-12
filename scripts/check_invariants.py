@@ -341,6 +341,17 @@ def main() -> int:
         if sorted(got) != sorted(expected) or len(got) != len(set(got)):
             fail("invariant 8", f"aggregator-api.md's Retention table covers {name} "
                                 f"values {got}; it must name each of {expected} once")
+    # The outbox table says what happens to a record at each severity before
+    # the aggregator stores it: when it may be removed, and whether it may be
+    # dropped. It names every severity once, DEBUG included, so a new severity
+    # cannot arrive without a rule for whether the outbox may lose it.
+    outbox = [cells(row) for row in section(record, "The outbox").splitlines()
+              if row.startswith("|")]
+    held = [value for row in outbox[2:] for value in ticked(row[0])]
+    severities = spec["components"]["schemas"]["Severity"]["enum"]
+    if sorted(held) != sorted(severities) or len(held) != len(set(held)):
+        fail("invariant 8", f"log-record.md's outbox table covers severity values {held}; "
+                            f"it must name each of {severities} once")
 
     # 9. Every file one skill document names resolves once the plugin is
     # installed: from the skills root, beside the naming file, or from the
@@ -463,7 +474,8 @@ def main() -> int:
     print("OK - manifests parse and agree on the plugin version, and the project "
           "template pins it")
     print("OK - severity and type values agree across log-record.md, sds-logging, "
-          "standard-api-endpoints.md and the schema")
+          "standard-api-endpoints.md and the schema, and the retention and outbox "
+          "tables cover them")
     print(f"OK - all {references} file references in the skills resolve")
     print("OK - the contract tests name only registered codes, cover every validation "
           "step, and pair each code with its status; the exemptions are listed once")

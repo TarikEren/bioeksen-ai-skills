@@ -129,7 +129,10 @@ in CI on every push and pull request, and locally when you run it.
    enums in `openapi.yaml`. Both sets are closed and restated four times, so a
    rename has to land in every copy in one commit. The **Retention** table in
    `aggregator-api.md` groups them: it names every type once down its first
-   column, and every severity but `DEBUG` once across its header.
+   column, and every severity but `DEBUG` once across its header. The table
+   under **The outbox** in `log-record.md` names every severity once down its
+   first column, so no severity is without a rule for whether the outbox may
+   drop it.
 9. Every file a skill document names resolves once the plugin is installed:
    from `skills/`, beside the naming file, or from the naming skill's own
    directory. A path starting with `/` or containing `{` names a file in the

@@ -239,10 +239,63 @@ tags versus free text — and an unbounded dimension degrades or breaks that
 indexing in every one of them. Keeping the split explicit means the question
 is already answered whenever storage or tooling changes.
 
+## The outbox
+
+An app writes every record first to its **outbox**, and submits it to the
+aggregator from there. The outbox is the app's own store: what its
+`GET /api/admin/logs` reads, per
+`sds-api-design/references/standard-api-endpoints.md`, and what an operator
+falls back on when the aggregator is unreachable or its records are in doubt.
+
+| Severity | Kept until | Over the bound |
+|----------|------------|----------------|
+| `DEBUG` | 7 days after its `timestamp`. It is never submitted | Dropped, oldest first |
+| `INFO`, `WARNING` | Stored or refused, and 7 days after its `timestamp` | Dropped, oldest first, while pending |
+| `ERROR`, `FATAL` | Stored or refused, and 7 days after its `timestamp` | Never dropped |
+
+A record is *pending* from the moment it is written until the aggregator
+stores it, answering 201, or refuses it with an answer the app does not retry,
+per **Handling the aggregator's response**. A pending record is never removed
+for its age. An app MAY keep any record longer than the table says, and MUST
+NOT remove one sooner: the 7 days are what `GET /api/admin/logs` promises.
+
+An app has two outboxes, because one kind of record must never be kept apart
+from the change it describes:
+
+- **The record outbox** holds every record but `AUDIT`. It is a local
+  database on the app's own volume, such as an SQLite file, at the path
+  `LOG_OUTBOX_PATH` names, per **Transport** in `SKILL.md`. It is never on a
+  shared database server, so it survives the failure it may be recording.
+- **The audit outbox** holds the `AUDIT` records, in a table in the app's own
+  database, written in the same transaction as the change each one describes.
+  The change and its record commit or roll back together, so a crash between
+  them cannot keep the change and lose its record. When that database is down
+  the change fails too, and there is nothing to audit.
+
+An `AUDIT` record is never dropped. It is removed only once the aggregator has
+stored it, and no sooner than 7 days after its `timestamp`, so a refused one
+stays: the archive keeps `AUDIT` forever, and a record lost on its way there
+defeats that.
+
+The record outbox is bounded by `LOG_OUTBOX_BOUND`, 100,000 records unless the
+app sets another. The bound counts the records the outbox may drop: its
+`DEBUG` records, and its pending `INFO` and `WARNING` records. When a new
+record would take that count over the bound, the oldest of them are dropped,
+and the app records the drop once, as `LOG-5500` carrying `dropped=` and the
+number dropped in its tail. An `ERROR` or `FATAL` record is never dropped, so
+the record outbox can grow past the bound while the aggregator stays down: an
+outage's own failures are the records most needed once it ends.
+
+A background sender submits the pending records of both outboxes in batches,
+through `POST /api/v1/logs/batch` in `aggregator-api.md`, and marks each one
+stored or refused by the answer.
+
 ## Emission rules
 
-- Logging MUST NOT fail the operation being logged. A failed submission is
-  swallowed. The record still exists in the app's local store, and the failure
+- Logging MUST NOT fail the operation being logged, with one exception: an
+  `AUDIT` record is written in the transaction of the change it describes, so
+  the change fails if its record cannot be written (**The outbox**). A failed
+  submission is swallowed. The record is still in the outbox, and the failure
   is recorded there and written to stderr — together, the app's local error
   channel.
 - Submission MUST NOT block the request path. Emit asynchronously.
@@ -257,7 +310,7 @@ is already answered whenever storage or tooling changes.
   `sds-api-design/references/service-calls.md`, but does not require it, so
   this rule is the emitter's to keep.
 - A `DEBUG` record MUST NOT be submitted, from any environment. It stays in
-  the app's own store, which the app's own `GET /api/admin/logs` reads; the
+  the record outbox, which the app's own `GET /api/admin/logs` reads; the
   aggregator keeps no `DEBUG` record and refuses one with `VAL-4006`, per
   `aggregator-api.md`.
 - An `AUDIT` record is never `DEBUG`. The aggregator keeps `AUDIT` forever and
@@ -271,7 +324,7 @@ What an app does next is decided by the status alone:
 | Response | Means | The app |
 |----------|-------|---------|
 | 201 | Stored | Nothing further |
-| 503, or no response | The aggregator or its database is unavailable | SHOULD buffer and retry on the background-class terms in `sds-api-design/references/service-calls.md`, including its circuit breaker, so a down aggregator is not called on every record |
+| 503, or no response | The aggregator or its database is unavailable | Keeps the records pending, and SHOULD retry on the background-class terms in `sds-api-design/references/service-calls.md`, including its circuit breaker, so a down aggregator is not called on every record |
 | 429 | Over the app's allowance | Waits the `Retry-After` interval, then retries |
 | 401 | The app's credential was refused | Refreshes it once and retries. If the fresh credential is refused too, it MUST NOT retry again |
 | 400 | The record is malformed | MUST NOT retry it unchanged; retrying a malformed record loops forever |
@@ -282,35 +335,30 @@ A 500 is not retried because it is outside the range
 `sds-api-design/references/service-calls.md` retries: the aggregator answers 500 only when its database rejected the
 write, and an unreachable database is a 503.
 
-Whatever the app does not retry stays in its local store only, and the app
-records that failure there: `LOG-4000` for a 4xx, `LOG-5000` for a 500, and
-`LOG-5500` once retries exhaust their budget or the circuit stays open. The
-buffer MUST be bounded and, when full, drop its oldest record that is not
-`AUDIT`, rather than growing without limit. An `AUDIT` record is never
-dropped: it stays in the app's local store, past that store's own window,
-until the aggregator has answered 201 for it. The archive keeps `AUDIT`
-forever, and a record lost on its way there defeats that.
+Whatever the app does not retry is refused: it stays in the outbox only, for
+as long as **The outbox** keeps it, and the app records that failure there:
+`LOG-4000` for a 4xx and `LOG-5000` for a 500. Once retries exhaust their
+budget or the circuit stays open, the app records `LOG-5500`, and the records
+stay pending.
 
 Two failures happen before anything is submitted. A record the app's own
 check refuses, because it would not match this contract, is `LOG-4000`: the
 same malformed record the aggregator would have refused, so the same code. A
-record the local store fails to write is that store's own failure, `DB-5001`
-for a database and `SYS-5000` for any other store, not a `LOG-` code. Both
-are written to stderr, since the store that would have held them is either
-not trusted with the record or is the thing that failed. `LOG-5000` stays the
-code for a submission the aggregator refused.
+record the outbox fails to write is that outbox's own failure, `DB-5001`, not
+a `LOG-` code. Both are written to stderr, since the outbox that would have
+held them is either not trusted with the record or is the thing that failed.
+`LOG-5000` stays the code for a submission the aggregator refused.
 
 The two sets of codes belong to different apps. The aggregator answers a
 malformed record with the `VAL-` code the selection procedure gives it, as any
 app answers any request. The `LOG-` codes are the emitting app's, for the
 records it writes about its own submissions.
 
-A record dropped from a full buffer, or rejected as malformed, never reaches
-the archive. It exists only in the app's own store, and only for that store's
-retention window — see
-`sds-api-design/references/standard-api-endpoints.md`. Dropping is therefore a
-real loss, not a deferral, which is what the bound on the buffer is trading
-against.
+A refused record never reaches the archive. It exists only in the outbox, and
+only for as long as **The outbox** keeps it. A dropped record is not kept
+anywhere. Dropping is therefore a real loss, not a deferral: the bound trades
+it against an outbox that grows without limit, and the table keeps the trade
+to the severities whose loss nobody is paged for.
 
 ## Rendering
 

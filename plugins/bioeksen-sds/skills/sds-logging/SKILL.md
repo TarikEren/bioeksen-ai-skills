@@ -117,8 +117,12 @@ other remote backend.
 
 Two local destinations sit beside it, and neither is an integration point:
 
-- An app MUST keep its own records in a local store for its retention window.
-  That store is what `GET /api/admin/logs` reads, per
+- An app MUST write every record first to its outbox, and submit it from
+  there, per **The outbox** in `references/log-record.md`: an audit outbox in
+  the app's own database, written in the transaction of the change each
+  `AUDIT` record describes, and a record outbox on the app's own volume for
+  every other record. Together they are the app's local store: what
+  `GET /api/admin/logs` reads, per
   `sds-api-design/references/standard-api-endpoints.md`, and what an operator
   falls back on when the aggregator is unreachable or its records are in doubt.
 - An app MAY also write its records to stdout or stderr, as the JSON record or
@@ -131,10 +135,10 @@ forwarder, or grow a query layer without any app, in any language, changing a
 line. An app that bypasses it converts one integration point into one per app
 — the duplication this repository exists to prevent.
 
-A binding takes the aggregator's address from `AGGREGATOR_URL`, its outbox's
-path from `LOG_OUTBOX_PATH`, and the outbox's bound from `LOG_OUTBOX_BOUND`
-(default 100,000). The outbox is the bounded buffer `references/log-record.md`
-requires, holding the records the aggregator has not yet stored.
+A binding takes the aggregator's address from `AGGREGATOR_URL`, the record
+outbox's path from `LOG_OUTBOX_PATH`, and its bound from `LOG_OUTBOX_BOUND`
+(default 100,000). The audit outbox needs no setting of its own: it is a table
+in the app's own database.
 
 ## Bindings
 
@@ -143,7 +147,9 @@ middleware are language-specific and are not defined here. Whatever the
 language, the binding MUST:
 
 - Emit records matching `references/log-record.md`
-- Never let a logging failure fail the operation being logged
+- Never let a logging failure fail the operation being logged, except an
+  `AUDIT` record's: its audit call takes the transaction of the change it
+  describes, and writes the record in it
 - Never block the request path on the aggregator being reachable
 - Map `FATAL` to a call that logs and returns, never to one that ends the
   process

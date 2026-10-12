@@ -369,9 +369,10 @@ with the error envelope.
 
 ### Retention
 
-An app MUST keep its own records for at least **7 days**, which is what this
-endpoint reads. That is a working week: long enough to debug an app directly
-when the aggregator is unreachable or when its records are in doubt.
+An app MUST keep its own records for at least **7 days**, in its two
+outboxes, per **The outbox** in `sds-logging/references/log-record.md`. This
+endpoint reads both. That is a working week: long enough to debug an app
+directly when the aggregator is unreachable or when its records are in doubt.
 
 The archive is the aggregator, which keeps each record for as long as its
 type and severity call for, from 14 days to forever — the **Retention** table
@@ -381,9 +382,9 @@ that the aggregator no longer holds, and far more there than here. Neither gap
 is loss.
 
 This store is also the only one that keeps `DEBUG` records, which never reach
-the aggregator. And an `AUDIT` record the aggregator has not yet stored stays
-here past the window until it has, per
-`sds-logging/references/log-record.md`.
+the aggregator. And an `AUDIT`, `ERROR` or `FATAL` record the aggregator has
+not yet stored stays here past the window until it has, per the same
+document.
 
 A `startDate` earlier than the window MUST be clamped to the start of it rather
 than rejected, and `filterParams` MUST echo the clamped value. A 400 would make

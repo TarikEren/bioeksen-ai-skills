@@ -123,11 +123,17 @@ it logs and what it calls.
 | Own text in the tail | A failure whose error says more than its code's meaning | It is logged | The prose is the code's meaning, and the error's text is under `error=` | `sds-logging/references/log-record.md` |
 | Redacted cause | A driver error quoting a connection string with a password | It is logged | The password appears in no record | `sds-logging/references/log-record.md` |
 | Level from LOG_LEVEL | `LOG_LEVEL` set to `WARNING` | An `INFO` event happens | No record of it is written | `sds-logging/SKILL.md` |
-| DEBUG stays local | `LOG_LEVEL` set to `DEBUG` | A `DEBUG` event happens | It is in the app's own store, and is never submitted | `sds-logging/references/log-record.md` |
-| AUDIT outlasts a full buffer | An unreachable aggregator, and a full buffer holding an `AUDIT` record | Records keep coming | Other records are dropped first, and the `AUDIT` record is kept until the aggregator stores it | `sds-logging/references/log-record.md` |
+| DEBUG stays local | `LOG_LEVEL` set to `DEBUG` | A `DEBUG` event happens | It is in the record outbox, and is never submitted | `sds-logging/references/log-record.md` |
+| Outbox first | An unreachable aggregator | A record is written | `GET /api/admin/logs` returns it, though no submission has succeeded | `sds-logging/references/log-record.md` |
+| Audit in the transaction | A change that writes an `AUDIT` record | The change's transaction rolls back | Neither the change nor its `AUDIT` record is kept | `sds-logging/references/log-record.md` |
+| Both outboxes read | An `AUDIT` record and an `APP` record, both written | `GET /api/admin/logs` is called | Both are returned | `sds-api-design/references/standard-api-endpoints.md` |
+| Kept a week | A record the aggregator stored, 6 days after its `timestamp` | The outbox is cleaned | It is kept | `sds-logging/references/log-record.md` |
+| Pending outlasts the week | An unreachable aggregator, and pending `ERROR`, `FATAL` and `AUDIT` records 8 days after their `timestamp` | The outboxes are cleaned | Each is kept until the aggregator stores it | `sds-logging/references/log-record.md` |
+| Refused AUDIT stays | An `AUDIT` record the aggregator refused, 8 days after its `timestamp` | The audit outbox is cleaned | It is kept | `sds-logging/references/log-record.md` |
+| Over the bound | An unreachable aggregator, and a record outbox at its bound | Records keep coming | The oldest `DEBUG`, `INFO` and `WARNING` records are dropped, no `ERROR` or `FATAL` record is, and one `LOG-5500` record carries `dropped=` with the number dropped | `sds-logging/references/log-record.md` |
 | Aggregator down | An unreachable aggregator | A request is handled | It succeeds, and no slower than with the aggregator up | `sds-logging/references/log-record.md` |
 | Malformed record | An aggregator that answers 400 | The submission is handled | It is not retried, and the app records `LOG-4000` locally | `sds-logging/references/log-record.md` |
-| Aggregator unavailable | An aggregator that answers 503 | Records keep coming | They are buffered and retried behind the breaker, the oldest dropped first when the buffer is full | `sds-logging/references/log-record.md` |
+| Aggregator unavailable | An aggregator that answers 503 | Records keep coming | They stay pending in the outbox, and are retried behind the breaker | `sds-logging/references/log-record.md` |
 | Batch rejected | A batch answered 400 naming two records | The app resubmits | Without those two, under a new `Idempotency-Key` | `sds-logging/references/aggregator-api.md` |
 
 ## Configuration
