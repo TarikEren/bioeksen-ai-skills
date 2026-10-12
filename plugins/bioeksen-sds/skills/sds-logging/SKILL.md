@@ -142,6 +142,37 @@ outbox's path from `LOG_OUTBOX_PATH`, and its bound from `LOG_OUTBOX_BOUND`
 (default 100,000). The audit outbox needs no setting of its own: it is a table
 in the app's own database.
 
+## Third-party software
+
+Software BioEksen runs but does not write, such as a model server, cannot
+follow this skill. It is logged through a **bridge**: a BioEksen-owned process
+that reads that software's output and submits valid records under the
+component's own software id.
+
+- A bridge is a BioEksen app. It holds the component's id, writes through the
+  binding below, and serves the four standard endpoints, reporting the
+  software's own health under `checks.dependencies`, per
+  `sds-api-design/references/standard-api-endpoints.md`.
+- It is the only consumer of that output. Nothing else in the estate reads it,
+  so nothing else depends on a format BioEksen does not control.
+- It forwards a fixed set of events, listed where the component is
+  specified: the software's start and stop, the changes in its health, and its
+  failures. Its routine output is not forwarded: it is the volume nobody reads.
+- A failure the software reports is `SYS-5000`, with the software's own text
+  under `error=`, redacted as `references/log-record.md` requires of any text
+  taken from a library. The bridge cannot know which condition of the
+  selection procedure the failure meets, so the procedure's last step decides.
+- The software unreachable once it has started is `UP-5500`: the bridge
+  called it and got no response, which is the procedure's step for an
+  upstream service, and comes before `SYS-5500`. `SYS-5500` is the bridge's
+  own readiness, never the software's. While the software is still starting,
+  being unreachable is expected: the bridge's readiness answers `not-ready`,
+  and nothing is logged.
+
+A record that came through a bridge then reads like any other: same fields,
+same codes, same correlation. A second way for third-party output to reach the
+aggregator would be a second format every filter and runbook has to know.
+
 ## Bindings
 
 Library choice, logger configuration, error class hierarchies and framework

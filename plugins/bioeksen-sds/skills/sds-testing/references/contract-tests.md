@@ -139,6 +139,18 @@ it logs and what it calls.
 | Aggregator unavailable | An aggregator that answers 503 | Records keep coming | They stay pending in the outbox, and are retried behind the breaker | `sds-logging/references/log-record.md` |
 | Batch rejected | A batch answered 400 naming two records | The app resubmits | Without those two, under a new `Idempotency-Key` | `sds-logging/references/aggregator-api.md` |
 
+## Bridges
+
+For a bridge that logs third-party software.
+
+| Case | Given | When | Then | Source |
+|------|-------|------|------|--------|
+| Failure forwarded | The software writes an error to its output | The bridge reads it | One `ERROR` record under the component's id, with `SYS-5000` and the software's text under `error=` | `sds-logging/SKILL.md` |
+| Routine output dropped | The software writes a routine line | The bridge reads it | No record is written | `sds-logging/SKILL.md` |
+| Unreachable after startup | Software that answered once, now unreachable | The bridge checks it | An `ERROR` record with `UP-5500`, and the bridge's health reports the software `fail` | `sds-logging/SKILL.md` |
+| Still starting | Software not yet answering since the bridge started | The bridge checks it | No record, and `GET /api/health/ready` answers 503 `not-ready` | `sds-logging/SKILL.md` |
+| Secret redacted | An error line from the software that quotes a credential | The bridge forwards it | The credential appears in no record | `sds-logging/references/log-record.md` |
+
 ## Configuration
 
 | Case | Given | When | Then | Source |
