@@ -120,7 +120,10 @@ it logs and what it calls.
 | Code on failure | An `ERROR` or `FATAL` record | It is written | Its `code` is not null | `sds-logging/references/log-record.md` |
 | One line | A failure whose context contains a newline | It is logged | The record's `message` is a single line | `sds-logging/references/log-record.md` |
 | No stack | A failure that carries a stack trace | It is logged | The record's `message` holds no stack; a stack, if kept, goes to stderr with the same `code` and `request=` | `sds-logging/references/log-record.md` |
-| Own text in the tail | A failure whose error says more than its code's meaning | It is logged | The prose is the code's meaning, and the error's text is under `error=` | `sds-logging/references/log-record.md` |
+| Own text in the tail | A failure whose error says more than its code's meaning | It is logged | The prose is the code's meaning, and the error's name and text are under `error=`, as `Name: message` | `sds-logging/references/log-record.md` |
+| Name survives the build | An error class the app defines, in a production build | An error of it is logged | `error=` carries the name the class sets, not one the build derived | `sds-logging/references/log-record.md` |
+| Operation from a template | A request to a path carrying an identifier | It fails and is logged | `op=` carries the operation's template, and not the identifier | `sds-logging/references/log-record.md` |
+| Person by oid | A request by a signed-in person | A record names them | It carries `user=` and the `oid` of their token, and no name, email or UPN | `sds-logging/references/log-record.md` |
 | Redacted cause | A driver error quoting a connection string with a password | It is logged | The password appears in no record | `sds-logging/references/log-record.md` |
 | Level from LOG_LEVEL | `LOG_LEVEL` set to `WARNING` | An `INFO` event happens | No record of it is written | `sds-logging/SKILL.md` |
 | DEBUG stays local | `LOG_LEVEL` set to `DEBUG` | A `DEBUG` event happens | It is in the record outbox, and is never submitted | `sds-logging/references/log-record.md` |
@@ -164,6 +167,7 @@ For the aggregator. Time passes on an injected clock.
 | Security year | A `SECURITY` `WARNING` record | 90 days pass | It is still kept, until a year after its `timestamp` | `sds-logging/references/aggregator-api.md` |
 | Audit forever | An `AUDIT` record | Any time passes | It is never deleted | `sds-logging/references/aggregator-api.md` |
 | DEBUG refused | A `DEBUG` record | It is submitted | 400 `VAL-4006`, and nothing is stored | `sds-logging/references/aggregator-api.md` |
+| Person by email refused | A record whose `user=` is an email | It is submitted | 400 `VAL-4006`, and nothing is stored | `sds-logging/references/aggregator-api.md` |
 | Not clamped | Records older than 90 days still kept | `GET /api/v1/logs` is called with a `startDate` a year ago | Every record kept since then is returned, and `filterParams` echoes that `startDate` | `sds-logging/references/aggregator-api.md` |
 
 ## Health

@@ -134,7 +134,7 @@ Everything variable goes at the end of the message as `logfmt`: space
 separated `key=value` pairs, after the human-readable prose.
 
 ```
-credential expired user=3f9a request=8c21 attempts=3
+credential expired user=0b2f6c1e-8a43-4d7e-9c15-6f0e2a7b9d31 request=8c21 attempts=3
 upstream timed out request=8c21 target="billing-service" waited_ms=3000
 ```
 
@@ -155,12 +155,38 @@ dashboard or a runbook can rely on the name. Any other key is the app's own.
 |-----|---------|
 | `request` | The request's identifier, per **Correlation** below |
 | `job` | A background run's identifier, in place of `request` |
+| `op` | The operation the record belongs to, from a bounded set the app's binding defines |
+| `user` | The person concerned, by the Entra `oid` their token carries, in lowercase. Never a name, an email or a UPN |
 | `attempt` | Which attempt of a retried outbound call this is, counting from 1 |
-| `error` | A failure's own text where it says more than its code's meaning: an exception's message, a driver's error |
+| `error` | A failure's own text where it says more than its code's meaning, written `Name: message`: the error's name, then an exception's message or a driver's error |
 | `cause` | The errors beneath that one, outermost first, each written `Name: message` and joined by ` <- ` |
+
+`op` names what the app was doing, so the records of one operation can be
+found and counted together. Its set is bounded: a value is built from
+templates, never from the values a request carries, so a route is
+`POST /api/v1/orders/[id]`, never `POST /api/v1/orders/42`. An identifier in
+`op` makes the set unbounded and gives every request an operation of its own.
+Each stack skill lists the values its binding sets; a Next.js app's are in
+`sds-nextjs-backend/SKILL.md`.
+
+`user` names a person by the oid alone. The oid identifies nobody once the
+employee directory has erased the person's data, so every record naming them
+stays as written and no longer identifies anyone. A name, an email or a UPN
+would be personal data in records that nothing may delete, `AUDIT` records
+above all, which the aggregator keeps forever. The schema enforces the format:
+`LogFields` in `sds-api-design/references/openapi.yaml` refuses a record whose
+`user=` value is anything but a lowercase oid, so the app's own check refuses
+it as `LOG-4000`, and the aggregator, were it submitted, as `VAL-4006`.
 
 `error` and `cause` are where an unhandled failure says what actually broke:
 `SYS-5000`'s prose, `unhandled error`, deliberately says nothing.
+
+**An error's name is set, never inferred.** Every error class an app defines
+MUST give itself an explicit name, as a string, rather than take it from its
+class or its constructor at run time. A production build that minifies its
+code renames classes, so an inferred name changes from one build to the next,
+and the records of one failure stop reading alike. A binding SHOULD enforce
+it, through a base error class that requires the name.
 
 Text taken from a library or a driver MUST be redacted before it is written.
 A driver quoting its connection string puts a password into `cause`, and the

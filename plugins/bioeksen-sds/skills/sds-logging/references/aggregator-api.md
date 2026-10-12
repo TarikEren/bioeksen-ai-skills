@@ -48,7 +48,8 @@ one of which the schema enforces:
 
 - `severity` and `type` MUST be members of their enumerations
 - `id` MUST be in the software id format, and `message` MUST be one line of
-  at most 8192 characters — see `log-record.md`
+  at most 8192 characters, whose `user=` value, if it carries one, is a
+  lowercase Entra oid — see `log-record.md`
 - `timestamp` MUST be RFC 3339 with at least millisecond precision
 - `code`, when not null, MUST be a code listed in `code-prefixes.md` — which
   the schema enforces by enumerating them, so an unlisted code fails validation

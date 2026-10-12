@@ -66,6 +66,42 @@
     "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "ERROR", "type": "APP", "code": "AUTH-5999", "message": "something failed"}
   },
   {
+    "name": "a person named by an oid",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": true,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "INFO", "type": "AUDIT", "code": null, "message": "role granted user=0b2f6c1e-8a43-4d7e-9c15-6f0e2a7b9d31 role=operator request=8c21"}
+  },
+  {
+    "name": "a person named by an email",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": false,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "INFO", "type": "AUDIT", "code": null, "message": "role granted user=jane@example.com role=operator request=8c21"}
+  },
+  {
+    "name": "a person named by a short id",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": false,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "WARNING", "type": "SECURITY", "code": "AUTH-4102", "message": "credential expired user=3f9a request=8c21"}
+  },
+  {
+    "name": "an oid in capitals",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": false,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "INFO", "type": "AUDIT", "code": null, "message": "role granted user=0B2F6C1E-8A43-4D7E-9C15-6F0E2A7B9D31 request=8c21"}
+  },
+  {
+    "name": "a quoted name under user",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": false,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "INFO", "type": "AUDIT", "code": null, "message": "role granted user=\"Jane Doe\" request=8c21"}
+  },
+  {
+    "name": "another key ending in user",
+    "schema": "openapi.yaml#/components/schemas/LogRecord",
+    "valid": true,
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "INFO", "type": "JOB", "code": null, "message": "job completed job=7f2a superuser=false"}
+  },
+  {
     "name": "a submitted recordId",
     "schema": "openapi.yaml#/components/schemas/LogRecord",
     "valid": false,

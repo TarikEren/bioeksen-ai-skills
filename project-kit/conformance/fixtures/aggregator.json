@@ -93,7 +93,7 @@
     "name": "an AUDIT submission at INFO",
     "schema": "aggregator-api.yaml#/components/schemas/LogSubmission",
     "valid": true,
-    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "INFO", "type": "AUDIT", "code": null, "message": "role granted user=3f9a role=operator request=8c21"}
+    "instance": {"id": "auth-service", "timestamp": "2026-09-03T14:05:00.123Z", "severity": "INFO", "type": "AUDIT", "code": null, "message": "role granted user=0b2f6c1e-8a43-4d7e-9c15-6f0e2a7b9d31 role=operator request=8c21"}
   },
   {
     "name": "a batch carrying one DEBUG record",

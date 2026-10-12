@@ -291,13 +291,17 @@ function process(value: string | number | null): string {
 ### instanceof Guard
 
 ```typescript
+// Each class sets its name explicitly: minifying renames classes, and
+// sds-logging needs the same name in every build.
 class ApiError extends Error {
+  override readonly name = "ApiError";
   constructor(public statusCode: number, message: string) {
     super(message);
   }
 }
 
 class ValidationError extends Error {
+  override readonly name = "ValidationError";
   constructor(public fields: string[]) {
     super("Validation failed");
   }

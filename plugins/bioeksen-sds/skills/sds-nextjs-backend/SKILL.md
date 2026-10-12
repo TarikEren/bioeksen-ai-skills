@@ -206,6 +206,24 @@ repositories and services that use the schema; `sds-database` § 5 and
   requires, so every record carries the request's correlation id.
 - **Never log** what `sds-logging/SKILL.md` forbids: secrets and tokens, a
   body in full, or personal data beyond the identifier needed to correlate.
+  A person is named only by `user=` and the `oid` of their token.
+- **`op` comes from the SDK**, which sets it from where the record is written.
+  These are the values, the bounded set `sds-logging/references/log-record.md`
+  requires; route templates are used, never actual paths, so no identifier
+  enters `op`:
+
+  | Where | `op` |
+  |---|---|
+  | Route handler | `"{METHOD} {route template}"`, e.g. `"POST /api/v1/orders/[id]"` |
+  | Page render | `"render {route template}"` |
+  | Server action | `"action {route template}"` |
+  | Middleware (`proxy` in Next.js 16 and later) | `"middleware"` |
+  | Startup and shutdown | `"startup"`, `"shutdown"` |
+  | Background job | `"job {job name}"` |
+
+- **Every error class extends the SDK's base error class**, which requires an
+  explicit `name`: a production build minifies class names, and
+  `sds-logging/references/log-record.md` needs the same name in every build.
 
 ### Abuse and resources
 

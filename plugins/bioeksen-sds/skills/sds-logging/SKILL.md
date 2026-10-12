@@ -46,7 +46,9 @@ rotation of it.
 - Passwords, tokens, API keys, session IDs, or `Authorization` header contents
 - Full payment or identity numbers
 - Request or response bodies in full — log the fields you actually need
-- Personal data beyond the identifier needed to correlate the event
+- Personal data beyond the identifier needed to correlate the event. A person
+  is named only by their Entra oid, under the reserved key `user`, per
+  `references/log-record.md`
 
 If a value must be referenced but not exposed, log a stable hash or the last
 four characters, never the value.
