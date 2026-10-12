@@ -16,15 +16,15 @@ Paths fall into two groups, and only one of them carries a version.
 
 | Endpoints | Path | Versioned |
 |-----------|------|-----------|
-| The four in this document | `/api/health`, `/api/health/live`, `/api/health/ready`, `/api/admin/logs` | No |
+| The five in this document | `/api/health`, `/api/health/live`, `/api/health/ready`, `/api/admin/logs`, `/api/client-errors` | No |
 | Everything else an app serves, including the log aggregator's own endpoints | `/api/v{major}/…` | Yes |
 
-The standard four are unversioned because every app implements them
+The standard five are unversioned because every app implements them
 identically, and because they are configured outside the app that serves them:
 in load balancer definitions, orchestrator manifests and monitoring checks. A
 version bump there is the hardest kind to roll out, and a probe path that moves
 takes healthy instances out of rotation while the configuration catches up. If
-one of the four ever has to break, the honest signal is a new path, not a
+one of the five ever has to break, the honest signal is a new path, not a
 version negotiation.
 
 For the versioned group:
@@ -457,6 +457,68 @@ above and need not be returned.
     }
 }
 ```
+
+## `POST /api/client-errors`
+
+Takes a report of an error that happened in one of the app's own pages, in the
+browser, and logs it. The SDK's browser error reporter sends it, so an app
+does not write its own.
+
+**Authorization:** none. A page fails before its user signs in as often as
+after, so the endpoint takes no credential. Three rules keep it the app's own:
+
+- **The `Origin` MUST be the app's own.** A request from another site, or one
+  carrying no `Origin`, is refused with 403 `PERM-4153`, step 7 of the
+  selection procedure in `sds-logging/references/code-prefixes.md`.
+- **It is rate limited per source**, to 10 reports a minute unless the app
+  records another value, an empirical value in the sense of
+  `service-calls.md`. The next report is answered 429 `RATE-4400`, with
+  `Retry-After`. Without the limit, a page caught in an error loop fills the
+  app's outbox and the aggregator.
+- **The body is at most 16 KiB**, not the 1 MiB default of **Method, size and
+  media type**: a report is an error and its causes, never a page's state. A
+  larger one is 413 `VAL-4550`.
+
+**Request:** `ClientErrorReport` in `openapi.yaml`.
+
+```json
+{
+    "route": "/orders/[id]",
+    "error": "TypeError: Cannot read properties of undefined (reading 'total')",
+    "cause": "FetchError: request failed <- AbortError: aborted"
+}
+```
+
+- `route` is the page's route template, which MUST be one the app serves. Any
+  other route is 400 `VAL-4006`: the report did not come from one of the app's
+  pages, and a template, unlike the path a user visited, carries no
+  identifier.
+- `error` is the error as `Name: message`, and `cause`, when there is one, the
+  errors beneath it, outermost first, joined by ` <- `: the forms of the
+  reserved tail keys in `sds-logging/references/log-record.md`.
+- A field the report does not define is 400 `VAL-4007`, so a reporter cannot
+  add a user's name or a page's data to a report.
+
+**Responses:** 200 with `{"status": "ok"}` once the report is logged; 400,
+403, 413, 415, 429 and 503 with the error envelope.
+
+**What the app logs.** Each report becomes one record:
+
+| Field | Value |
+|-------|-------|
+| `severity`, `type`, `code` | `ERROR`, `APP`, `SYS-5000` |
+| `message` | `unhandled error`, then the tail: `op="client {route}"`, `error=`, `cause=`, `request=`, and `user=` with the person's oid when the request carries the app's session |
+
+- `error=` and `cause=` are redacted, as any text from a library is, and
+  written on one line, per `sds-logging/references/log-record.md`. When the
+  record would be longer than 8192 characters, the app shortens `cause`, then
+  `error`, from their ends.
+- Nothing else about the user is recorded: no address, no user agent, and no
+  page state.
+- Reports are grouped like any failure, per **Groups** in
+  `sds-logging/references/aggregator-api.md`, so a page that fails for every
+  user is one group, not a record per user. Noise from browser extensions and
+  old browsers is closed as `close:external`.
 
 ## Machine-readable schema
 

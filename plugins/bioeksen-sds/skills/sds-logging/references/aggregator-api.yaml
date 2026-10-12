@@ -8,7 +8,7 @@ info:
     relative to the aggregator host, denoted HOST in aggregator-api.md, which
     is the rationale layer for this file.
 
-    The aggregator also exposes the four standard endpoints, unversioned, as
+    The aggregator also exposes the five standard endpoints, unversioned, as
     every app does; those are defined in
     sds-api-design/references/openapi.yaml and are not repeated here.
 

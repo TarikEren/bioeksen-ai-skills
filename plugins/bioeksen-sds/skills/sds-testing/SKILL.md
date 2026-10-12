@@ -315,7 +315,7 @@ Drop a row only when it cannot apply, and say why in the report.
 
 ## The standard endpoints
 
-For the four standard endpoints the failing suite already exists: this
+For the five standard endpoints the failing suite already exists: this
 skill's conformance check, which ships with it. Run it against the service
 before implementing them, and its failures are the red list:
 
@@ -326,11 +326,16 @@ python ${CLAUDE_SKILL_DIR}/scripts/check_service.py --base-url http://localhost:
 
 It checks every response against `sds-api-design/references/openapi.yaml`,
 and what no schema can express: the `X-Request-Id` echo, 401 `AUTH-4100`
-without a credential, and, with an operator token, the code for each bad
-query parameter. It exits 0 when every check passed, 1 when one failed, and 2
-when one was not run: the packages are missing, the service cannot be
-reached, or no operator token was given. Report a 2 as not run, never as
-passed.
+without a credential, with an operator token the code for each bad query
+parameter, and the client error endpoint's refusals: 403 `PERM-4153` from
+another site and 400 `VAL-4006` for a route the app does not serve. A report
+from the app's own page is accepted: pass `--client-route` when the app
+serves no page at `/`, and `--origin` when its pages are served from another
+origin than `--base-url`, as behind a proxy. It exits 0 when every check
+passed, 1 when one failed, and 2 when one was not run: the packages are
+missing, the service cannot be reached, no operator token was given, or the
+client error endpoint's rate limit refused a check. Report a 2 as not run,
+never as passed.
 
 Implement until every check passes. The service's own tests still cover what
 the conformance check cannot see from outside: what the service logs, and what

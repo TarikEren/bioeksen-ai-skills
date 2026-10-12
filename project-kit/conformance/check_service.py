@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check a running service against the four standard endpoints, or check the check.
+"""Check a running service against the five standard endpoints, or check the check.
 
     python check_service.py --base-url http://localhost:8080 [--operator-token TOKEN]
     python check_service.py --self-test

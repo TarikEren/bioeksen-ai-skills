@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A minimal service serving the four standard endpoints conformingly.
+"""A minimal service serving the five standard endpoints conformingly.
 
     python stub_service.py [--port 8080] [--operator-token TOKEN]
 
@@ -7,8 +7,9 @@ It exists so check_service.py can be exercised end to end, and doubles as
 the shortest readable statement of what those endpoints require of a
 response: the error envelope, the X-Request-Id echo, Cache-Control, and the
 order in which the selection procedure picks a code. It stores nothing, its
-numbers are placeholders, and it accepts one fixed operator token in place
-of the JWT validation sds-auth requires.
+numbers are placeholders, it accepts one fixed operator token in place
+of the JWT validation sds-auth requires, it serves one page, /, and it does
+not rate limit.
 """
 from __future__ import annotations
 
@@ -29,6 +30,10 @@ SEVERITIES = ("DEBUG", "INFO", "WARNING", "ERROR", "FATAL")
 LOG_TYPES = ("APP", "SECURITY", "AUDIT", "ACCESS", "JOB")
 RETENTION = timedelta(days=7)
 DEFAULT_TOKEN = "stub-operator-token"
+# The route templates of the stub's own pages, which a client error report names.
+CLIENT_ROUTES = {"/"}
+REPORT_LIMIT = 16 * 1024
+REPORT_FIELDS = {"route", "error", "cause"}
 STARTED = time.monotonic()
 GB = 1_000_000_000
 
@@ -36,11 +41,17 @@ GB = 1_000_000_000
 CODES = {
     "AUTH-4100": (401, "Credential missing"),
     "AUTH-4101": (401, "Credential invalid"),
+    "PERM-4153": (403, "Origin not allowed"),
+    "VAL-4000": (400, "Request body malformed"),
+    "VAL-4001": (400, "Required field missing"),
     "VAL-4002": (400, "Unknown value for an enumerated field"),
     "VAL-4003": (400, "Query parameter malformed"),
     "VAL-4004": (400, "endDate earlier than startDate"),
     "VAL-4005": (400, "Pagination out of range"),
     "VAL-4006": (400, "Field value invalid"),
+    "VAL-4007": (400, "Unknown field"),
+    "VAL-4550": (413, "Request body too large"),
+    "VAL-4600": (415, "Unsupported media type"),
     "RES-4200": (404, "Resource does not exist"),
     "RES-4500": (405, "Method not allowed"),
 }
@@ -71,6 +82,7 @@ def parse_time(value: str) -> datetime | None:
 class Handler(BaseHTTPRequestHandler):
     operator_token = DEFAULT_TOKEN
     request_id = ""
+    body = b""
 
     def log_message(self, format: str, *args) -> None:  # noqa: A002 - base signature
         pass  # a conformance run wants its own output, not an access log
@@ -96,19 +108,25 @@ class Handler(BaseHTTPRequestHandler):
         self.request_id = offered if REQUEST_ID.match(offered) else secrets.token_hex(8)
         url = urlsplit(self.path)
         query = parse_qs(url.query, keep_blank_values=True)
+        # Read the whole body, whatever the answer: one left unread resets the
+        # connection before the answer reaches the caller.
+        self.body = self.rfile.read(int(self.headers.get("Content-Length") or 0))
         routes = {
-            "/api/health/live": (False, self.live),
-            "/api/health/ready": (False, self.ready),
-            "/api/health": (True, self.health),
-            "/api/admin/logs": (True, self.logs),
+            "/api/health/live": ("GET", False, self.live),
+            "/api/health/ready": ("GET", False, self.ready),
+            "/api/health": ("GET", True, self.health),
+            "/api/admin/logs": ("GET", True, self.logs),
+            "/api/client-errors": ("POST", False, self.client_error),
         }
         try:
             if url.path not in routes:
                 raise Fault("RES-4200")
-            needs_operator, handler = routes[url.path]
+            served, needs_operator, handler = routes[url.path]
             if needs_operator:
-                self.authenticate()  # steps 2-10, before the method (step 11)
-            if method != "GET":
+                self.authenticate()  # steps 2-6 and 8-10, before the method (step 11)
+            if handler == self.client_error and self.headers.get("Origin") != self.origin():
+                raise Fault("PERM-4153")  # step 7, before the method too
+            if method != served:
                 raise Fault("RES-4500")
             status, body = handler(query)
         except Fault as fault:
@@ -116,6 +134,10 @@ class Handler(BaseHTTPRequestHandler):
             body = {"status": "fail", "code": fault.code, "message": meaning,
                     "details": fault.details}
         self.send(status, body)
+
+    def origin(self) -> str:
+        """The stub's own origin: the scheme and host the request reached it at."""
+        return f"http://{self.headers.get('Host', '')}"
 
     def authenticate(self) -> None:
         header = self.headers.get("Authorization", "")
@@ -158,6 +180,32 @@ class Handler(BaseHTTPRequestHandler):
                          "free": disk.free / GB},
             },
         }
+
+    def client_error(self, query) -> tuple[int, dict]:
+        # In selection procedure order: 12, 13, 14, 15, 20, then 21.
+        if len(self.body) > REPORT_LIMIT:
+            raise Fault("VAL-4550")
+        if self.headers.get_content_type() != "application/json":
+            raise Fault("VAL-4600")
+        try:
+            report = json.loads(self.body)
+        except ValueError:
+            raise Fault("VAL-4000")
+        if not isinstance(report, dict):
+            raise Fault("VAL-4000")
+        for field in ("route", "error"):
+            if field not in report:
+                raise Fault("VAL-4001", field, "missing")
+        for field in sorted(REPORT_FIELDS & report.keys()):
+            if not isinstance(report[field], str) or not report[field]:
+                raise Fault("VAL-4006", field, "not a string")
+        if report["route"] not in CLIENT_ROUTES:
+            raise Fault("VAL-4006", "route", "not a route this app serves")
+        unknown = sorted(report.keys() - REPORT_FIELDS)
+        if unknown:
+            raise Fault("VAL-4007", unknown[0], "not a field of a report")
+        # A real app logs the report here, per standard-api-endpoints.md.
+        return 200, {"status": "ok"}
 
     def logs(self, query) -> tuple[int, dict]:
         def one(name: str) -> str | None:

@@ -103,6 +103,7 @@ Drawn from the endpoints already specified elsewhere:
 | `GET /api/health/ready` | None |
 | `GET /api/health` | Operator |
 | `GET /api/admin/logs` | Operator |
+| `POST /api/client-errors` | None |
 | `POST HOST/api/v1/logs`, `POST HOST/api/v1/logs/batch` | App, holding `logs.write` |
 | `GET HOST/api/v1/logs`, `GET HOST/api/v1/groups/:groupId/occurrences` | Operator |
 | `GET HOST/api/v1/logs/:recordId` | Operator, or App holding `logs.resolve` |
@@ -111,7 +112,10 @@ Drawn from the endpoints already specified elsewhere:
 
 The two probe endpoints are deliberately unauthenticated: they expose nothing,
 and a probe that can fail on credential expiry is a probe that will eventually
-take a healthy service out of rotation.
+take a healthy service out of rotation. `POST /api/client-errors` is
+unauthenticated too, because a page fails before its user signs in as often as
+after: what keeps it the app's own is its `Origin` check, step 7 of the
+validation order, and its rate limit.
 
 ## Rate limiting
 

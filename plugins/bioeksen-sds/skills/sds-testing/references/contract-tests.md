@@ -11,7 +11,7 @@ the registry and every status against its code, and requires a case for every
 step of the validation order. An empirical value — a threshold, a timeout — is
 the app's configured value, never a number copied into the test.
 
-For the four standard endpoints, the conformance check this skill ships,
+For the five standard endpoints, the conformance check this skill ships,
 `sds-testing/scripts/check_service.py`, already runs the cases visible from
 outside a service. Its own tests still cover what
 it logs and what it calls.
@@ -70,7 +70,7 @@ it logs and what it calls.
 | Create | A collection | A member is created | 201, a `Location` header naming the member, and the member in the body | `sds-api-design/references/app-endpoints.md` |
 | Merge Patch | A member | A JSON Merge Patch sets one field to `null` and leaves another out | The first field is removed and the second unchanged | `sds-api-design/references/app-endpoints.md` |
 | Delete | A member | It is deleted | 204, with no body | `sds-api-design/references/app-endpoints.md` |
-| No store | Any of the four standard endpoints | It is called | The response carries `Cache-Control: no-store` | `sds-api-design/references/standard-api-endpoints.md` |
+| No store | Any of the five standard endpoints | It is called | The response carries `Cache-Control: no-store` | `sds-api-design/references/standard-api-endpoints.md` |
 
 ## Throttling
 
@@ -140,6 +140,23 @@ it logs and what it calls.
 | Malformed record | An aggregator that answers 400 | The submission is handled | It is not retried, and the app records `LOG-4000` locally | `sds-logging/references/log-record.md` |
 | Aggregator unavailable | An aggregator that answers 503 | Records keep coming | They stay pending in the outbox, and are retried behind the breaker | `sds-logging/references/log-record.md` |
 | Batch rejected | A batch answered 400 naming two records | The app resubmits | Without those two, under a new `Idempotency-Key` | `sds-logging/references/aggregator-api.md` |
+
+## Client errors
+
+For `POST /api/client-errors`. The conformance check runs the refusals visible from outside; these cases also cover what the app logs.
+
+| Case | Given | When | Then | Source |
+|------|-------|------|------|--------|
+| Report logged | A report from the app's own origin, naming one of its route templates | It is submitted | 200 `{"status": "ok"}`, and one `ERROR` `APP` record with `SYS-5000`, `op="client {route}"`, and the report's `error=` and `cause=` | `sds-api-design/references/standard-api-endpoints.md` |
+| No credential needed | A report with no session and no `Authorization` header | It is submitted | 200, and the record carries no `user=` | `sds-api-design/references/standard-api-endpoints.md` |
+| Person by oid | A report sent with the app's session | It is submitted | The record carries `user=` and the person's oid, and nothing else about them | `sds-api-design/references/standard-api-endpoints.md` |
+| Foreign origin | A report whose `Origin` is another site's | It is submitted | 403 `PERM-4153`, and no report is logged | `sds-api-design/references/standard-api-endpoints.md` |
+| No origin | A report carrying no `Origin` | It is submitted | 403 `PERM-4153` | `sds-api-design/references/standard-api-endpoints.md` |
+| Foreign route | A report naming a route the app does not serve | It is submitted | 400 `VAL-4006`, with `route` in `details` | `sds-api-design/references/standard-api-endpoints.md` |
+| Extra field | A report carrying a field it does not define | It is submitted | 400 `VAL-4007` | `sds-api-design/references/standard-api-endpoints.md` |
+| Report too large | A report one byte over 16 KiB | It is submitted | 413 `VAL-4550` | `sds-api-design/references/standard-api-endpoints.md` |
+| Rate limited | One source past its allowance of reports, 10 a minute unless the app records another | It submits another | 429 `RATE-4400`, carrying `Retry-After` | `sds-api-design/references/standard-api-endpoints.md` |
+| Secret redacted | A report whose `error` quotes a token | It is logged | The token appears in no record | `sds-logging/references/log-record.md` |
 
 ## Bridges
 

@@ -350,6 +350,12 @@ outside the scale, so Avatar and Badge stay round.
   input. Narrow `searchParams` values (`typeof q === "string"`). An id that does
   not parse, or a record that does not exist, calls `notFound()` rather than
   throwing into the error boundary.
+- **Report what reaches an error boundary.** `error.tsx` and
+  `global-error.tsx` hand the error to `@bioeksen/sdk`'s browser error
+  reporter, which sends it to `POST /api/client-errors` with the route
+  template, per `sds-api-design/references/standard-api-endpoints.md`. Never
+  send a report by hand: the reporter is what keeps the path, the user and
+  the page's data out of it.
 - **Keep filters and selection in the URL** (a GET form, `?folder=`), not in
   client state, so a link opens the same view.
 - **Functions cannot cross the server/client boundary.** That rules out render

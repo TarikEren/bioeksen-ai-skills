@@ -1,7 +1,7 @@
 # App-Specific Endpoints
 
-The conventions every endpoint an app serves follows, beyond the four standard
-ones. `standard-api-endpoints.md` defines those four, and the conventions every
+The conventions every endpoint an app serves follows, beyond the five standard
+ones. `standard-api-endpoints.md` defines those five, and the conventions every
 endpoint shares with them — types and units, correlation, the error envelope,
 rate limiting, and the 405, 413 and 415 responses. This document adds what only
 app-specific endpoints need.

@@ -12,7 +12,33 @@ REPO = Path(__file__).resolve().parents[3]
 SCRIPT = REPO / "plugins" / "bioeksen-sds" / "skills" / "sds-testing" / "scripts" / "check_service.py"
 sys.path.insert(0, str(REPO / "project-kit" / "conformance"))
 
-from stub_service import DEFAULT_TOKEN, serve  # noqa: E402
+from http.server import ThreadingHTTPServer  # noqa: E402
+
+from stub_service import DEFAULT_TOKEN, Handler, serve  # noqa: E402
+
+
+class ForeignOriginAccepted(Handler):
+    """The stub, taking every origin for its own."""
+
+    def origin(self) -> str:
+        return self.headers.get("Origin", "")
+
+
+class ReportsRateLimited(Handler):
+    """The stub, with every client error report over its source's allowance."""
+
+    def do_POST(self) -> None:
+        self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        self.request_id = self.headers.get("X-Request-Id", "rate-limited")
+        self.send(429, {"status": "fail", "code": "RATE-4400",
+                        "message": "Rate limit exceeded", "details": None})
+
+
+def serving(test: unittest.TestCase, handler: type[Handler]) -> str:
+    server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    test.addCleanup(server.shutdown)
+    return f"http://127.0.0.1:{server.server_address[1]}"
 
 
 def load(name: str = "sds_check_service"):
@@ -49,6 +75,22 @@ class AgainstTheStubTest(unittest.TestCase):
             status, out = run(self.module, "--base-url", self.url)
         self.assertEqual(status, 2, out)
         self.assertIn("NOT RUN", out)
+        self.assertNotIn("FAIL", out)
+
+
+class ClientErrorsTest(unittest.TestCase):
+    def test_a_service_logging_reports_from_another_site_fails(self):
+        status, out = run(load(), "--base-url", serving(self, ForeignOriginAccepted),
+                          "--operator-token", DEFAULT_TOKEN)
+        self.assertEqual(status, 1, out)
+        self.assertIn("FAIL     POST /api/client-errors from another site", out)
+
+    def test_a_report_the_rate_limit_refuses_is_not_run_not_passed(self):
+        status, out = run(load(), "--base-url", serving(self, ReportsRateLimited),
+                          "--operator-token", DEFAULT_TOKEN)
+        self.assertEqual(status, 2, out)
+        self.assertIn("NOT RUN  POST /api/client-errors", out)
+        self.assertIn("rate limit", out)
         self.assertNotIn("FAIL", out)
 
 

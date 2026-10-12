@@ -150,7 +150,7 @@ that reads that software's output and submits valid records under the
 component's own software id.
 
 - A bridge is a BioEksen app. It holds the component's id, writes through the
-  binding below, and serves the four standard endpoints, reporting the
+  binding below, and serves the standard endpoints, reporting the
   software's own health under `checks.dependencies`, per
   `sds-api-design/references/standard-api-endpoints.md`.
 - It is the only consumer of that output. Nothing else in the estate reads it,

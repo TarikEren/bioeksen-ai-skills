@@ -220,6 +220,7 @@ repositories and services that use the schema; `sds-database` § 5 and
   | Middleware (`proxy` in Next.js 16 and later) | `"middleware"` |
   | Startup and shutdown | `"startup"`, `"shutdown"` |
   | Background job | `"job {job name}"` |
+  | A browser's report to `POST /api/client-errors` | `"client {route template}"` |
 
 - **Every error class extends the SDK's base error class**, which requires an
   explicit `name`: a production build minifies class names, and

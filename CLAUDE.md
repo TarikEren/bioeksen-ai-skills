@@ -104,10 +104,11 @@ in CI on every push and pull request, and locally when you run it.
    **Database failures** table in `code-prefixes.md` also names steps, by
    number, and each of its rows carries the code of the step it names.
 3. Every code's HTTP status matches the range table in `error-codes.md`.
-4. The four standard endpoints in `openapi.yaml` are exactly `/api/health`,
-   `/api/health/live`, `/api/health/ready` and `/api/admin/logs`, unversioned;
+4. The five standard endpoints in `openapi.yaml` are exactly `/api/health`,
+   `/api/health/live`, `/api/health/ready`, `/api/admin/logs` and
+   `/api/client-errors`, unversioned;
    every endpoint in `aggregator-api.md` is served under `/api/v{major}/`.
-   Those four are the only unversioned paths in the estate.
+   Those five are the only unversioned paths in the estate.
 5. The retry classification in `sds-api-design/references/service-calls.md`
    covers exactly the two server-fault ranges of `error-codes.md`, and calls
    the 503 range retryable and the 500 range not. Retry policy is derived from

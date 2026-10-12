@@ -20,7 +20,7 @@ Every API contains standard and specialized endpoints.
 
 ## Standard API Endpoints
 
-Every app MUST expose these four, with identical paths and schemas:
+Every app MUST expose these five, with identical paths and schemas:
 
 | Endpoint | Is | Principal |
 |----------|-----|-----------|
@@ -28,8 +28,9 @@ Every app MUST expose these four, with identical paths and schemas:
 | `GET /api/health/live` | Liveness probe: is the process alive? Checks no dependency | None |
 | `GET /api/health/ready` | Readiness probe: can this instance serve traffic now? What load balancers probe | None |
 | `GET /api/admin/logs` | This app's logs, filtered and paginated | Operator |
+| `POST /api/client-errors` | A report of an error in one of the app's own pages, which the app logs. Accepts only the app's own `Origin` | None |
 
-All four MUST be served with `Cache-Control: no-store`. The principal column is
+All five MUST be served with `Cache-Control: no-store`. The principal column is
 `sds-auth`'s; the schemas and status codes are in the references below.
 
 - `references/standard-api-endpoints.md` — the conventions and the reasoning
@@ -53,7 +54,7 @@ table, correlation, the error envelope, rate limiting, and the 405, 413 and 415
 responses.
 
 They are also the versioned half of the estate: every app-specific path is
-served under `/api/v{major}/`, and the four standard endpoints above are the
+served under `/api/v{major}/`, and the five standard endpoints above are the
 only unversioned ones. The rule, and the 90 day deprecation window a bump
 carries, are in the same document.
 

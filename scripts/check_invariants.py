@@ -55,7 +55,7 @@ AUTH_STEPS = 10
 
 # The only unversioned paths in the estate; everything else carries /api/v{major}/.
 STANDARD_PATHS = {"/api/health", "/api/health/live", "/api/health/ready",
-                  "/api/admin/logs"}
+                  "/api/admin/logs", "/api/client-errors"}
 
 # `| `AUTH-4100` | 401 | Credential missing |` — the per-prefix tables.
 PREFIX_ROW = re.compile(r"^\|\s*`([A-Z][A-Z0-9]*-\d{4})`\s*\|\s*(\d{3})\s*\|", re.M)
@@ -207,12 +207,12 @@ def main() -> int:
         elif expected != http:
             fail("invariant 3", f"{code} is documented as {http}, range table says {expected}")
 
-    # 4. The four standard endpoints are unversioned; every other path is not.
+    # 4. The five standard endpoints are unversioned; every other path is not.
     paths = set(spec["paths"])
     if paths != STANDARD_PATHS:
         for extra in sorted(paths - STANDARD_PATHS):
             fail("invariant 4", f"openapi.yaml defines {extra}, which is not one of "
-                                "the four unversioned standard endpoints")
+                                "the five unversioned standard endpoints")
         for missing in sorted(STANDARD_PATHS - paths):
             fail("invariant 4", f"openapi.yaml no longer defines {missing}")
     agg = yaml.safe_load(read(AGGREGATOR_YAML))

@@ -4,9 +4,9 @@ info:
   title: BioEksen Standard API Endpoints
   version: 1.0.0
   description: >-
-    Normative definition of the health and admin-log endpoints every BioEksen
-    web app must expose. Paths are relative to the host of the app in question,
-    and are deliberately unversioned: these four are the only unversioned paths
+    Normative definition of the health, admin-log and client-error endpoints
+    every BioEksen web app must expose. Paths are relative to the host of the app in question,
+    and are deliberately unversioned: these five are the only unversioned paths
     in the estate, and every app-specific endpoint is served under
     /api/v{major}/ instead. See standard-api-endpoints.md for rationale.
 
@@ -223,6 +223,49 @@ paths:
         "503":
           $ref: "#/components/responses/NotReady"
 
+  /api/client-errors:
+    post:
+      summary: Report an error from one of the app's own pages
+      description: >-
+        Called by the SDK's browser error reporter. Errors happen before sign-in
+        as well as after, so it takes no credential; what keeps it the app's
+        own is that it accepts only the app's own Origin (PERM-4153), at most
+        10 reports a minute from one source (RATE-4400), and a body of at most
+        16 KiB (VAL-4550). The app logs each report as an ERROR APP record
+        with SYS-5000, per standard-api-endpoints.md.
+      operationId: reportClientError
+      tags: [client]
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/RequestId"
+        - $ref: "#/components/parameters/RequestDeadline"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientErrorReport"
+      responses:
+        "200":
+          description: The report is logged.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+            X-Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportLogged"
+        "400":
+          $ref: "#/components/responses/BadReport"
+        "403":
+          $ref: "#/components/responses/OriginForbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/NotReady"
+
 components:
   securitySchemes:
     operatorAuth:
@@ -261,7 +304,7 @@ components:
         minimum: 0
 
   # Cross-cutting request headers. Every endpoint in the estate takes these,
-  # not only the four defined here, so they are referenced rather than repeated
+  # not only the five defined here, so they are referenced rather than repeated
   # — sds-logging/references/aggregator-api.yaml points at these same
   # definitions.
   parameters:
@@ -313,6 +356,28 @@ components:
             $ref: "#/components/schemas/Error"
     Unauthorized:
       description: Missing or invalid credential.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    BadReport:
+      description: >-
+        The report failed validation: a field missing, a route the app does
+        not serve (VAL-4006), or a field the report does not define.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    OriginForbidden:
+      description: >-
+        PERM-4153. The request's Origin is not the app's own, or it carries
+        none.
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestId"
@@ -736,6 +801,45 @@ components:
               items:
                 $ref: "#/components/schemas/LogRecord"
       unevaluatedProperties: false
+
+    # What the SDK's browser error reporter sends. The app writes error and
+    # cause into the record's tail, redacted and on one line, so the report
+    # carries them as the tail does: each error as Name: message, the causes
+    # outermost first and joined by " <- ".
+    ClientErrorReport:
+      type: object
+      additionalProperties: false
+      required: [route, error]
+      properties:
+        route:
+          type: string
+          minLength: 1
+          maxLength: 512
+          description: >-
+            The route template of the page, e.g. /orders/[id]: one of the
+            app's own, never the path the user visited, so no identifier
+            enters the record.
+        error:
+          type: string
+          minLength: 1
+          maxLength: 4096
+          description: "The error, as Name: message."
+        cause:
+          type: string
+          minLength: 1
+          maxLength: 8192
+          description: >-
+            The errors beneath it, outermost first, each Name: message, joined
+            by " <- ".
+
+    ReportLogged:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          const: ok
 
     Error:
       type: object
