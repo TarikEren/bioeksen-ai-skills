@@ -84,8 +84,8 @@ class AttributionTest(MonorepoTest):
         self.assertAttributed({"apps/bio-inventory/app/page.tsx": "y"}, "bio-inventory")
 
     def test_an_app_of_several_packages_is_one_unit(self):
-        self.assertAttributed({"apps/bio-softop/worker/index.ts": "y",
-                               "apps/bio-softop/db/schema.prisma": "y"}, "bio-softop")
+        self.assertAttributed({"apps/bio-email/worker/index.ts": "y",
+                               "apps/bio-email/db/schema.prisma": "y"}, "bio-email")
 
     def test_a_package_inside_a_unit_reaches_every_unit_that_depends_on_it(self):
         # error-codes is bio-sdk's own, and reaches both apps through sdk. It is
@@ -98,13 +98,13 @@ class AttributionTest(MonorepoTest):
 
     def test_a_shared_package_several_apps_depend_on_names_the_package(self):
         self.assertAttributed({"packages/eslint-config/index.js": "y"}, "bio-software",
-                              ("bio-inventory", "bio-softop"), ("@bioeksen/eslint-config",))
+                              ("bio-email", "bio-inventory"), ("@bioeksen/eslint-config",))
 
     def test_dev_dependencies_count(self):
         self.assertAttributed({"packages/tsconfig/base.json": "{ }"}, "bio-inventory")
 
     def test_the_generator_reaches_bio_softop_through_its_worker(self):
-        self.assertAttributed({"tooling/create-app/index.ts": "y"}, "bio-softop")
+        self.assertAttributed({"tooling/create-app/index.ts": "y"}, "bio-email")
 
     def test_a_root_build_file_affects_every_unit(self):
         for name in ("turbo.json", "package.json", "pnpm-workspace.yaml", ".npmrc",
@@ -137,13 +137,13 @@ class AttributionTest(MonorepoTest):
         # packages/*/* matches it, and !**/fixtures/** takes it out again.
         self.assertAttributed({"packages/eslint-config/fixtures/package.json":
                                    package("eslint-fixture")},
-                              "bio-software", ("bio-inventory", "bio-softop"),
+                              "bio-software", ("bio-email", "bio-inventory"),
                               ("@bioeksen/eslint-config",))
 
     def test_several_apps_changed_directly_name_no_package(self):
         self.assertAttributed({"apps/bio-inventory/app/page.tsx": "y",
-                               "apps/bio-softop/web/app/page.tsx": "y"},
-                              "bio-software", ("bio-inventory", "bio-softop"))
+                               "apps/bio-email/web/app/page.tsx": "y"},
+                              "bio-software", ("bio-email", "bio-inventory"))
 
     def test_a_new_app_with_its_lockfile_entry_carries_the_new_id(self):
         self.assertAttributed({"apps/bio-orders/.bioeksen/software-id": "bio-orders\n",
@@ -169,7 +169,7 @@ class AttributionTest(MonorepoTest):
         lines = out.getvalue().splitlines()
         self.assertTrue(CHANGE_ID.match(lines[0]) and lines[0].startswith("bio-software-"),
                         lines)
-        self.assertEqual(lines[1:], ["Affects: bio-inventory", "Affects: bio-softop",
+        self.assertEqual(lines[1:], ["Affects: bio-email", "Affects: bio-inventory",
                                      "Changes-Package: @bioeksen/eslint-config"])
 
     def test_a_missing_root_id_refuses_to_guess(self):
@@ -185,7 +185,7 @@ class AttributionTest(MonorepoTest):
 
     def test_a_unit_inside_another_is_refused(self):
         with self.assertRaises(SystemExit) as raised:
-            self.staged({"apps/bio-softop/web/.bioeksen/software-id": "bio-web\n"})
+            self.staged({"apps/bio-email/web/.bioeksen/software-id": "bio-web\n"})
         self.assertIn("inside", str(raised.exception))
 
     def test_an_unreadable_package_json_is_refused(self):

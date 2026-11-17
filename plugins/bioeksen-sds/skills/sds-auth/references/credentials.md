@@ -180,8 +180,6 @@ company roles in **Company roles** below:
 |------|---------------|------------|--------|
 | `operator` | Users only | Every app's registration | Every operator endpoint in the estate: the full health report, an app's own `GET /api/admin/logs`, and the aggregator's read endpoints |
 | `logs.write` | Applications only | The aggregator's registration | Submitting log records, `POST /api/v1/logs` and `POST /api/v1/logs/batch`, and reading the codes the aggregator accepts, `GET /api/v1/codes` |
-| `monitor` | Users only | `bio-softop`'s registration | Read-only use of `bio-softop`'s own pages: health, logs, error groups, tasks, deploys and the registry. No endpoint in these specs, and no action |
-| `employees.read` | Applications only | `bio-softop`'s registration, which serves the employee directory | Reading the employee directory, `GET /api/v1/employees` and `GET /api/v1/employees/{userId}`, per `employees-api.md` |
 | `logs.resolve` | Applications only | The aggregator's registration | Moving an error group along its lifecycle with the issue that tracks it, `PUT /api/v1/groups/{groupId}/issue`, and reading a record to find its group, `GET /api/v1/logs/{recordId}`. Held by the git provider's integration alone |
 
 "Assignable to" is enforced by the provider, as its reference says, so a user
@@ -238,21 +236,35 @@ employee is given one once, not once per app:
 - **The company roles are a closed list**, the table below, on the same terms
   as the roles above: a human adds one, in the same commit as the
   specification of the first endpoint that requires it. Each is a kebab-case
-  noun, taken from the roles the apps' own users tables held before the
-  employee directory.
+  noun, matching `^[a-z][a-z0-9]*(-[a-z0-9]+)*$`.
 - **Each is a group at the identity provider**, named `bio-role-{role}`. An
   employee holds the role by being a member of its group, and is added once.
-- **The provider puts the role in the token's `roles`**, from the group, as
-  its reference says. Where it cannot, the app reads an employee's roles from
-  the employee directory, `GET /api/v1/employees/{userId}` in
-  `employees-api.md`, as an app holding `employees.read`.
+  Where the provider cannot give an app role to a group, as Entra ID cannot
+  without its P1 licence, the role is assigned to each employee directly, on
+  every app that requires it, per the provider's reference.
+- **The token carries the role**, in its `roles`, either way. The token is
+  the only source an app reads a company role from: a second source would be
+  a second answer, and the two disagree the day one of them is not updated.
 
-`@bioeksen/sdk` hides where a role came from, so an app checks role names
-either way, and, as with every role, ignores the ones it does not require.
+An app checks role names, and, as with every role, ignores the ones it does
+not require.
 
 | Company role | Means |
 |--------------|-------|
-| None yet | The list is filled from the apps' existing users tables as they move to the directory |
+| None yet | Each is added with the first endpoint that requires it |
+
+## An app's own users
+
+An app that needs to know more about a person than their token carries keeps
+a profile table keyed by the principal key, holding only what the app itself
+needs: its foreign keys then keep working whoever the person is. The table
+holds no password, because people sign in at the identity provider, and no
+role, because the token carries the roles.
+
+When a person's data must be erased, the app sets the profile's personal
+fields to `null` in place. The key remains, so every log record that names the
+person, per `sds-logging/references/log-record.md`, stays exactly as written
+and no longer identifies anyone.
 
 ## Acting for a person
 
@@ -278,8 +290,7 @@ prevent.
 ## Configuration
 
 Every value below arrives as environment configuration, under the variable
-beside it, except the client id to software id mapping, which is not
-configuration. This is the concrete list `CFG-5000` and `CFG-5001` refer to:
+beside it, except the client id to software id mapping, which is derived. This is the concrete list `CFG-5000` and `CFG-5001` refer to:
 a missing one is `CFG-5000` at startup, a present but unusable one is
 `CFG-5001`.
 
@@ -294,8 +305,7 @@ a missing one is `CFG-5000` at startup, a present but unusable one is
 | Client credential | `AUTH_CLIENT_CERTIFICATE_PATH`, or `AUTH_CLIENT_SECRET` | Every app | The certificate or secret backing that identity |
 | Operator scope | `AUTH_OPERATOR_SCOPE` | Every app | The scope marking a delegated token as an operator's |
 | Clock skew | `AUTH_CLOCK_SKEW_SECONDS` | Every app | 60 seconds, per **Validation** |
-| Client id to software id | — | The aggregator | Served by `bio-softop`'s registry; not configuration |
-| Employee directory | `DIRECTORY_URL` | Apps that read the employee directory | Where the directory is served, `HOST` in `employees-api.md` |
+| Client id to software id | — | The aggregator | Derived from the provider's registrations, which are named after the software ids, per **Issuer**. Never configuration |
 | Trusted proxies | `TRUSTED_PROXIES` | Apps behind a proxy | The addresses whose `X-Forwarded-For` entries are believed when finding a request's source, per the rate limiting rule in `SKILL.md` |
 
 These names are fixed for every app and every provider, as `LOG_LEVEL` is, so

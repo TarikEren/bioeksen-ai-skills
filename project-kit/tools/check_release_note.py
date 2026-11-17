@@ -22,7 +22,7 @@ The note is read from that unit's directory, the previous release is the
 unit's own latest earlier tag, and the commits are those **Release units**
 gives the unit. A commit is breaking for the unit only when its scope names
 it, and an entry minted with the monorepo's id ends by naming the units the
-commit affects: (affects bio-inventory, bio-softop).
+commit affects: (affects bio-email, bio-inventory).
 """
 from __future__ import annotations
 

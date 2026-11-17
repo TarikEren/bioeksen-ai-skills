@@ -67,9 +67,10 @@ that fails it.
   company roles its endpoints require as app roles, assignable to users only,
   and each is assigned to its `bio-role-{role}` security group once, when the
   app is created. Tokens then carry the role names in `roles`.
-- **Without P1** a group cannot be assigned to an app role, so the app reads
-  an employee's roles from the employee directory, per **Company roles** in
-  `credentials.md`. A tenant without P1 therefore needs the directory.
+- **Company roles without P1:** a group cannot be assigned to an app role,
+  so each employee is assigned the app role directly, on every app that
+  requires it, and again whenever an app is added. Tokens carry the role names
+  in `roles` the same way; what P1 saves is the assigning.
 
 ## Lifetimes and revocation
 

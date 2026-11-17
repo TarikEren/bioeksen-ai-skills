@@ -169,7 +169,7 @@ class WithChangeIdTest(unittest.TestCase):
                                         "Co-Authored-By: A <a@b>\n"), result)
 
 
-SHARED = Attribution("bio-software", ("bio-inventory", "bio-softop"), ("@bioeksen/ui",), True)
+SHARED = Attribution("bio-software", ("bio-email", "bio-inventory"), ("@bioeksen/ui",), True)
 SHARED_ID = "Change-Id: bio-software-20261008T100000-ab12"
 
 
@@ -181,7 +181,7 @@ class AttributionCheckTest(unittest.TestCase):
 
     def test_the_computed_prefix_and_trailers_conform(self):
         self.assertEqual(self.problems(SHARED_ID + "\nAffects: bio-inventory\n"
-                                       "Affects: bio-softop\nChanges-Package: @bioeksen/ui\n"
+                                       "Affects: bio-email\nChanges-Package: @bioeksen/ui\n"
                                        "Test-Exempt: docs"), [])
 
     def test_a_single_unit_commit_carries_the_units_id_and_no_trailers(self):
@@ -198,16 +198,16 @@ class AttributionCheckTest(unittest.TestCase):
     def test_a_missing_affects_trailer_is_a_problem(self):
         problems = self.problems(SHARED_ID + "\nAffects: bio-inventory\n"
                                  "Changes-Package: @bioeksen/ui\nTest-Exempt: docs")
-        self.assertTrue(any("Affects" in p and "'bio-softop'" in p for p in problems), problems)
+        self.assertTrue(any("Affects" in p and "'bio-email'" in p for p in problems), problems)
 
     def test_an_affects_trailer_naming_a_unit_not_affected_is_a_problem(self):
-        problems = self.problems(SHARED_ID + "\nAffects: bio-inventory\nAffects: bio-softop\n"
+        problems = self.problems(SHARED_ID + "\nAffects: bio-email\nAffects: bio-inventory\n"
                                  "Affects: bio-sdk\nChanges-Package: @bioeksen/ui\n"
                                  "Test-Exempt: docs")
         self.assertTrue(any("Affects" in p and "'bio-sdk'" in p for p in problems), problems)
 
     def test_a_missing_or_extra_changes_package_trailer_is_a_problem(self):
-        problems = self.problems(SHARED_ID + "\nAffects: bio-inventory\nAffects: bio-softop\n"
+        problems = self.problems(SHARED_ID + "\nAffects: bio-email\nAffects: bio-inventory\n"
                                  "Changes-Package: @bioeksen/tsconfig\nTest-Exempt: docs")
         self.assertTrue(any("Changes-Package" in p and "'@bioeksen/ui'" in p
                             for p in problems), problems)
@@ -216,13 +216,13 @@ class AttributionCheckTest(unittest.TestCase):
 
     def test_a_trailer_twice_is_a_problem(self):
         problems = self.problems(SHARED_ID + "\nAffects: bio-inventory\nAffects: bio-inventory\n"
-                                 "Affects: bio-softop\nChanges-Package: @bioeksen/ui\n"
+                                 "Affects: bio-email\nChanges-Package: @bioeksen/ui\n"
                                  "Test-Exempt: docs")
         self.assertTrue(any("Affects" in p and "twice" in p for p in problems), problems)
 
     def test_a_trailer_outside_the_final_paragraph_is_a_problem(self):
         problems = check(message("feat(ui): add x", "Affects: bio-inventory",
-                                 SHARED_ID + "\nAffects: bio-softop\n"
+                                 SHARED_ID + "\nAffects: bio-email\n"
                                  "Changes-Package: @bioeksen/ui\nTest-Exempt: docs"), SHARED)
         self.assertTrue(any("Affects" in p and "final paragraph" in p for p in problems),
                         problems)
@@ -267,7 +267,7 @@ class MonorepoRangeTest(MonorepoTest):
         self.commit("feat(ui): x\n\nChange-Id: bio-inventory-20261008T100000-ab12\n"
                     "Test-Exempt: docs\n", {"packages/ui/index.ts": "y"})
         self.commit("chore: tune the linter\n\nChange-Id: bio-software-20261008T100100-ab12\n"
-                    "Affects: bio-inventory\nAffects: bio-softop\n"
+                    "Affects: bio-email\nAffects: bio-inventory\n"
                     "Changes-Package: @bioeksen/eslint-config\n",
                     {"packages/eslint-config/index.js": "y"})
         status, out = self.run_range()
@@ -287,7 +287,7 @@ class MonorepoRangeTest(MonorepoTest):
         self.assertEqual(main(["--hook", str(path), "--root", str(self.root)]), 0)
         written = path.read_text(encoding="utf-8")
         self.assertRegex(written, r"\nChange-Id: bio-software-\d{8}T\d{6}-[a-z0-9]{4,}\n"
-                                  r"Affects: bio-inventory\nAffects: bio-softop\n"
+                                  r"Affects: bio-email\nAffects: bio-inventory\n"
                                   r"Changes-Package: @bioeksen/eslint-config\n$")
 
     def test_the_hook_leaves_an_existing_change_id_to_ci(self):
@@ -295,7 +295,7 @@ class MonorepoRangeTest(MonorepoTest):
         # so only --range, against the first parent, can attribute it.
         self.stage({"apps/bio-inventory/app/page.tsx": "y"})
         path = self.root / "MSG"
-        path.write_text("docs: x\n\nChange-Id: bio-softop-20261008T100000-ab12\n",
+        path.write_text("docs: x\n\nChange-Id: bio-email-20261008T100000-ab12\n",
                         encoding="utf-8")
         self.assertEqual(main(["--hook", str(path), "--root", str(self.root)]), 0)
 

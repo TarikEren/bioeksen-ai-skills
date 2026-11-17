@@ -51,11 +51,16 @@ hold and what they are registered to, never by their labels:
   on the application server.
 - No app repository contains a deployment workflow. When a release tag is
   pushed, `v*` in a repository holding one service and `{software-id}/v*` in a
-  monorepo, the git provider's integration, bio-softop, verifies the release,
-  per **Releases and deployment** below, and dispatches the deploy
-  repository's workflow, from that repository's own protected main branch,
-  with the released unit's software id, the version and the commit. A merge
-  to main deploys nothing.
+  monorepo, the **verifier** checks the release, per **Releases and
+  deployment** below, and dispatches the deploy repository's workflow, from
+  that repository's own protected main branch, with the released unit's
+  software id, the version and the commit. A merge to main deploys nothing.
+- The verifier is the release tag's own pipeline in the app's repository,
+  defined by the reviewed CI file on that tagged commit. It
+  dispatches the deploy with a token that can do nothing else, readable only
+  by jobs on a protected release tag: an environment secret limited to
+  release tags on GitHub, a protected variable on GitLab. Only a person can
+  create such a tag, so no branch can read the token.
 - The deploy and AI task repositories' workflows are changed only by people,
   and their main branches are protected like every other.
 
@@ -109,7 +114,8 @@ unreviewed.
 - The only CI secrets a workflow MAY be given are ones that harm nothing when
   read: a read-only token for the package registry, and a read-only token for
   the `bioeksen-ai-skills` repository, `BIOEKSEN_SDS_READ_TOKEN`, when it is
-  private, for checking the kit out.
+  private, for checking the kit out. The deploy dispatch token is the one
+  exception, readable only by jobs on a protected release tag, per **Runners**.
 - A build that needs a registry token receives it as a build secret. It is
   never a build argument, a copied file or an environment variable in the
   image, all of which leave it in an image layer.
@@ -131,7 +137,7 @@ production has a version and a release note, and a merged fix reaches
 production at a moment the estate can name.
 
 - Every release is deployed, whatever it increments: patch, minor or major.
-- Before dispatching, the git provider's integration verifies that:
+- Before dispatching, the verifier checks that:
   - the tag points to a commit reachable from the repository's protected
     main branch;
   - the release's note exists in that commit, at `/release-notes/{version}.md`,
@@ -184,8 +190,8 @@ production at a moment the estate can name.
   picked by hand.
 - **Every release has its note**, at the path and in the format
   `sds-commit/references/release-notes.md` gives it.
-- **A person creates the release tag**, and bio-softop verifies and deploys
-  it, as above. A role or a model prepares the version and the note;
+- **A person creates the release tag**, and the verifier checks and
+  dispatches it, as above. A role or a model prepares the version and the note;
   it never tags, publishes or deploys.
 
 ## Workflow definitions

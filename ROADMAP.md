@@ -49,10 +49,11 @@ skill it names: treat landing it as an API change, per `CLAUDE.md`, and run
 | 2026-10-07 | `sds-api-design` governs any API, a server action included; `details` belongs to the code: field errors for `VAL-4001` to `VAL-4007`, otherwise what the code's entry defines, or null. Landed in `e0b6ee3` |
 | 2026-10-07 | Every unit of development has acceptance tests a tester writes ahead of the code and blind to it, hidden from the developer, red on the unit's branch; `Test-Exempt: acceptance` names them. Landed in `5c127c8` |
 | 2026-10-07 | The scaffolder's skills join `bioeksen-sds`: testing into `sds-testing`, ci-cd into `sds-ci`, database and reviewing as `sds-database` and `sds-reviewing`, each with a `references/nextjs.md`; the backend and frontend skills as `sds-nextjs-backend` and `sds-nextjs-frontend`. `heroui-react` stays vendored in the template. Landed in `cc889c7`, `a8cfe3d`, `8be031a`, `ca86316`, `2002656` and `8f88bb9` |
-| 2026-10-08 | Every BioEksen app moves into one monorepo, `bio-software` (bio-softop spec §12). Each service's id lives in its own directory, and the root holds the monorepo's, which no log record carries. Landed in `5824efe` |
+| 2026-10-08 | Every BioEksen app moves into one monorepo, `bio-software`. Each service's id lives in its own directory, and the root holds the monorepo's, which no log record carries. Landed in `5824efe` |
 | 2026-10-08 | A commit carries the id of the one release unit it affects, or the monorepo's with `Affects:` and `Changes-Package:` trailers. The mint script computes them from the staged change alone; the kit checks each commit against its own tree, and leaves a history moved in unchecked. Landed in `a5b72d1` and `e007818` |
 | 2026-10-08 | Each unit releases on its own, from `{software-id}/v*` tags, with its notes in its directory. Its range is the commits since its previous tag that reached it, judged as of each commit, so a lockfile-only commit is in every unit's next release; the spec's `git log -- <closure>` form would have left it out. A breaking commit names the unit it breaks as its scope, so an SDK change that updates every caller breaks no app. Landed in `a11d8e3` |
 | 2026-10-08 | sds-ci verifies, builds and deploys each unit on its own and holds an AI task to its unit; build caches are out of reach of `ci` jobs. Each app of a monorepo has its own test databases. Landed in `89af1c3` and `bd2179e` |
+| 2026-11-17 | bio-softop is dropped: no employee directory, id registry or id-issuing service. Roles come from the identity provider's tokens, the project's own CI verifies a release tag, and the user supplies each software id |
 
 ## Order of work
 
@@ -68,12 +69,12 @@ skill it names: treat landing it as an API change, per `CLAUDE.md`, and run
 | ~~8~~ | ~~`DB-5501` severity~~ | — | — | **done** |
 | 9 | Promoting `request` to a record field | a real need | — | deferred deliberately |
 | ~~10~~ | ~~Reference-link and restatement checks~~ | — | — | **done** |
-| 11 | Software id registry service | the service existing | — | 11.1 and 11.2 done, 11.3 waits |
+| ~~11~~ | ~~Software id registry service~~ | — | — | **dropped** |
 | 12 | Move the repository to the company organisation | a decision on visibility | the install path in the kit | a transfer and one commit |
 
-Items 1 to 8 and 10 are settled. What remains is item 9, deferred on purpose;
-item 11.3, which waits on a service that does not exist; and item 12, which is
-an administrative step rather than a specification change.
+Items 1 to 8, 10 and 11 are settled. What remains is item 9, deferred on
+purpose, and item 12, which is an administrative step rather than a
+specification change.
 
 ---
 
@@ -344,7 +345,11 @@ definition; since `90d5192` the schema enforces the id's format too.
 
 ---
 
-## 11. Software id registry service
+## 11. Software id registry service — dropped
+
+Dropped on 2026-11-17: no such service will exist, and the software id is
+supplied by the user, per `log-record.md`. The reasoning below for minting
+locally still holds.
 
 A future service is expected to handle the software registry and repository
 management. The question raised on 2026-09-17 was whether it should also mint
@@ -383,11 +388,12 @@ id loudly without a commit ever depending on a service being reachable.
 |---|------|------|
 | ~~11.1~~ | `log-record.md` | **Done** in `55895d6`: a repository stores its id in `.bioeksen/software-id`, and this one holds `bioeksen-sds` |
 | ~~11.2~~ | `release-notes.md` | **Done** in `55895d6`: minting is local and MUST NOT require a network call |
-| 11.3 | — | When the service exists: the allocation and resolution endpoints, specified like any other app, under `/api/v1/`. The aggregator's `azp`-to-id mapping is no longer configuration: since `926a0ae` it is served by `bio-softop`'s registry |
+| ~~11.3~~ | — | **Dropped** with the service |
 
 The verification row above now has its local half: `project-kit/tools/commit_msg.py`
 fails a `Change-Id` whose software id is not the one in `.bioeksen/software-id`.
-Checking that the id resolves estate-wide waits on 11.3.
+Nothing checks that an id is unique across the estate: the user who supplies
+it is the check.
 
 ---
 

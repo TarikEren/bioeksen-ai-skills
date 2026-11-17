@@ -25,7 +25,6 @@ FACTS: dict[str, tuple[str, ...] | None] = {
     "git-provider": ("github", "gitlab"),
     "identity-provider": ("entra-id", "keycloak"),
     "log-aggregator": ("present", "none"),
-    "bio-softop": ("present", "none"),
     "test-order": ("tests-first", "implementation-first"),
 }
 

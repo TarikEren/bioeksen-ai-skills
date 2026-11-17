@@ -370,7 +370,8 @@ times, so it costs a count, not a copy.
 
 Moves a group to the state its issue is in, per **States**. The aggregator is
 connected to the project's git provider, whose integration calls this endpoint as
-an app holding `logs.resolve`:
+an app holding `logs.resolve`. Where no integration holds the role, every
+group stays `open`:
 
 | When, in the git service | Body |
 |--------------------------|------|
@@ -543,7 +544,8 @@ altered:
 - **People are named only by `user=` and their principal key**, per
   `log-record.md`:
   never by a name, an email, a UPN or free text about them. When a person's
-  data is erased, the employee directory is anonymised, and every audit record
+  data is erased, per **An app's own users** in
+  `sds-auth/references/credentials.md`, every audit record
   stays exactly as written while it no longer identifies anyone. Any other
   form would force a choice between breaking the rule above and keeping
   personal data forever.
@@ -595,8 +597,8 @@ precedence over any validation fault in the same record. An `azp` that
 resolves to no app is refused with `PERM-4150`: it names nothing the estate
 knows.
 
-The resolution is not the aggregator's configuration: it is served by
-`bio-softop`'s registry, per **Configuration** in
+The resolution is not the aggregator's configuration: it is derived from the
+identity provider's registrations, per **Configuration** in
 `sds-auth/references/credentials.md`.
 
 The read endpoints, `GET HOST/api/v1/logs`, `GET HOST/api/v1/logs/:recordId`

@@ -8,7 +8,7 @@ from units import commit_attribution, holding_units, predates_monorepo, release_
 
 class CommitAttributionTest(MonorepoTest):
     def test_a_commit_is_attributed_against_its_first_parent(self):
-        self.commit("feat(ui): x\n", {"apps/bio-softop/web/app/page.tsx": "y"})
+        self.commit("feat(ui): x\n", {"apps/bio-email/web/app/page.tsx": "y"})
         sha = self.commit("feat(ui): y\n", {"packages/ui/index.ts": "y"})
         self.assertEqual(commit_attribution(self.root, sha),
                          Attribution("bio-inventory", (), (), True))

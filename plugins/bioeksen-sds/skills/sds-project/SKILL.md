@@ -1,6 +1,6 @@
 ---
 name: sds-project
-description: BioEksen project facts and comment limits. Use at the start of work in a BioEksen project, before the first change, to read the choices recorded under .bioeksen/ — the git provider, the identity provider, the log aggregator, bio-softop's services and the test order — and to ask the user for any that are missing; when the user changes one of them; and when writing or reviewing code comments, which are limited to 5 lines a block and 30 words a line.
+description: BioEksen project facts and comment limits. Use at the start of work in a BioEksen project, before the first change, to read the choices recorded under .bioeksen/ — the git provider, the identity provider, the log aggregator and the test order — and to ask the user for any that are missing; when the user changes one of them; and when writing or reviewing code comments, which are limited to 5 lines a block and 30 words a line.
 ---
 
 # Project facts
@@ -33,13 +33,12 @@ surrounding whitespace is ignored.
 | `git-provider` | `github`, `gitlab` | The CI file, how protected paths and branches are enforced | `sds-ci/SKILL.md` |
 | `identity-provider` | `entra-id`, `keycloak` | Who issues the tokens, and what their claims are called | `sds-auth/SKILL.md` |
 | `log-aggregator` | `present`, `none` | Whether records are submitted, or the app's outbox is their archive | `sds-logging/SKILL.md` |
-| `bio-softop` | `present`, `none` | Whether bio-softop's services are used: the employee directory, release verification, the id registry | `sds-auth/SKILL.md`, `sds-ci/SKILL.md` |
 | `test-order` | `tests-first`, `implementation-first` | Whether a behaviour's tests or its code come first | `sds-testing/SKILL.md` |
 
 A fact is read from the nearest `.bioeksen/{fact}` above the file at hand,
 never looking past the repository's root, as the software id is. In a
 monorepo the root's facts hold for every unit, and a unit MAY record its own
-`log-aggregator`, `bio-softop` or `test-order`. `git-provider` and
+`log-aggregator` or `test-order`. `git-provider` and
 `identity-provider` are the repository's, recorded at its root only.
 
 `.bioeksen/test-paths`, the kit's list of test paths, is not a choice and is
@@ -79,7 +78,6 @@ itself. Rewrite the file, then do what the change needs:
 | `git-provider` | Replace the CI file with the new provider's, and move the protected-path and branch rules, per `sds-ci/SKILL.md` |
 | `identity-provider` | Change the authentication values, per `sds-auth/SKILL.md`. Records keep the `user=` values they were written with |
 | `log-aggregator` | Set or remove the transport's values, and start or stop submitting, per `sds-logging/SKILL.md` |
-| `bio-softop` | Start or stop reading the employee directory, and move release verification, per `sds-auth/SKILL.md` and `sds-ci/SKILL.md` |
 | `test-order` | Nothing to set up. Work under way finishes in the order it began in; the next unit of work follows the new one |
 
 ## Comments

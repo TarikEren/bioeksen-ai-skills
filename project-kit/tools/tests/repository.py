@@ -16,9 +16,9 @@ def package(name: str, *deps: str, dev: tuple[str, ...] = ()) -> str:
                        "devDependencies": {dep: "workspace:^" for dep in dev}})
 
 
-# bio-software as spec §12 lays it out: two apps, one of them three packages
+# bio-software's layout: two apps, one of them three packages
 # under one id; the published bio-sdk unit, whose sdk depends on its
-# error-codes; shared packages; the generator, which bio-softop's worker
+# error-codes; shared packages; the generator, which bio-email's worker
 # depends on; and the root's own files.
 MONOREPO = {
     ".bioeksen/software-id": "bio-software\n",
@@ -38,16 +38,16 @@ MONOREPO = {
                                                dev=("@bioeksen/eslint-config",
                                                     "@bioeksen/tsconfig")),
     "apps/bio-inventory/app/page.tsx": "x",
-    "apps/bio-softop/.bioeksen/software-id": "bio-softop\n",
-    "apps/bio-softop/web/package.json": package("@bio-softop/web", "@bioeksen/sdk",
-                                                "@bio-softop/db",
+    "apps/bio-email/.bioeksen/software-id": "bio-email\n",
+    "apps/bio-email/web/package.json": package("@bio-email/web", "@bioeksen/sdk",
+                                                "@bio-email/db",
                                                 dev=("@bioeksen/eslint-config",)),
-    "apps/bio-softop/web/app/page.tsx": "x",
-    "apps/bio-softop/worker/package.json": package("@bio-softop/worker", "@bio-softop/db",
+    "apps/bio-email/web/app/page.tsx": "x",
+    "apps/bio-email/worker/package.json": package("@bio-email/worker", "@bio-email/db",
                                                    "@bioeksen/create-app"),
-    "apps/bio-softop/worker/index.ts": "x",
-    "apps/bio-softop/db/package.json": package("@bio-softop/db"),
-    "apps/bio-softop/db/schema.prisma": "x",
+    "apps/bio-email/worker/index.ts": "x",
+    "apps/bio-email/db/package.json": package("@bio-email/db"),
+    "apps/bio-email/db/schema.prisma": "x",
     "packages/bio-sdk/.bioeksen/software-id": "bio-sdk\n",
     "packages/bio-sdk/release-notes/.gitkeep": "",
     "packages/bio-sdk/sdk/package.json": package("@bioeksen/sdk", "@bioeksen/error-codes"),
@@ -67,7 +67,7 @@ MONOREPO = {
     "tooling/create-app/index.ts": "x",
 }
 
-ALL_UNITS = ("bio-inventory", "bio-sdk", "bio-softop")
+ALL_UNITS = ("bio-email", "bio-inventory", "bio-sdk")
 
 
 class RepositoryTest(unittest.TestCase):

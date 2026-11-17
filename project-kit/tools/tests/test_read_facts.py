@@ -14,7 +14,6 @@ FACTS = {
     "git-provider": "github",
     "identity-provider": "entra-id",
     "log-aggregator": "present",
-    "bio-softop": "none",
     "test-order": "tests-first",
 }
 
@@ -84,15 +83,20 @@ class FactsTest(unittest.TestCase):
         self.assertIn("test-order=implementation-first", out)
 
     def test_nothing_above_the_repository_is_read(self):
-        (self.root / ".bioeksen" / "bio-softop").unlink()
-        self.record(self.root.parent, "bio-softop", "present")
-        status, out = self.read("bio-softop")
+        (self.root / ".bioeksen" / "test-order").unlink()
+        self.record(self.root.parent, "test-order", "tests-first")
+        status, out = self.read("test-order")
         self.assertEqual(status, 2, out)
 
     def test_only_the_facts_asked_for(self):
         status, out = self.read("log-aggregator")
         self.assertEqual(status, 0, out)
         self.assertEqual(out.strip(), "log-aggregator=present")
+
+    def test_bio_softop_is_not_a_fact(self):
+        status, out = self.read("bio-softop")
+        self.assertEqual(status, 2, out)
+        self.assertIn("not a fact", out)
 
     def test_an_unknown_fact_is_not_run(self):
         status, out = self.read("favourite-colour")

@@ -7,8 +7,7 @@ generated project runs to stay on them.
 ## What the generator does
 
 1. **Asks for the software id** and writes it to `.bioeksen/software-id`. The
-   id is supplied — by the project, or by the id-issuing service once one
-   exists — and never derived from the project's name; see
+   id is supplied by the user, and never derived from the project's name; see
    `plugins/bioeksen-sds/skills/sds-logging/references/log-record.md`. A
    generator that cannot get one leaves the file out, and everything that
    needs the id then asks for it.

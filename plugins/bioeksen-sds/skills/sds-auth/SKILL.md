@@ -15,8 +15,6 @@ The keywords MUST, SHOULD and MAY are used as in RFC 2119.
 - `references/entra-id.md` and `references/keycloak.md` — how each identity
   provider meets them. The project's `.bioeksen/identity-provider`, per
   `sds-project/SKILL.md`, says which applies.
-- `references/employees-api.md` — the employee directory every app reads its
-  employees from. `references/employees-api.yaml` beside it is normative.
 
 Paths such as `sds-logging/references/log-record.md` name a file in another
 skill of this plugin, relative to the plugin's skills directory: the parent
@@ -116,7 +114,6 @@ Drawn from the endpoints already specified elsewhere:
 | `GET HOST/api/v1/logs/:recordId` | Operator, or App holding `logs.resolve` |
 | `PUT HOST/api/v1/groups/:groupId/issue` | App, holding `logs.resolve` |
 | `GET HOST/api/v1/codes` | App holding `logs.write`, or Operator |
-| `GET HOST/api/v1/employees`, `GET HOST/api/v1/employees/:userId` | App holding `employees.read`, or Operator |
 
 The two probe endpoints are deliberately unauthenticated: they expose nothing,
 and a probe that can fail on credential expiry is a probe that will eventually

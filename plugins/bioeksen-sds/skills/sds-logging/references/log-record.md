@@ -30,9 +30,8 @@ This is the normative rule for the value, which `sds-commit` reuses as the
 `{software-id}` half of a change identifier — see
 `sds-commit/references/release-notes.md`.
 
-- The id is **supplied**: by the project itself, or by the id-issuing service
-  once one exists. It is never derived from a repository name, a directory
-  name, or anything else at the point of use.
+- The id is **supplied** by the user. It is never derived from a repository
+  name, a directory name, or anything else at the point of use.
 - When it has not been supplied, **ask for it**. An assistant or generator MUST
   NOT invent one, and MUST NOT fall back to a plausible-looking guess.
 - An id is stored in one place: the file `.bioeksen/software-id`, holding the
@@ -170,8 +169,9 @@ Each stack skill lists the values its binding sets; a Next.js app's are in
 `sds-nextjs-backend/SKILL.md`.
 
 `user` names a person by the principal key alone. The key identifies nobody once the
-employee directory has erased the person's data, so every record naming them
-stays as written and no longer identifies anyone. A name, an email or a UPN
+person's data is erased, per **An app's own users** in
+`sds-auth/references/credentials.md`, so every record naming them stays as
+written and no longer identifies anyone. A name, an email or a UPN
 would be personal data in records that nothing may delete, `AUDIT` records
 above all, which the aggregator keeps forever and chains so that none can be
 altered, per **Audit records** in `aggregator-api.md`. An `AUDIT` record

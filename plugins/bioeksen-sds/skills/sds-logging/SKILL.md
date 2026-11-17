@@ -102,8 +102,8 @@ emitting app, the `request=` value every record of one request shares, and the
 `X-Request-Id` header that carries it between services. Three rules are
 repeated here because they are the ones that get missed:
 
-- The `id` is allocated, never guessed — supplied by the project or by the
-  id-issuing service, and asked for when it has not been.
+- The `id` is allocated, never guessed — supplied by the user, and asked for
+  when it has not been.
 - `id` has nothing to do with the prefix of an error code. Prefixes name the
   *kind* of failure and are shared by every app, so one app emits several of
   them — see `references/error-codes.md`.

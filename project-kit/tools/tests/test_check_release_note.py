@@ -108,7 +108,7 @@ class AfterAPreReleaseTest(RepositoryTest):
         self.assertIn("v1.0.0..HEAD", out)
 
 
-ALL = "(affects bio-inventory, bio-sdk, bio-softop)"
+ALL = "(affects bio-email, bio-inventory, bio-sdk)"
 CREATED = "bio-software-20261008T100000-aaaa"  # MonorepoTest's initial commit
 
 
@@ -151,8 +151,8 @@ class UnitReleaseTest(MonorepoTest):
     def first_inventory_release(self) -> None:
         page = self.change("feat(ui): add a page", "bio-inventory",
                            {"apps/bio-inventory/app/page.tsx": "y"})
-        self.change("fix(web): mend a page", "bio-softop",
-                    {"apps/bio-softop/web/app/page.tsx": "y"})
+        self.change("fix(web): mend a page", "bio-email",
+                    {"apps/bio-email/web/app/page.tsx": "y"})
         lock = self.change("build: refresh the lockfile", "bio-software",
                            {"pnpm-lock.yaml": "lockfileVersion: '9.1'\n"})
         self.release("apps/bio-inventory", "bio-inventory", "0.1.0",
@@ -179,7 +179,7 @@ class UnitReleaseTest(MonorepoTest):
         self.first_inventory_release()
         self.git("tag", "bio-inventory/v0.1.0")
         # Another unit's tag is never this unit's previous release.
-        self.git("tag", "bio-softop/v0.3.0")
+        self.git("tag", "bio-email/v0.3.0")
         rename = self.change("feat(bio-sdk)!: rename createLogger", "bio-software",
                              {"packages/bio-sdk/sdk/index.ts": "y",
                               "apps/bio-inventory/app/page.tsx": "z"},

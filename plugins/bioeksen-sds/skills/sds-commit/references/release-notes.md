@@ -260,8 +260,7 @@ names no service, so its entries name the units they reached instead, per
 
 ### When the software id is unknown
 
-The software id is supplied by the project, or by the id-issuing service once
-one exists, is allocated per the rule in
+The software id is supplied by the user, is allocated per the rule in
 `sds-logging/references/log-record.md`, which is normative for it, and is read
 from the `.bioeksen/software-id` file that rule names.
 
@@ -305,7 +304,7 @@ makes a locally minted identifier collision-resistant without coordination.
   **Release range**, and the previous release is the unit's own previous tag.
 - An entry minted with a monorepo's own id ends its reason by naming the units
   the commit affects, as its `Affects:` trailers list them:
-  `- bio-software-20261008T101500-a3f9 feat(sdk): … (affects bio-inventory, bio-softop)`.
+  `- bio-software-20261008T101500-a3f9 feat(sdk): … (affects bio-email, bio-inventory)`.
 - Merge commits are not listed. The commits they bring in are.
 - A first release has no previous tag. Its range is every commit from the
   root, so the initial commit has an entry too.

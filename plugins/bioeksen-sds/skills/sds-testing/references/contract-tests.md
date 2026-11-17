@@ -244,19 +244,6 @@ For the aggregator.
 | Codes without the role | An app credential without `logs.write` | `GET /api/v1/codes` is called | 403 `PERM-4150` | `sds-auth/references/credentials.md` |
 | Unlisted code refused | A record whose code `GET /api/v1/codes` does not list | It is submitted | 400 `VAL-4002`, and nothing is stored | `sds-logging/references/aggregator-api.md` |
 
-## Employee directory
-
-For the directory, and for an app that reads it.
-
-| Case | Given | When | Then | Source |
-|------|-------|------|------|--------|
-| Directory for an app | An app credential holding `employees.read` | `GET /api/v1/employees` is called | 200, a page of employees ordered by `userId` | `sds-auth/references/employees-api.md` |
-| Directory without the role | An app credential without `employees.read` | `GET /api/v1/employees` is called | 403 `PERM-4150` | `sds-auth/references/credentials.md` |
-| Unknown employee | A `userId` no employee has | `GET /api/v1/employees/:userId` is called | 404 `RES-4200` | `sds-auth/references/employees-api.md` |
-| Unknown company role | A `role` filter the company roles list does not hold | `GET /api/v1/employees` is called | 400 `VAL-4002` | `sds-auth/references/employees-api.md` |
-| Erased employee | An employee whose data was erased | They are fetched by `userId` | 200, `state: erased`, every personal field `null`, and no role | `sds-auth/references/employees-api.md` |
-| Roles without P1, on Entra ID | An app on a tenant without Entra ID P1, and an employee in a `bio-role-*` group | The employee calls an endpoint requiring that role | The app finds the role through the directory, and the call proceeds | `sds-auth/references/entra-id.md` |
-
 ## Audit chain
 
 For the aggregator. Time passes on an injected clock.

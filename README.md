@@ -44,7 +44,7 @@ BioEksen personnel and authorised parties.
 | [`sds-planning`](plugins/bioeksen-sds/skills/sds-planning/) | Specifications and build planning: decisions with their status, owner and open question, build items with numbered acceptance criteria that every test cites, a build order of stages with checkable exit criteria, the stage plan, and a checker for the set and the tests' citations |
 | [`sds-testing`](plugins/bioeksen-sds/skills/sds-testing/) | Testing: no behaviour change without a test seen failing for the missing behaviour, in the project's order, tests first or implementation first; acceptance tests blind to the code; how tests are written and run, and the contract tests every convention above requires |
 | [`sds-database`](plugins/bioeksen-sds/skills/sds-database/) | Schemas and migrations: one source of truth, constraints that enforce the specification, forward-only migrations safe on a live database, transactions, parameterised and indexed queries, and disposable databases only |
-| [`sds-project`](plugins/bioeksen-sds/skills/sds-project/) | A project's recorded choices: the git provider, the identity provider, the log aggregator, bio-softop's services and the test order, read before the first change and asked when missing; and the comment limits, 5 lines a block and 30 words a line, with a checker for each |
+| [`sds-project`](plugins/bioeksen-sds/skills/sds-project/) | A project's recorded choices: the git provider, the identity provider, the log aggregator and the test order, read before the first change and asked when missing; and the comment limits, 5 lines a block and 30 words a line, with a checker for each |
 | [`sds-reviewing`](plugins/bioeksen-sds/skills/sds-reviewing/) | Reviewing a change and recording the review: an independent reviewer's passes in priority order, every finding verified before it is reported, and a record in which no finding is lost |
 | [`sds-nextjs-backend`](plugins/bioeksen-sds/skills/sds-nextjs-backend/) | Server code in a Next.js App Router app in TypeScript: route handlers, server actions, services and repositories, validation at every boundary, authorisation, and the TypeScript references behind them |
 | [`sds-nextjs-frontend`](plugins/bioeksen-sds/skills/sds-nextjs-frontend/) | UI in a Next.js App Router app styled with HeroUI v3 and Tailwind CSS v4: the server/client trust boundary, the palette and its contrast, copy from dictionaries, forms, tables and icons |
@@ -86,8 +86,6 @@ the plugin is installed or the repository is being read directly.
 - **The aggregator's own endpoints** — `sds-logging/references/aggregator-api.yaml`,
   normative on the same terms. It references the schemas above rather than
   copying them, so the two cannot drift apart.
-- **The employee directory** — `sds-auth/references/employees-api.yaml`, the
-  endpoints every app reads its employees from, normative on the same terms.
 - **Calling another service** — `sds-api-design/references/service-calls.md`.
   What a caller does when a call is slow, fails, or must not be repeated.
 

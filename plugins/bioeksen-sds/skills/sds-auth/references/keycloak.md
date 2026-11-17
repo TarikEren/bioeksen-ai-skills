@@ -56,7 +56,7 @@ realm. `AUTH_TENANT_ID` is unused; the realm is fixed by `iss`.
   users.
 - **Company roles:** each `bio-role-{role}` group is given the matching client
   role of every app that requires it, so its members' tokens carry the role
-  in `roles`. No directory is needed for roles.
+  in `roles`.
 
 ## Lifetimes and revocation
 
