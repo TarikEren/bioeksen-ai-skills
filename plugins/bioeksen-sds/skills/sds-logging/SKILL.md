@@ -129,8 +129,9 @@ the archive. Either way, an app MUST NOT send its records to any other remote
 store, hosted logging service or backend.
 
 - An app MUST write every record first to its outbox, per **The outbox** in
-  `references/log-record.md`: an audit outbox in the app's own database,
-  written in the transaction of the change each `AUDIT` record describes, and
+  `references/log-record.md`: an audit outbox in the app's own database, or
+  its own schema in a shared one, written in the transaction of the change
+  each `AUDIT` record describes, and
   a record outbox on the app's own volume for every other record. Together
   they are the app's local store: what `GET /api/admin/logs` reads, per
   `sds-api-design/references/standard-api-endpoints.md`, and what an operator
@@ -149,8 +150,8 @@ A binding takes the record outbox's path from `LOG_OUTBOX_PATH`, and its
 bound from `LOG_OUTBOX_BOUND` (default 100,000). Under pushed delivery it
 takes the aggregator's address from `AGGREGATOR_URL`, and any credential the
 aggregator needs from the variables the services file's `Configuration`
-names. The audit outbox needs no setting of its own: it is a table in the
-app's own database.
+names. The audit outbox needs no setting of its own: it is a table beside
+the app's own data.
 
 ## Third-party software
 

@@ -48,6 +48,8 @@ it logs and what it calls.
 | Pool exhausted | No pooled connection free within the pool's timeout | A request needs one | 503 `DB-5501` | `sds-logging/references/code-prefixes.md` |
 | Database down | A database that refuses connections | A request needs it | 503 `DB-5500` | `sds-logging/references/code-prefixes.md` |
 | Constraint validated first | A value a database check constraint would refuse | It is submitted | 400 `VAL-4006` from validation, before the database sees it | `sds-logging/references/code-prefixes.md` |
+| Own schema only | A shared database, and the app's migrations | They run on a disposable copy of it | Nothing outside the app's `Schema` changes | `sds-database/SKILL.md` |
+| Shared schemas only read | A shared database | The app's runtime role writes to a schema its `Reads` names | The database refuses the write | `sds-database/SKILL.md` |
 
 ## Correlation
 

@@ -71,7 +71,9 @@ describes it).
 ## Parallel worktrees
 
 Each worktree names its schema after its role on the database URL
-(`?schema=qa_engineer`), and its end-to-end port in `E2E_PORT`. The guard
+(`?schema=qa_engineer`), and its end-to-end port in `E2E_PORT`. In a shared
+database, where the URL's schema is the app's own, it names its database
+instead (`bio_inventory_qa_engineer_integration`). The guard
 empties the schema by applying the migrations and truncating
 every table in it, never with `prisma migrate reset`, which Prisma refuses
 when an agent runs it.

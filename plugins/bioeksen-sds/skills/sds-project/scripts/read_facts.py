@@ -34,6 +34,7 @@ FACTS: dict[str, tuple[str, ...] | None] = {
 }
 
 CAPABILITY = re.compile(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
+SCHEMA = re.compile(r"^[a-z][a-z0-9_]*$")
 FIELD = re.compile(r"^([A-Z][A-Za-z ]*?):\s*(.*?)\s*$")
 # Determined at initialization, because every app needs the answer.
 REQUIRED = ("log-aggregator",)
@@ -42,6 +43,7 @@ WHEN_USED = ("Service", "Purpose", "Reached by", "Interface")
 # The fields a capability adds when it is used, each with its allowed values.
 ADDED: dict[str, dict[str, tuple[str, ...]]] = {
     "log-aggregator": {"Delivery": ("collected", "pushed"), "Retention": ("meets", "short")},
+    "database": {"Shared": ("yes", "no")},
 }
 
 
@@ -121,6 +123,11 @@ def service_problems(capability: str, found: dict[str, str]) -> list[str]:
     for name, allowed in ADDED.get(capability, {}).items():
         if found.get(name) not in allowed:
             wrong.append(f"{name} {found.get(name)!r} is not one of {', '.join(allowed)}")
+    # A shared database names the one schema the app owns, per sds-database.
+    if capability == "database" and found.get("Shared") == "yes":
+        if not SCHEMA.match(found.get("Schema", "")):
+            wrong.append(f"Schema {found.get('Schema')!r} is not a schema name: "
+                         "lowercase letters, digits and '_', which a shared database needs")
     return wrong
 
 

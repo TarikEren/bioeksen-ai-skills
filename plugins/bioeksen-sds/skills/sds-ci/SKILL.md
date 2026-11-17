@@ -179,6 +179,10 @@ production at a moment the estate can name.
   dispatched by an operator. It creates no tag.
 - A release's database migrations MUST leave the schema usable by the
   previous release, so that rolling back never needs a down-migration.
+- In a shared database, per **A shared database** in
+  `sds-database/SKILL.md`, an app's migrations change its own schema alone. A
+  release that changes a shared schema deploys before any app that relies on
+  the change, and only expands it; its contract waits for a later release.
 
 ### Preparing a release
 

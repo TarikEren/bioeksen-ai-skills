@@ -1,6 +1,6 @@
 ---
 name: sds-database
-description: "BioEksen database conventions: one source of truth for the schema and a drift check, modelling with constraints that enforce the specification's invariants, forward-only migrations that are safe on a live database (expand and contract, locks, backfills, no silent data loss), transactions and concurrency, parameterised and indexed queries, the data contract handed to the server code, and working only against disposable databases. Use when designing, changing, running or reviewing a schema, a migration, a seed, a database object such as a trigger or view, raw SQL, a repository's queries or a transaction boundary."
+description: "BioEksen database conventions: one source of truth for the schema and a drift check, modelling with constraints that enforce the specification's invariants, forward-only migrations that are safe on a live database (expand and contract, locks, backfills, no silent data loss), transactions and concurrency, parameterised and indexed queries, the data contract handed to the server code, a database shared by several apps with one schema each, and working only against disposable databases. Use when designing, changing, running or reviewing a schema, a migration, a seed, a database object such as a trigger or view, raw SQL, a repository's queries or a transaction boundary."
 ---
 
 # Database
@@ -54,8 +54,7 @@ of `${CLAUDE_SKILL_DIR}`, which is this skill's own directory.
   as a data contract (§ 7), then the code that uses it.
 - **In the stage loop,** the tests of constraints, database objects and
   raw SQL are acceptance tests, written by the tester, before the change under
-  tests first
-  from the acceptance criteria and the stage plan's data contract
+  tests first, from the acceptance criteria and the stage plan's data contract
   (`sds-planning/SKILL.md`), and hidden from the developers, per
   **Acceptance tests** in `sds-testing/SKILL.md`.
 
@@ -70,6 +69,41 @@ Constraints, indexes, triggers and seeds belong to the implementation task,
 so that the tests for them fail, for the right reason, until then. A later
 migration adds them; the skeleton's migration is never edited once applied
 anywhere but a disposable database.
+
+### A shared database
+
+Whether the app's database is its own or shared with other apps is
+`/.bioeksen/services/database.md`, per `sds-project/SKILL.md`. Besides the
+fields every service has, it holds three of its own:
+
+| Field | Values | Means |
+|-------|--------|-------|
+| `Shared` | `yes`, `no` | Whether other apps keep their data in the same database |
+| `Schema` | A schema name | The one schema the app owns, given when `Shared` is `yes` |
+| `Reads` | Schema names | The shared schemas the app reads, such as a core schema every app reads |
+
+In a shared database:
+
+- **The app owns exactly its `Schema`.** Its source of truth describes that
+  schema alone, its migrations create and change nothing else, and its drift
+  check (§ 2) compares that schema alone.
+- **It writes nothing outside it,** and reads only the schemas `Reads` names.
+  Another app's own schema is that app's to serve, through its endpoints.
+- **The database enforces both.** The app's runtime role holds rights on its
+  own schema and `SELECT` alone on each schema it reads, and its migration
+  role owns its own schema and nothing else. A rule the grants do not enforce
+  is one a defect breaks.
+- **A shared schema is changed only by the unit that owns it**, through
+  expand and contract (§ 4), because every app that reads it runs code a
+  breaking change breaks. Its contract step waits until no reader uses what
+  it drops.
+- **A shared schema never references an app's schema**, or one app's data
+  could block another's. An app's tables MAY reference a shared table, with a
+  delete behaviour that restricts, per § 3.
+- **A disposable database holds every schema the app needs**: the shared
+  schemas it reads, built by their owner's migrations, then its own, built by
+  its own. Worktrees are kept apart by the database's name, per § 8, because
+  the schema's name is the app's.
 
 ## 2. One source of truth
 
@@ -161,8 +195,9 @@ database.
   protect against. Where a rule depends on rows another writer can change, lock
   them (`SELECT … FOR UPDATE`) or use a constraint.
 - **An audit record is written in the same transaction** as the change it
-  records, through the logger's audit call, which keeps it in the app's own
-  database for good (`sds-logging/references/log-record.md`). What makes a change auditable is
+  records, through the logger's audit call, which keeps it for good in the
+  app's own database, or its own schema in a shared one
+  (`sds-logging/references/log-record.md`). What makes a change auditable is
   `sds-logging`'s **Choosing a type**.
 - **Keep transactions short.** No network calls, file I/O or user waits
   inside one.
@@ -202,9 +237,10 @@ A data change is handed to the server developer as a contract, in the report:
 - **Migrate, seed and test only against a disposable database**: one named
   apart from the development database by a fixed suffix, per **Test
   databases** in `sds-testing/SKILL.md`, that nothing else depends on.
-- **One disposable schema per worktree.** Roles work in parallel worktrees,
-  and two suites resetting one schema wipe each other's data. Each worktree
-  names its own on its database URLs, after its role.
+- **One disposable schema per worktree,** or, in a shared database, where
+  the schema's name is the app's, one disposable database. Roles work in
+  parallel worktrees, and two suites resetting one schema wipe each other's
+  data. Each worktree names its own on its database URLs, after its role.
 - **Before running anything that creates, resets, migrates or seeds a
   database, check where it points.** Read the environment and setup files it
   uses. If it could reach a development, shared or production database, or

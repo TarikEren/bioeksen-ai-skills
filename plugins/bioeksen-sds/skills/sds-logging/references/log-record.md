@@ -300,7 +300,8 @@ from the change it describes:
   so that what one run could not deliver is still there for the next, per
   `sds-api-design/references/standard-api-endpoints.md`.
 - **The audit outbox** holds the `AUDIT` records, in a table in the app's own
-  database, written in the same transaction as the change each one describes.
+  database, or its own schema in a shared one, written in the same
+  transaction as the change each one describes.
   The change and its record commit or roll back together, so a crash between
   them cannot keep the change and lose its record. When that database is down
   the change fails too, and there is nothing to audit.

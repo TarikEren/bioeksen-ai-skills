@@ -176,7 +176,7 @@ The database reviewer takes these passes instead, in this order.
    - an index for each new filter, join and sort on a table that grows;
      N+1 queries; unbounded result sets.
 5. **Drift.** `sds-database` § 2: the ORM schema, the DDL and the migrations
-   describe one database.
+   describe one database, or, in a shared one, the app's own schema alone.
 6. **Privacy and audit.** Personal data columns, retention, what reaches
    logs, and the audit trail the project keeps.
 7. **Tests.** `sds-testing`, **Keeping the suite honest** and **Test

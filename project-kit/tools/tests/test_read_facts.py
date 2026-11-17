@@ -28,6 +28,17 @@ AGGREGATOR = ("Status: used\n"
               "\n"
               "Labels are the record's id, type and severity.\n")
 
+DATABASE = ("Status: used\n"
+            "Service: the bio-software core database\n"
+            "Purpose: Holds the app's own data, beside the core tables it reads\n"
+            "Reached by: PostgreSQL, at DATABASE_URL\n"
+            "Configuration: DATABASE_URL\n"
+            "Interface: https://git.example.com/bio-software/packages/core-db/README.md\n"
+            "Shared: yes\n"
+            "Schema: bio_inventory\n"
+            "Reads: core\n"
+            "Answered by: Deniz Örnek\n")
+
 
 def load():
     """The plugin's script as a fresh module, wherever the plugin is installed."""
@@ -198,6 +209,35 @@ class ServicesTest(ProjectCase):
         status, out = self.read("services/log-aggregator", path=unit)
         self.assertEqual(status, 0, out)
         self.assertEqual(out.strip(), "services/log-aggregator=used")
+
+    def test_a_shared_database_with_its_schema(self):
+        self.service(self.root, "database", DATABASE)
+        status, out = self.read("services/database")
+        self.assertEqual(status, 0, out)
+
+    def test_a_shared_database_names_its_schema(self):
+        self.service(self.root, "database", DATABASE.replace("Schema: bio_inventory\n", ""))
+        status, out = self.read("services/database")
+        self.assertEqual(status, 1, out)
+        self.assertIn("Schema", out)
+
+    def test_a_schema_name_in_the_wrong_format(self):
+        self.service(self.root, "database", DATABASE.replace("bio_inventory", "Bio-Inventory"))
+        status, out = self.read("services/database")
+        self.assertEqual(status, 1, out)
+        self.assertIn("Bio-Inventory", out)
+
+    def test_a_database_of_its_own_needs_no_schema(self):
+        own = DATABASE.replace("Shared: yes", "Shared: no").replace("Schema: bio_inventory\n", "")
+        self.service(self.root, "database", own.replace("Reads: core\n", ""))
+        status, out = self.read("services/database")
+        self.assertEqual(status, 0, out)
+
+    def test_whether_the_database_is_shared_is_required(self):
+        self.service(self.root, "database", DATABASE.replace("Shared: yes\n", ""))
+        status, out = self.read("services/database")
+        self.assertEqual(status, 1, out)
+        self.assertIn("Shared", out)
 
     def test_a_capability_name_in_the_wrong_format(self):
         status, out = self.read("services/Log Aggregator")

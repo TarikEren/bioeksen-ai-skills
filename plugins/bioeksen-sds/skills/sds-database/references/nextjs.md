@@ -22,6 +22,12 @@ outranks it. Another app maps the names below to its own.
   variants with input in them. Rows from raw SQL are validated at the
   boundary (`sds-nextjs-backend` § 2).
 - **Per-worktree schemas** are named on the database URL, after the role,
-  e.g. `?schema=qa_engineer` (`/AGENTS.md` § Data).
+  e.g. `?schema=qa_engineer` (`/AGENTS.md` § Data). In a shared database the
+  URL's schema is the app's own, so a worktree names its database instead,
+  e.g. `bio_inventory_qa_engineer_integration`.
+- **In a shared database**, how the ORM declares the shared schemas the app
+  reads, so that its migrations never touch them, is the project's convention
+  in `/AGENTS.md` § Data. The drift check proves it: it finds no change
+  outside the app's own schema.
 - **Prisma 7 refuses** `prisma migrate reset`, and its other commands that
   drop data, when an AI agent runs them.

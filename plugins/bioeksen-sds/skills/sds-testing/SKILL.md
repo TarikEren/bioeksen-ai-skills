@@ -283,8 +283,12 @@ the order of the stage plan's tasks:
 
 Each role works in its own git worktree, and two roles may run suites at the
 same time. So each worktree gets its own schema in each disposable database,
-named after the role, and its own end-to-end port. The guard (**Test
-databases**) checks the database's name and the schema's.
+named after the role, and its own end-to-end port. In a shared database,
+where the schema's name is the app's, per **A shared database** in
+`sds-database/SKILL.md`, each worktree gets its own disposable database
+instead, with the role before the suffix, e.g.
+`bio_inventory_qa_engineer_integration`. The guard (**Test databases**)
+checks the database's name and the schema's.
 
 ### Disputes
 
@@ -575,7 +579,10 @@ reported as not run.
 In a monorepo, each app's disposable databases are its own: named with its
 software id in snake case before the suffix, e.g. `bio_inventory_integration`,
 and a suite empties only its own app's. Apps sharing one database server then
-cannot empty each other's data, and a name says whose it is. A name longer
+cannot empty each other's data, and a name says whose it is. In a shared
+database, a suite empties only the app's own schema: the shared schemas it
+reads are built by their owner's migrations, and never emptied by an app's
+suite. A name longer
 than the engine allows an identifier, 63 bytes in PostgreSQL, is refused
 rather than truncated, because two truncated names can collide.
 
