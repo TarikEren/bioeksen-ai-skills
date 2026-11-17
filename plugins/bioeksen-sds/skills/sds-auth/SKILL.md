@@ -24,8 +24,8 @@ of `${CLAUDE_SKILL_DIR}`, which is this skill's own directory.
 
 | Principal | Is | Used for |
 |-----------|-----|---------|
-| **App** | A service acting as itself, with no human behind the call | Service-to-service calls, and submitting log records to the aggregator |
-| **Operator** | A person holding the operator role, authenticated as themselves — directly, or through a tool acting for them | Administrative endpoints — `GET /api/admin/logs`, the full health report, the aggregator's read endpoints |
+| **App** | A service acting as itself, with no human behind the call | Service-to-service calls |
+| **Operator** | A person holding the operator role, authenticated as themselves — directly, or through a tool acting for them | Administrative endpoints — `GET /api/admin/logs` and the full health report |
 | **Employee** | A person signed in to an app as themselves, holding the company roles its endpoints require | The app's own endpoints: its pages, the server functions they call, and its `/api/v{major}/` endpoints for people |
 
 How a token is told apart as one kind or another, how a tool acts for a
@@ -100,7 +100,9 @@ follows automatically from the `AUTH-`/`PERM-` prefix.
 
 ## Requirements by endpoint
 
-Drawn from the endpoints already specified elsewhere:
+Drawn from the endpoints already specified elsewhere. An app's own endpoints
+are listed with their principals in its specification, with the roles it
+lists there, per **Roles** in `references/credentials.md`.
 
 | Endpoint | Principal |
 |----------|-----------|
@@ -109,11 +111,6 @@ Drawn from the endpoints already specified elsewhere:
 | `GET /api/health` | Operator |
 | `GET /api/admin/logs` | Operator |
 | `POST /api/client-errors` | None |
-| `POST HOST/api/v1/logs`, `POST HOST/api/v1/logs/batch` | App, holding `logs.write` |
-| `GET HOST/api/v1/logs`, `GET HOST/api/v1/groups/:groupId/occurrences` | Operator |
-| `GET HOST/api/v1/logs/:recordId` | Operator, or App holding `logs.resolve` |
-| `PUT HOST/api/v1/groups/:groupId/issue` | App, holding `logs.resolve` |
-| `GET HOST/api/v1/codes` | App holding `logs.write`, or Operator |
 
 The two probe endpoints are deliberately unauthenticated: they expose nothing,
 and a probe that can fail on credential expiry is a probe that will eventually

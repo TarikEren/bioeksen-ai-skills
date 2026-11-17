@@ -22,7 +22,7 @@ another's responses without learning a new envelope.
   member is the collection followed by its id:
   `/api/v1/purchase-orders/{id}`.
 - An operation on a whole collection that is not creating one member is a
-  sub-path named for the operation: `/api/v1/logs/batch`. That is the only
+  sub-path named for the operation: `/api/v1/purchase-orders/batch`. That is the only
   verb-like segment a path carries.
 - An id in a path is opaque. A caller MUST NOT parse one or construct one.
 
@@ -126,8 +126,7 @@ Methods carry their RFC 9110 semantics, which is what the retry rules in
 - An unknown field in a request body is rejected with 400 `VAL-4007`. The
   caller alone writes a body, so an unknown field is the caller's mistake — a
   misspelt `quantitiy` that would otherwise be dropped silently while the
-  request succeeds. The aggregator's rejection of a submitted `recordId` is
-  this rule.
+  request succeeds.
 
 Adding an optional request field is therefore a change the serving app deploys
 before any caller sends the field, which is the order an additive change takes

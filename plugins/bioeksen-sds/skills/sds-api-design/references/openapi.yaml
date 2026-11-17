@@ -146,7 +146,9 @@ paths:
           required: false
           description: >-
             Inclusive lower bound on timestamp. Defaults to the start of the
-            retention window, and is clamped to it when earlier.
+            retention window. While the aggregator is the archive it is clamped
+            to the app's own 7 days when earlier; see
+            standard-api-endpoints.md.
           schema:
             type: string
             format: date-time
@@ -304,9 +306,8 @@ components:
         minimum: 0
 
   # Cross-cutting request headers. Every endpoint in the estate takes these,
-  # not only the five defined here, so they are referenced rather than repeated
-  # — sds-logging/references/aggregator-api.yaml points at these same
-  # definitions.
+  # not only the five defined here, so an app's own schema references them
+  # rather than repeating them.
   parameters:
     RequestId:
       name: X-Request-Id
@@ -650,8 +651,8 @@ components:
                   $ref: "#/components/schemas/Gigabytes"
 
     # The six emitted fields, defined once for the whole estate. Kept separate
-    # from LogRecord so that a schema adding a field — the aggregator's
-    # StoredRecord adds recordId — can compose this rather than copy it. It
+    # from LogRecord so that a schema adding a field — a store's own row
+    # identifier — can compose this rather than copy it. It
     # deliberately constrains nothing about extra properties; the schemas that
     # compose it do that.
     #
@@ -677,7 +678,7 @@ components:
           description: >-
             RFC 3339 with offset and at least millisecond precision, e.g.
             2026-09-03T14:05:00.123Z. The time the event occurred, not the time
-            it was submitted.
+            it was written or delivered.
         severity:
           $ref: "#/components/schemas/Severity"
         type:
@@ -784,8 +785,8 @@ components:
               format: date-time
 
     # The page this endpoint returns: the common wrapper plus records in the
-    # emitted shape. The aggregator composes LogPageBase the same way, with
-    # StoredRecord in place of LogRecord.
+    # emitted shape. A store that adds its own fields composes LogPageBase the
+    # same way, with its own record in place of LogRecord.
     LogPage:
       allOf:
         - $ref: "#/components/schemas/LogPageBase"

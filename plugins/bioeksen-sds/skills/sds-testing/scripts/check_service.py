@@ -53,7 +53,6 @@ REQUIREMENTS = HERE / "requirements.txt"
 SKILLS = HERE.parent.parent
 SCHEMA_FILES = {
     "openapi.yaml": SKILLS / "sds-api-design" / "references" / "openapi.yaml",
-    "aggregator-api.yaml": SKILLS / "sds-logging" / "references" / "aggregator-api.yaml",
 }
 OPENAPI = SCHEMA_FILES["openapi.yaml"]
 REQUEST_ID = re.compile(r"^[A-Za-z0-9_-]{1,128}$")

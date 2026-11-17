@@ -1,15 +1,16 @@
 # Log Record
 
 This document is the normative definition of a BioEksen log record: its
-fields, its enumerated values, and the rules an emitting app MUST follow. The
-aggregator endpoints that carry these records are in `aggregator-api.md`.
+fields, its enumerated values, and the rules an emitting app MUST follow,
+including how its records reach the project's log aggregator, when it has one,
+per **Delivery**.
 
 ## Fields
 
 | Field | Type | Rules |
 |-------|------|-------|
 | `id` | string | The emitting service, app or process. Stable across restarts and deployments. Lowercase, `-` separated, at most 63 characters, e.g. `auth-service` — see **Allocating an id** |
-| `timestamp` | string | RFC 3339 with offset and at least millisecond precision, e.g. `2026-09-03T14:05:00.123Z`. MUST be the time the event occurred, not the time it was submitted |
+| `timestamp` | string | RFC 3339 with offset and at least millisecond precision, e.g. `2026-09-03T14:05:00.123Z`. MUST be the time the event occurred, not the time it was written or delivered |
 | `severity` | enum | See below |
 | `type` | enum | See below |
 | `code` | string \| null | The error code identifying the failure, per `error-codes.md`. `null` when the record does not describe a failure. REQUIRED when `severity` is `ERROR` or `FATAL` |
@@ -19,10 +20,9 @@ The same six fields are what an app's own `GET /api/admin/logs` returns — see
 `sds-api-design/references/standard-api-endpoints.md`.
 
 These six are the record as *emitted*. A store that keeps records MAY add its
-own identifier for the stored row, which is assigned on write and never
-submitted: the aggregator returns one as `recordId`, per `aggregator-api.md`.
-Such an identifier is detail, not a dimension — see below — and MUST NOT be
-confused with `id`, which names the emitting app.
+own identifier for the stored row, which is assigned on write and never part
+of the record an app emits. Such an identifier is detail, not a dimension —
+see below — and MUST NOT be confused with `id`, which names the emitting app.
 
 ### Allocating an id
 
@@ -173,13 +173,12 @@ person's data is erased, per **An app's own users** in
 `sds-auth/references/credentials.md`, so every record naming them stays as
 written and no longer identifies anyone. A name, an email or a UPN
 would be personal data in records that nothing may delete, `AUDIT` records
-above all, which the aggregator keeps forever and chains so that none can be
-altered, per **Audit records** in `aggregator-api.md`. An `AUDIT` record
-therefore names a person nowhere but under `user`: not in its prose, and not
-under another key. The schema enforces the format:
+above all, which are kept forever and never altered, per **The outbox**. An
+`AUDIT` record therefore names a person nowhere but under `user`: not in its
+prose, and not under another key. The schema enforces the format:
 `LogFields` in `sds-api-design/references/openapi.yaml` refuses a record whose
 `user=` value is anything but a lowercase UUID, so the app's own check refuses
-it as `LOG-4000`, and the aggregator, were it submitted, as `VAL-4006`.
+it as `LOG-4000`.
 
 `error` and `cause` are where an unhandled failure says what actually broke:
 `SYS-5000`'s prose, `unhandled error`, deliberately says nothing.
@@ -270,23 +269,25 @@ is already answered whenever storage or tooling changes.
 
 ## The outbox
 
-An app writes every record first to its **outbox**, and, when the project
-has an aggregator, submits it from there. The outbox is the app's own store: what its
-`GET /api/admin/logs` reads, per
-`sds-api-design/references/standard-api-endpoints.md`, and what an operator
-falls back on when the aggregator is unreachable or its records are in doubt.
+An app writes every record first to its **outbox**. The outbox is the app's
+own store: what its `GET /api/admin/logs` reads, per
+`sds-api-design/references/standard-api-endpoints.md`, what records reach the
+project's aggregator from, per **Delivery**, and what an operator falls back
+on when the aggregator is unreachable or its records are in doubt.
 
 | Severity | Kept until | Over the bound |
 |----------|------------|----------------|
-| `DEBUG` | 7 days after its `timestamp`. It is never submitted | Dropped, oldest first |
-| `INFO`, `WARNING` | Stored or refused, and 7 days after its `timestamp` | Dropped, oldest first, while pending |
-| `ERROR`, `FATAL` | Stored or refused, and 7 days after its `timestamp` | Never dropped |
+| `DEBUG` | Its window. It never leaves the app | Dropped, oldest first |
+| `INFO`, `WARNING` | Its window, and never while pending | Dropped, oldest first, unless the outbox is the archive and keeps it longer than 7 days |
+| `ERROR`, `FATAL` | Its window, and never while pending | Never dropped |
 
-With an aggregator, a record is *pending* from the moment it is written until the aggregator
-stores it, answering 201, or refuses it with an answer the app does not retry,
-per **Handling the aggregator's response**. A pending record is never removed
-for its age. An app MAY keep any record longer than the table says, and MUST
-NOT remove one sooner: the 7 days are what `GET /api/admin/logs` promises.
+A record's window is 7 days from its `timestamp` while the aggregator is the
+archive, and its window in **Retention** while the outbox is. An app MAY keep
+any record longer, and MUST NOT remove one sooner: the window is what
+`GET /api/admin/logs` promises. Under pushed delivery, a record is *pending*
+from the moment it is written until the aggregator accepts it, or refuses it
+with an answer the app does not retry, per **Delivery**; a pending record is
+never removed for its age.
 
 An app has two outboxes, because one kind of record must never be kept apart
 from the change it describes:
@@ -304,30 +305,29 @@ from the change it describes:
   them cannot keep the change and lose its record. When that database is down
   the change fails too, and there is nothing to audit.
 
-An `AUDIT` record is never dropped. It is removed only once the aggregator has
-stored it, and no sooner than 7 days after its `timestamp`, so a refused one
-stays: the archive keeps `AUDIT` forever, and a record lost on its way there
-defeats that.
+An `AUDIT` record is never dropped, never removed and never altered: the audit
+outbox keeps every one forever, whether the project has an aggregator or not,
+so accountability never depends on a service the project may not have, or may
+change. The app's runtime database role SHOULD hold only `INSERT` and `SELECT`
+on the table, so that not even a defect in the app can alter a record.
 
 The record outbox is bounded by `LOG_OUTBOX_BOUND`, 100,000 records unless the
-app sets another. The bound counts the records the outbox may drop: its
-`DEBUG` records, and its pending `INFO` and `WARNING` records. When a new
-record would take that count over the bound, the oldest of them are dropped,
-and the app records the drop once, as `LOG-5500` carrying `dropped=` and the
-number dropped in its tail. An `ERROR` or `FATAL` record is never dropped, so
-the record outbox can grow past the bound while the aggregator stays down: an
-outage's own failures are the records most needed once it ends.
+app sets another. The bound counts the records the table lets the outbox
+drop. When a new record would take that count over the bound, the oldest of
+them are dropped, and the app records the drop once, with `dropped=` and the
+number dropped in its tail: as `LOG-5500` when records were pending because
+the aggregator could not be reached, and otherwise as a `WARNING` record with
+no code. An `ERROR` or `FATAL` record is never dropped, so the record outbox
+can grow past the bound while the aggregator stays down: an outage's own
+failures are the records most needed once it ends.
 
-A background sender submits the pending records of both outboxes in batches,
-through `POST /api/v1/logs/batch` in `aggregator-api.md`, and marks each one
-stored or refused by the answer.
+### Retention
 
-### Without an aggregator
-
-When the project's `/.bioeksen/services/log-aggregator.md` says `not used`,
-per `sds-project/SKILL.md`, nothing is submitted and no record is ever pending:
-the outbox is the records' archive. It keeps each as the aggregator would,
-less what needs the aggregator's groups:
+How long the archive keeps a record. The archive is the project's aggregator
+when `/.bioeksen/services/log-aggregator.md` says `used` with
+`Retention: meets`: the user has confirmed it keeps every record at least this
+long. Otherwise the archive is the outbox, which keeps each record for its
+window here.
 
 | Type | `DEBUG` | `INFO` | `WARNING` | `ERROR`, `FATAL` |
 |------|---------|--------|-----------|------------------|
@@ -335,103 +335,105 @@ less what needs the aggregator's groups:
 | `SECURITY` | 7 days | 1 year | 1 year | 1 year |
 | `AUDIT` | — | Forever | Forever | Forever |
 
-- A window runs from the record's `timestamp`. Forever means never removed
-  and never dropped.
-- Over `LOG_OUTBOX_BOUND`, the oldest records kept 7 days are dropped first;
-  no other record ever is. The drop is recorded once, as a `WARNING` record
-  with no code and `dropped=` in its tail: `LOG-5500` would say the
-  aggregator is unavailable, and there is none.
-- `GET /api/admin/logs` reads every record still kept, and never clamps its
-  `startDate`, as the aggregator never clamps its own.
-- Groups, alerts and the audit chain are the aggregator's, per
-  `aggregator-api.md`. Without one, a person reads the outbox, and an `AUDIT`
-  record is protected by the app's database alone.
-- **When an aggregator is added**, `AGGREGATOR_URL` is set and every record
-  written from then on is pending. The `AUDIT` records already kept are
-  submitted too, oldest first, so the archive holds every one; nothing else
-  written before is.
-- **When it is removed**, the sender stops, and every record still kept stays
-  as this table says.
+- A window runs from the record's `timestamp`. Forever means never removed,
+  never dropped, never sampled and never summarised.
+- `DEBUG` never leaves the app, so its 7 days are always the outbox's.
+- `AUDIT` is always kept by the audit outbox, per **The outbox**, whatever an
+  aggregator keeps of it.
+
+Each window answers the question its records are read for, for as long as it
+is asked. `INFO` and `WARNING` answer "what happened before this failed",
+which is asked within days. `ERROR` and `FATAL` are the evidence a fix is
+written from, and a quarter outlasts the fix. `SECURITY` is kept a year at
+every severity, because an intrusion is often found months after it began.
+`AUDIT` is kept forever, because who changed what is asked years later.
+
+- **When an aggregator is added**, records written from then on are
+  delivered, and so are the `AUDIT` records already kept, oldest first, so it
+  holds every one; nothing else written before is.
+- **When it is removed**, or recorded as `Retention: short`, the outbox is
+  the archive, and keeps every record still held as this table says.
+
+## Delivery
+
+When the project has an aggregator, the `Delivery` its
+`/.bioeksen/services/log-aggregator.md` records says how records reach it.
+The record is the same either way: the JSON form this document defines.
+
+| Delivery | The app |
+|----------|---------|
+| `collected` | Writes each record but `DEBUG` to stdout, as one line of its JSON form, for a collector the aggregator runs, such as Grafana Alloy, to read |
+| `pushed` | Sends each record but `DEBUG` from its outbox to the aggregator, as the service's `Interface` documents |
+
+**Collected.** Stdout carries records and nothing else, so a collector never
+has to guess what a line is: an app SHOULD send its framework's own output to
+stderr. A record is written to stdout once it is in its outbox, and an
+`AUDIT` record once the transaction that wrote it commits, read back from the
+audit outbox and marked written, so it reaches stdout exactly once. A
+collector that is down is the aggregator's failure, not the app's: the
+outbox still holds every record.
+
+A collector turns some fields into labels, and only the dimensions above may
+become one: `id`, `type`, `severity` and `code`. A label from the tail, such
+as `request` or `user`, makes the label set unbounded, per **Dimensions and
+detail**.
+
+**Pushed.** A background sender delivers the pending records of both
+outboxes, in batches where the aggregator takes them, and marks each one
+accepted or refused by the answer. Where the aggregator accepts an
+idempotency key, every delivery carries one: the same value on every retry of
+it, and a fresh one for any delivery whose body differs.
+
+| Answer | The app |
+|--------|---------|
+| 2xx | Accepted: the records are no longer pending |
+| 503, 502, 504, or no response | Keeps the records pending, and SHOULD retry on the background-class terms in `sds-api-design/references/service-calls.md`, including its circuit breaker |
+| 429 | Waits the `Retry-After` interval, then retries |
+| 401 | Refreshes its credential once and retries. If the fresh one is refused too, it MUST NOT retry again |
+| 400 | Refused as malformed: MUST NOT retry it unchanged, which would loop forever. Recorded as `LOG-4000` |
+| 500, or any other status | Refused, in a way a retry will not change: MUST NOT retry. Recorded as `LOG-5000` |
+
+Once retries exhaust their budget or the circuit stays open, the app records
+`LOG-5500`, and the records stay pending. A refused record stays in the
+outbox only, for its window, and never reaches the archive. A dropped record
+is kept nowhere: dropping is a real loss, not a deferral, which is why the
+outbox table keeps it to the severities nobody is paged for.
+
+Two failures happen before anything is delivered. A record the app's own
+check refuses, because it would not match this contract, is `LOG-4000`: the
+same malformed record an aggregator would refuse, so the same code. A record
+the outbox fails to write is that outbox's own failure, `DB-5001`, not a
+`LOG-` code. Both are written to stderr, since the outbox that would have
+held them is either not trusted with the record or is the thing that failed.
+The `LOG-` codes are the emitting app's, for the records it writes about its
+own delivery; an aggregator answers with its own.
 
 ## Emission rules
 
 - Logging MUST NOT fail the operation being logged, with one exception: an
   `AUDIT` record is written in the transaction of the change it describes, so
   the change fails if its record cannot be written (**The outbox**). A failed
-  submission is swallowed. The record is still in the outbox, and the failure
-  is recorded there and written to stderr — together, the app's local error
+  delivery is swallowed: the record is still in the outbox, and the failure is
+  recorded there and written to stderr, together the app's local error
   channel.
-- Submission MUST NOT block the request path. Emit asynchronously.
-- An app that emits more than occasionally SHOULD submit in batches, through
-  `POST /api/v1/logs/batch` in `aggregator-api.md`. The response handling below
-  is the same for a batch as for a single record.
-- Every submission MUST carry an `Idempotency-Key`: the same value on every
-  retry of that submission, and a fresh one for any submission whose body
-  differs. The same key is what stops a retry after a timeout storing a record
-  twice; a fresh key is what stops a corrected resubmission being refused as a
-  replay. The aggregator honours the key, per
-  `sds-api-design/references/service-calls.md`, but does not require it, so
-  this rule is the emitter's to keep.
-- A `DEBUG` record MUST NOT be submitted, from any environment. It stays in
-  the record outbox, which the app's own `GET /api/admin/logs` reads; the
-  aggregator keeps no `DEBUG` record and refuses one with `VAL-4006`, per
-  `aggregator-api.md`.
-- An `AUDIT` record is never `DEBUG`. The aggregator keeps `AUDIT` forever and
-  never sees `DEBUG`, so an `AUDIT` record at `DEBUG` would be an
-  accountability record nobody keeps.
-
-### Handling the aggregator's response
-
-This applies when the project has an aggregator. What an app does next is
-decided by the status alone:
-
-| Response | Means | The app |
-|----------|-------|---------|
-| 201 | Stored | Nothing further |
-| 503, or no response | The aggregator or its database is unavailable | Keeps the records pending, and SHOULD retry on the background-class terms in `sds-api-design/references/service-calls.md`, including its circuit breaker, so a down aggregator is not called on every record |
-| 429 | Over the app's allowance | Waits the `Retry-After` interval, then retries |
-| 401 | The app's credential was refused | Refreshes it once and retries. If the fresh credential is refused too, it MUST NOT retry again |
-| 400 | The record is malformed | MUST NOT retry it unchanged; retrying a malformed record loops forever |
-| 409 | The idempotency key was already spent on a different body | MUST NOT retry. The app is minting keys wrongly |
-| 403, 500, any other 4xx | Refused, or the write failed in a way a retry will not change | MUST NOT retry |
-
-A 500 is not retried because it is outside the range
-`sds-api-design/references/service-calls.md` retries: the aggregator answers 500 only when its database rejected the
-write, and an unreachable database is a 503.
-
-Whatever the app does not retry is refused: it stays in the outbox only, for
-as long as **The outbox** keeps it, and the app records that failure there:
-`LOG-4000` for a 4xx and `LOG-5000` for a 500. Once retries exhaust their
-budget or the circuit stays open, the app records `LOG-5500`, and the records
-stay pending.
-
-Two failures happen before anything is submitted. A record the app's own
-check refuses, because it would not match this contract, is `LOG-4000`: the
-same malformed record the aggregator would have refused, so the same code. A
-record the outbox fails to write is that outbox's own failure, `DB-5001`, not
-a `LOG-` code. Both are written to stderr, since the outbox that would have
-held them is either not trusted with the record or is the thing that failed.
-`LOG-5000` stays the code for a submission the aggregator refused.
-
-The two sets of codes belong to different apps. The aggregator answers a
-malformed record with the `VAL-` code the selection procedure gives it, as any
-app answers any request. The `LOG-` codes are the emitting app's, for the
-records it writes about its own submissions.
-
-A refused record never reaches the archive. It exists only in the outbox, and
-only for as long as **The outbox** keeps it. A dropped record is not kept
-anywhere. Dropping is therefore a real loss, not a deferral: the bound trades
-it against an outbox that grows without limit, and the table keeps the trade
-to the severities whose loss nobody is paged for.
+- Delivery MUST NOT block the request path.
+- A `DEBUG` record MUST NOT leave the app, from any environment: it is never
+  delivered, and under collected delivery never written to stdout. It stays
+  in the record outbox, which the app's own `GET /api/admin/logs` reads.
+- An `AUDIT` record is never `DEBUG`. `DEBUG` is off in production and kept 7
+  days, so an `AUDIT` record at `DEBUG` would be an accountability record
+  nobody keeps.
+- Outside collected delivery, an app MAY write its records to stdout or
+  stderr, in their JSON form or rendered, for a container runtime or a
+  developer to read. Nothing in the project may depend on that output.
 
 ## Rendering
 
-The aggregator renders a stored record as:
+A record rendered for a person to read, on stderr or in a viewer, is:
 
 ```
 [timestamp] [severity] [type] [id] [code]: [message]
 ```
 
-`[code]` is rendered as `-` when the record has no code. Emitting apps submit
-the structured JSON form, not this string; the rendered form exists for
-reading, not for parsing.
+`[code]` is rendered as `-` when the record has no code. The rendered form
+exists for reading, not for parsing: what is delivered is the JSON form.

@@ -54,6 +54,7 @@ skill it names: treat landing it as an API change, per `CLAUDE.md`, and run
 | 2026-10-08 | Each unit releases on its own, from `{software-id}/v*` tags, with its notes in its directory. Its range is the commits since its previous tag that reached it, judged as of each commit, so a lockfile-only commit is in every unit's next release; the spec's `git log -- <closure>` form would have left it out. A breaking commit names the unit it breaks as its scope, so an SDK change that updates every caller breaks no app. Landed in `a11d8e3` |
 | 2026-10-08 | sds-ci verifies, builds and deploys each unit on its own and holds an AI task to its unit; build caches are out of reach of `ci` jobs. Each app of a monorepo has its own test databases. Landed in `89af1c3` and `bd2179e` |
 | 2026-11-17 | bio-softop is dropped: no employee directory, id registry or id-issuing service. Roles come from the identity provider's tokens, the project's own CI verifies a release tag, and the user supplies each software id |
+| 2026-11-17 | The log aggregator API is dropped, with its error groups, audit chain, codes check and `Fixes-Log` trailer. A project determines whether it has an aggregator and learns it from the user; records reach it collected from stdout or pushed. Retention moves to `log-record.md`, and the audit outbox keeps every `AUDIT` record forever |
 
 ## Order of work
 

@@ -22,7 +22,7 @@ to exactly one.
 |-------|---------|
 | **Request path** | Made while handling an inbound request. Someone is waiting |
 | **Background** | Made by a job, a scheduler or a startup routine. Nobody is waiting |
-| **Log emission** | Submission to the log aggregator. Governed by the emission rules in `sds-logging/references/log-record.md`, which override this document — logging MUST NOT block or fail the operation being logged |
+| **Log emission** | Delivery to the log aggregator. Governed by **Delivery** and the emission rules in `sds-logging/references/log-record.md`, which override this document — logging MUST NOT block or fail the operation being logged |
 
 ## Deadlines
 

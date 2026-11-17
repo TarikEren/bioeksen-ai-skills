@@ -119,27 +119,10 @@ class TestExemptTest(unittest.TestCase):
         self.assertEqual(check(clean(result), SOFTWARE_ID), [])
 
 
-class FixesLogTest(unittest.TestCase):
-    def problems(self, subject: str, trailers: str, *body: str) -> list[str]:
-        return check(message(subject, *body, trailers), SOFTWARE_ID)
-
-    def test_a_fix_naming_each_record_it_resolves_conforms(self):
-        trailers = CHANGE_ID + "\nFixes-Log: 01J9Z4K7XQ2M8N\nFixes-Log: 01J9Z4K7XQ2M8P"
-        self.assertEqual(self.problems("fix(db): retry a write that lost its connection", trailers), [])
-
-    def test_fixes_log_on_a_commit_that_is_not_a_fix_is_a_problem(self):
-        problems = self.problems("feat(db): cache widget reads", CHANGE_ID + "\nFixes-Log: 01J9Z4K7XQ2M8N")
-        self.assertTrue(any("Fixes-Log" in p and "feat commit" in p for p in problems), problems)
-
-    def test_fixes_log_outside_the_final_paragraph_is_a_problem(self):
-        problems = self.problems("fix(db): retry a write", CHANGE_ID, "Fixes-Log: 01J9Z4K7XQ2M8N")
-        self.assertTrue(any("Fixes-Log" in p and "final paragraph" in p for p in problems), problems)
-
-    def test_fixes_log_naming_no_single_record_is_a_problem(self):
-        for value in ("", "01J9Z4K7XQ2M8N 01J9Z4K7XQ2M8P"):
-            problems = self.problems("fix(db): retry a write", f"{CHANGE_ID}\nFixes-Log: {value}")
-            self.assertTrue(any("Fixes-Log" in p and "one recordId" in p for p in problems),
-                            (value, problems))
+class OtherTrailersTest(unittest.TestCase):
+    def test_a_trailer_the_convention_does_not_define_is_not_checked(self):
+        trailers = CHANGE_ID + "\nTest-Exempt: docs\nFixes-Log: 01J9Z4K7XQ2M8N 01J9Z4K7XQ2M8P"
+        self.assertEqual(check(message("feat(db): cache widget reads", trailers), SOFTWARE_ID), [])
 
 
 class CleanTest(unittest.TestCase):

@@ -149,11 +149,7 @@ production at a moment the estate can name.
     `sds-commit/references/release-notes.md`;
   - the note's entry count equals the number of commits in that range,
     `git log --no-merges {previous}..{tag}` in a repository holding one
-    service;
-  - once an aggregator runs, it accepts every error code the release's build
-    contains, as `GET /api/v1/codes` in
-    `sds-logging/references/aggregator-api.md` lists them, so that no record
-    the release writes is refused and lost.
+    service.
 
   A release failing any check is not deployed. The refusal is logged as
   `JOB-4000`, its check in the structured tail, e.g. `reason=version-mismatch`,
@@ -371,7 +367,7 @@ the host allows; no sandbox can reach that engine.
 - **Transcripts**, the model's conversation, its tool calls and the files it
   read, are stored as the run's artifacts. They are never log records: they
   are unbounded and carry code, which `sds-logging/references/log-record.md`
-  keeps out of the aggregator.
+  keeps out of every record.
 
 ## Instructions are not controls
 

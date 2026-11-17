@@ -1,13 +1,13 @@
 ---
 name: sds-logging
-description: BioEksen logging and error code conventions. Use when adding log statements, choosing a severity or log type, defining or returning an error code, or wiring an app to the log aggregator.
+description: BioEksen logging and error code conventions. Use when adding log statements, choosing a severity or log type, defining or returning an error code, or delivering an app's records to the project's log aggregator.
 ---
 
 # Logging and Error Codes
 
 Every BioEksen app writes log records in one format, to its own outbox and,
-where the project has one, to the shared log aggregator, and identifies its
-failures with error codes. Both are cross-service contracts: an operator
+where the project has one, to its log aggregator, and identifies its failures
+with error codes. Both are cross-service contracts: an operator
 filtering the aggregator, and a client handling an API error, depend on every
 app behaving identically.
 
@@ -18,7 +18,6 @@ The keywords MUST, SHOULD and MAY are used as in RFC 2119.
 - `references/error-codes.md` — error code format, ranges and HTTP mapping.
 - `references/code-prefixes.md` — the closed list of every prefix and code.
   Codes are taken from here verbatim, never invented.
-- `references/aggregator-api.md` — the aggregator's own endpoints.
 
 Paths such as `sds-logging/references/log-record.md` name a file in another
 skill of this plugin, relative to the plugin's skills directory: the parent
@@ -39,9 +38,9 @@ already visible in the `ACCESS` log.
 
 ## What MUST NOT be logged
 
-The aggregator is shared across apps and retained, and without one the app's
-outbox keeps records as long. A secret written to either is leaked to every
-operator and every backup. `SECURITY` records are kept for a year and `AUDIT`
+An aggregator is shared across apps and keeps records for months, and an
+app's outbox keeps them as long when it is the archive. A secret written to
+either is leaked to every operator and every backup. `SECURITY` records are kept for a year and `AUDIT`
 records forever, so a secret written into one outlives every
 rotation of it.
 
@@ -62,7 +61,7 @@ selection guidance:
 
 | Severity | Use when | Wakes someone |
 |----------|----------|---------------|
-| `DEBUG` | Detail useful only while diagnosing. MUST be disabled in production by default, and never leaves the app: the aggregator keeps none | No |
+| `DEBUG` | Detail useful only while diagnosing. MUST be disabled in production by default, and never leaves the app | No |
 | `INFO` | A normal, noteworthy event: startup, job completed, resource created | No |
 | `WARNING` | Degraded but handled: retry succeeded, fell back to a default, approaching a limit | No |
 | `ERROR` | One operation failed and a user or job is affected. The app keeps running | Not immediately |
@@ -83,7 +82,7 @@ Rules:
 |------|---------|
 | `APP` | General application behavior; the default when nothing else fits |
 | `SECURITY` | Authentication, authorization, credential changes, suspected abuse |
-| `AUDIT` | Deliberate record of who changed what, kept for accountability: forever, so never at `DEBUG`. It names a person only by `user=` and their principal key, and the aggregator chains it so that it cannot be altered, per **Audit records** in `references/aggregator-api.md` |
+| `AUDIT` | Deliberate record of who changed what, kept for accountability: forever, so never at `DEBUG`. It names a person only by `user=` and their principal key, and nothing alters it once written, per **The outbox** in `references/log-record.md` |
 | `ACCESS` | Request-level records: method, path, status, duration |
 | `JOB` | Scheduled and background work |
 
@@ -92,8 +91,8 @@ Rules:
 failed login is `SECURITY`; a successful role change is both, and SHOULD be
 logged twice rather than compromising on one.
 
-How long the aggregator keeps each type at each severity is the **Retention**
-table in `references/aggregator-api.md`.
+How long each type is kept at each severity is **Retention** in
+`references/log-record.md`.
 
 ## Correlation
 
@@ -115,45 +114,49 @@ be added to a record after it is written. Emit both from the first version.
 
 ## Transport
 
-Whether the project has a log aggregator is its
-`/.bioeksen/services/log-aggregator.md`, per `sds-project/SKILL.md`. Where it
-has one, the aggregator is the only remote destination for an app's log
-records; where it has none, a record
-never leaves the app, and its outbox is the archive, per **Without an
-aggregator** in `references/log-record.md`. Either way, an app MUST NOT write
-to a shared log store, a hosted logging service, or any other remote backend.
+Whether the project has a log aggregator, and how records reach it, is its
+`/.bioeksen/services/log-aggregator.md`, per `sds-project/SKILL.md`. Besides
+the fields every service has, it holds two of its own:
 
-Two local destinations sit beside it, and neither is an integration point:
+| Field | Values | Means |
+|-------|--------|-------|
+| `Delivery` | `collected`, `pushed` | Whether a collector the aggregator runs reads the app's stdout, or the app sends its records, per **Delivery** in `references/log-record.md` |
+| `Retention` | `meets`, `short` | Whether the user confirmed the aggregator keeps every record at least as long as **Retention** in `references/log-record.md` says. With `short`, the app's outbox stays the archive |
 
-- An app MUST write every record first to its outbox, and, with an
-  aggregator, submit it from there, per **The outbox** in `references/log-record.md`: an audit outbox in
-  the app's own database, written in the transaction of the change each
-  `AUDIT` record describes, and a record outbox on the app's own volume for
-  every other record. Together they are the app's local store: what
-  `GET /api/admin/logs` reads, per
+Where it is used, the aggregator is the only remote destination for an app's
+log records; where it is not, a record never leaves the app, and its outbox is
+the archive. Either way, an app MUST NOT send its records to any other remote
+store, hosted logging service or backend.
+
+- An app MUST write every record first to its outbox, per **The outbox** in
+  `references/log-record.md`: an audit outbox in the app's own database,
+  written in the transaction of the change each `AUDIT` record describes, and
+  a record outbox on the app's own volume for every other record. Together
+  they are the app's local store: what `GET /api/admin/logs` reads, per
   `sds-api-design/references/standard-api-endpoints.md`, and what an operator
   falls back on when the aggregator is unreachable or its records are in doubt.
-- An app MAY also write its records to stdout or stderr, as the JSON record or
-  in the rendered form `references/log-record.md` defines, for a container
-  runtime or a developer to read. Nothing in the estate consumes that output,
-  and no alert or dashboard may depend on it.
+- Under collected delivery, stdout carries the records, and nothing else, per
+  **Delivery** in `references/log-record.md`. Otherwise an app MAY write its
+  records to stdout or stderr for a container runtime or a developer to read,
+  and nothing in the project may depend on that output.
 
 The aggregator is the single integration point. It can change storage, gain a
 forwarder, or grow a query layer without any app, in any language, changing a
 line. An app that bypasses it converts one integration point into one per app
 — the duplication this repository exists to prevent.
 
-A binding takes the aggregator's address, when there is one, from
-`AGGREGATOR_URL`, the record
-outbox's path from `LOG_OUTBOX_PATH`, and its bound from `LOG_OUTBOX_BOUND`
-(default 100,000). The audit outbox needs no setting of its own: it is a table
-in the app's own database.
+A binding takes the record outbox's path from `LOG_OUTBOX_PATH`, and its
+bound from `LOG_OUTBOX_BOUND` (default 100,000). Under pushed delivery it
+takes the aggregator's address from `AGGREGATOR_URL`, and any credential the
+aggregator needs from the variables the services file's `Configuration`
+names. The audit outbox needs no setting of its own: it is a table in the
+app's own database.
 
 ## Third-party software
 
 Software BioEksen runs but does not write, such as a model server, cannot
 follow this skill. It is logged through a **bridge**: a BioEksen-owned process
-that reads that software's output and submits valid records under the
+that reads that software's output and writes valid records under the
 component's own software id.
 
 - A bridge is a BioEksen app. It holds the component's id, writes through the

@@ -162,8 +162,7 @@ database.
   them (`SELECT … FOR UPDATE`) or use a constraint.
 - **An audit record is written in the same transaction** as the change it
   records, through the logger's audit call, which keeps it in the app's own
-  database until the aggregator has stored it
-  (`sds-logging/references/log-record.md`). What makes a change auditable is
+  database for good (`sds-logging/references/log-record.md`). What makes a change auditable is
   `sds-logging`'s **Choosing a type**.
 - **Keep transactions short.** No network calls, file I/O or user waits
   inside one.

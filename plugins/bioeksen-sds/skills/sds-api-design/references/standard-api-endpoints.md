@@ -21,7 +21,7 @@ another way:
   `LOG_OUTBOX_PATH`. The component delivers it before a run ends, and sends
   whatever is still undelivered at the start of the next run, before its own
   records. With no `GET /api/admin/logs` to read it, an operator reads the
-  aggregator, or the outbox on the runner host.
+  aggregator, when the project has one, or the outbox on the runner host.
 
 ## Conventions
 
@@ -32,7 +32,7 @@ Paths fall into two groups, and only one of them carries a version.
 | Endpoints | Path | Versioned |
 |-----------|------|-----------|
 | The five in this document | `/api/health`, `/api/health/live`, `/api/health/ready`, `/api/admin/logs`, `/api/client-errors` | No |
-| Everything else an app serves, including the log aggregator's own endpoints | `/api/v{major}/…` | Yes |
+| Everything else an app serves | `/api/v{major}/…` | Yes |
 
 The standard five are unversioned because every app implements them
 identically, and because they are configured outside the app that serves them:
@@ -171,9 +171,7 @@ An endpoint's body limit is **1 MiB** (1,048,576 bytes) unless the app sets
 another for that endpoint. A different limit is an empirical value in the
 sense of `sds-api-design/references/service-calls.md`: the app MAY set it and
 MUST record that it has. One default across the estate lets a caller size a
-request without reading each app's code, and it is the aggregator's own batch
-limit, so the service every app writes to accepts whatever an app's default
-accepts.
+request without reading each app's code.
 
 The limit is counted on the bytes as they arrive, never taken from
 `Content-Length` alone. A chunked body carries no `Content-Length`, and a
@@ -353,8 +351,8 @@ entry of `dependencies`.
 
 ## `GET /api/admin/logs`
 
-Returns this app's logs, filtered and paginated. Log records use the shared
-format defined by the log aggregator.
+Returns this app's logs, filtered and paginated, in the record format
+`sds-logging/references/log-record.md` defines.
 
 **Authorization:** MUST require an authenticated operator. Unauthenticated
 requests return 401; authenticated non-operators return 403.
@@ -389,24 +387,21 @@ outboxes, per **The outbox** in `sds-logging/references/log-record.md`. This
 endpoint reads both. That is a working week: long enough to debug an app
 directly when the aggregator is unreachable or when its records are in doubt.
 
-The archive is the aggregator, which keeps each record for as long as its
-type and severity call for, from 14 days to forever — the **Retention** table
-in `sds-logging/references/aggregator-api.md`. The two windows are
-deliberately different, and an operator comparing them will find records here
-that the aggregator no longer holds, and far more there than here. Neither gap
-is loss.
+Where the aggregator is the archive, it keeps each record for as long as its
+type and severity call for, per **Retention** in
+`sds-logging/references/log-record.md`. The two windows are deliberately
+different, and an operator comparing them will find records here that the
+aggregator no longer holds, and far more there than here. Neither gap is loss.
+This store is also the only one that keeps `DEBUG` records, which never leave
+the app, and the one that keeps every `AUDIT` record forever.
 
-This store is also the only one that keeps `DEBUG` records, which never reach
-the aggregator. And an `AUDIT`, `ERROR` or `FATAL` record the aggregator has
-not yet stored stays here past the window until it has, per the same
-document.
+Where the outbox is the archive, it keeps each record for its window in the
+same table, and this endpoint reads every one still kept: its `startDate` is
+then never clamped.
 
-Without an aggregator the outbox keeps records longer, per **Without an
-aggregator** in `sds-logging/references/log-record.md`, and this endpoint
-reads every one still kept: its `startDate` is then never clamped.
-
-With an aggregator, a `startDate` earlier than the window MUST be clamped to the start of it rather
-than rejected, and `filterParams` MUST echo the clamped value. A 400 would make
+Where the aggregator is the archive, a `startDate` earlier than the 7 days
+MUST be clamped to the start of them rather than rejected, and `filterParams`
+MUST echo the clamped value. A 400 would make
 a caller guess a boundary it was never told, and the guess goes stale the next
 time the window changes.
 
@@ -493,7 +488,7 @@ after, so the endpoint takes no credential. Three rules keep it the app's own:
   records another value, an empirical value in the sense of
   `service-calls.md`. The next report is answered 429 `RATE-4400`, with
   `Retry-After`. Without the limit, a page caught in an error loop fills the
-  app's outbox and the aggregator.
+  app's outbox and its aggregator.
 - **The body is at most 16 KiB**, not the 1 MiB default of **Method, size and
   media type**: a report is an error and its causes, never a page's state. A
   larger one is 413 `VAL-4550`.
@@ -534,10 +529,6 @@ after, so the endpoint takes no credential. Three rules keep it the app's own:
   `error`, from their ends.
 - Nothing else about the user is recorded: no address, no user agent, and no
   page state.
-- Where the project has an aggregator, reports are grouped like any failure, per **Groups** in
-  `sds-logging/references/aggregator-api.md`, so a page that fails for every
-  user is one group, not a record per user. Noise from browser extensions and
-  old browsers is closed as `close:external`.
 
 ## Machine-readable schema
 

@@ -162,6 +162,22 @@ class ServicesTest(ProjectCase):
         self.assertEqual(status, 1, out)
         self.assertIn("Answered by", out)
 
+    def test_a_delivery_outside_the_choices(self):
+        self.service(self.root, "log-aggregator", AGGREGATOR.replace("collected", "emailed"))
+        status, out = self.read()
+        self.assertEqual(status, 1, out)
+        self.assertIn("collected, pushed", out)
+
+    def test_a_used_aggregator_says_whether_it_keeps_records_long_enough(self):
+        self.service(self.root, "log-aggregator", AGGREGATOR.replace("Retention: meets\n", ""))
+        status, out = self.read()
+        self.assertEqual(status, 1, out)
+        self.assertIn("Retention", out)
+
+    def test_an_aggregator_not_used_needs_neither(self):
+        status, out = self.read("services/log-aggregator")
+        self.assertEqual(status, 0, out)
+
     def test_an_undetermined_log_aggregator_is_not_run(self):
         (self.root / ".bioeksen" / "services" / "log-aggregator.md").unlink()
         status, out = self.read()

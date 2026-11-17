@@ -34,9 +34,8 @@ allocated per `sds-logging/references/log-record.md`. A caller asks for a
 token for the app it is about to call, so `aud` names the receiving app, as
 the claims table requires, without any app arranging it. Naming the
 registration after the software id also lets anything that reads the
-registrations derive which client id belongs to which software id: the
-aggregator needs exactly that mapping to refuse a record submitted under
-another app's `id`, per `sds-logging/references/aggregator-api.md`.
+registrations derive which client id belongs to which software id, so an app
+can tell which app called it without keeping a table of its own.
 
 Every app's registration MUST refuse a person who holds none of the app's
 roles at sign-in, before any of its code runs, so the provider's accounts are
@@ -173,28 +172,28 @@ mechanism from a credential rotation and belongs to whoever runs the incident.
 
 ## Roles
 
-Roles are a closed list, like error codes, and this table is it, with the
-company roles in **Company roles** below:
+Roles are a closed list, like error codes. This table holds the roles every
+app shares, with the company roles in **Company roles** below; an app's own
+roles are listed in its specification:
 
 | Role | Assignable to | Defined on | Grants |
 |------|---------------|------------|--------|
-| `operator` | Users only | Every app's registration | Every operator endpoint in the estate: the full health report, an app's own `GET /api/admin/logs`, and the aggregator's read endpoints |
-| `logs.write` | Applications only | The aggregator's registration | Submitting log records, `POST /api/v1/logs` and `POST /api/v1/logs/batch`, and reading the codes the aggregator accepts, `GET /api/v1/codes` |
-| `logs.resolve` | Applications only | The aggregator's registration | Moving an error group along its lifecycle with the issue that tracks it, `PUT /api/v1/groups/{groupId}/issue`, and reading a record to find its group, `GET /api/v1/logs/{recordId}`. Held by the git provider's integration alone |
+| `operator` | Users only | Every app's registration | Every operator endpoint in the estate: the full health report and an app's own `GET /api/admin/logs` |
 
 "Assignable to" is enforced by the provider, as its reference says, so a user
 role is unobtainable by an app, and the reverse, without any receiving app
 having to check.
 
 An app role that an app grants to its callers is named `<resource>.<action>`,
-lowercase, e.g. `logs.write`. `operator` keeps its bare name, being the one
+lowercase, e.g. `orders.write`. `operator` keeps its bare name, being the one
 role that means the same thing on every app.
 
-A role is added to this table by a human, in the same commit as the spec of
-the endpoint that requires it, and only then created on the owning app's
-registration. An app MUST NOT require a role neither table lists: a role
-defined in one service is an authorization decision in a place nobody auditing
-access will look for it.
+An app's own role is added to its specification by a human, in the same
+change as the endpoint that requires it, and only then created on the app's
+registration. A role every app shares is added to this table instead. An app
+MUST NOT require a role that neither this table nor its specification lists:
+a role defined in code alone is an authorization decision in a place nobody
+auditing access will look for it.
 
 An app checks for the role it requires and ignores any others present in
 `roles`. Adding a role to the directory therefore cannot break a deployed app.
@@ -207,11 +206,9 @@ than a gap waiting to be filled.
 ### The gradient this accepts
 
 Those endpoints are not equally sensitive. A health report exposes capacity
-numbers. The aggregator holds every app's records, including whatever
-identifiers the structured tail carries, which is why
-`sds-logging/references/aggregator-api.md` calls it the highest-value read
-target in the estate. One role covers both, so anyone who can read a dashboard
-can read the estate's logs.
+numbers. An app's logs hold its records, including whatever identifiers the
+structured tail carries, which makes them the highest-value read in the app.
+One role covers both, so anyone who can read a dashboard can read the logs.
 
 That is acceptable while the operator population is small and uniformly
 trusted. It stops being acceptable the moment someone needs one of those
@@ -290,7 +287,8 @@ prevent.
 ## Configuration
 
 Every value below arrives as environment configuration, under the variable
-beside it, except the client id to software id mapping, which is derived. This is the concrete list `CFG-5000` and `CFG-5001` refer to:
+beside it, except the client id to software id mapping, which is derived.
+This is the concrete list `CFG-5000` and `CFG-5001` refer to:
 a missing one is `CFG-5000` at startup, a present but unusable one is
 `CFG-5001`.
 
@@ -305,7 +303,7 @@ a missing one is `CFG-5000` at startup, a present but unusable one is
 | Client credential | `AUTH_CLIENT_CERTIFICATE_PATH`, or `AUTH_CLIENT_SECRET` | Every app | The certificate or secret backing that identity |
 | Operator scope | `AUTH_OPERATOR_SCOPE` | Every app | The scope marking a delegated token as an operator's |
 | Clock skew | `AUTH_CLOCK_SKEW_SECONDS` | Every app | 60 seconds, per **Validation** |
-| Client id to software id | — | The aggregator | Derived from the provider's registrations, which are named after the software ids, per **Issuer**. Never configuration |
+| Client id to software id | — | An app that acts on which app called it | Derived from the provider's registrations, which are named after the software ids, per **Issuer**. Never configuration |
 | Trusted proxies | `TRUSTED_PROXIES` | Apps behind a proxy | The addresses whose `X-Forwarded-For` entries are believed when finding a request's source, per the rate limiting rule in `SKILL.md` |
 
 These names are fixed for every app and every provider, as `LOG_LEVEL` is, so

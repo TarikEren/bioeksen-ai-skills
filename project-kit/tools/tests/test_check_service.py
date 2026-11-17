@@ -56,6 +56,11 @@ def run(module, *args: str) -> tuple[int, str]:
     return status, out.getvalue()
 
 
+class SchemasTest(unittest.TestCase):
+    def test_the_standard_endpoints_schema_is_the_only_one(self):
+        self.assertEqual(set(load().SCHEMA_FILES), {"openapi.yaml"})
+
+
 class AgainstTheStubTest(unittest.TestCase):
     def setUp(self):
         self.module = load()

@@ -40,7 +40,9 @@ REQUIRED = ("log-aggregator",)
 STATUS = ("used", "not used")
 WHEN_USED = ("Service", "Purpose", "Reached by", "Interface")
 # The fields a capability adds when it is used, each with its allowed values.
-ADDED: dict[str, dict[str, tuple[str, ...]]] = {}
+ADDED: dict[str, dict[str, tuple[str, ...]]] = {
+    "log-aggregator": {"Delivery": ("collected", "pushed"), "Retention": ("meets", "short")},
+}
 
 
 def repository_root(start: Path) -> Path | None:

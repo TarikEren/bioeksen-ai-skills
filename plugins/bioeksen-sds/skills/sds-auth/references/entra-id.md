@@ -10,7 +10,7 @@ How a project whose `.bioeksen/identity-provider` is `entra-id` meets
 | `iss` | `https://login.microsoftonline.com/{tenantId}/v2.0` |
 | Discovery | `{iss}/.well-known/openid-configuration` |
 | Signing keys | `https://login.microsoftonline.com/{tenantId}/discovery/v2.0/keys` |
-| `aud` | The receiving app's Application ID URI, e.g. `api://logs-aggregator` |
+| `aud` | The receiving app's Application ID URI, e.g. `api://bio-inventory` |
 
 Every app is registered once, with the Application ID URI
 `api://{software-id}`. A caller asks for a token with the client credentials
@@ -20,8 +20,8 @@ app.
 Every app's registration MUST also set:
 
 - **`requestedAccessTokenVersion: 2`**, in its manifest. A version 1 token
-  carries no `azp`, which the aggregator needs to tell which app sent a
-  record. It also names its issuer `https://sts.windows.net/{tenantId}/`, so
+  carries no `azp`, which an app needs to tell which app called it. It also
+  names its issuer `https://sts.windows.net/{tenantId}/`, so
   it fails the `iss` check and is refused with `AUTH-4101`.
 - **Assignment required: Yes**, on its enterprise application. Without it,
   any account in the tenant, guests included, can sign in to the app and get

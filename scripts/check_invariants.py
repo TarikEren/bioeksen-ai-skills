@@ -12,7 +12,6 @@ rather than stopping at the first.
 from __future__ import annotations
 
 import ast
-import importlib.util
 import json
 import re
 import sys
@@ -26,15 +25,12 @@ except ImportError:
 ROOT = Path(__file__).resolve().parent.parent
 SKILLS = ROOT / "plugins" / "bioeksen-sds" / "skills"
 README = ROOT / "README.md"
-MINT_SCRIPT = SKILLS / "sds-commit" / "scripts" / "mint_change_id.py"
 CODE_PREFIXES = SKILLS / "sds-logging" / "references" / "code-prefixes.md"
 ERROR_CODES = SKILLS / "sds-logging" / "references" / "error-codes.md"
 AUTH_SKILL = SKILLS / "sds-auth" / "SKILL.md"
-AGGREGATOR = SKILLS / "sds-logging" / "references" / "aggregator-api.md"
 SERVICE_CALLS = SKILLS / "sds-api-design" / "references" / "service-calls.md"
 OPENAPI = SKILLS / "sds-api-design" / "references" / "openapi.yaml"
-AGGREGATOR_YAML = SKILLS / "sds-logging" / "references" / "aggregator-api.yaml"
-SCHEMAS = (OPENAPI, AGGREGATOR_YAML)
+SCHEMAS = (OPENAPI,)
 LOG_RECORD = SKILLS / "sds-logging" / "references" / "log-record.md"
 LOGGING_SKILL = SKILLS / "sds-logging" / "SKILL.md"
 STANDARD_ENDPOINTS = SKILLS / "sds-api-design" / "references" / "standard-api-endpoints.md"
@@ -71,8 +67,6 @@ SELECT_ROW = re.compile(r"^\|\s*\d+\s*\|\s*.+?\s*\|\s*`([A-Z0-9-]+)`\s*\|\s*$", 
 AUTH_ROW = re.compile(r"^\|\s*\d+\s*\|\s*.+?\s*\|\s*`([A-Z0-9-]+)`\s*\|\s*\d{3}\s*\|\s*$", re.M)
 # `| `4100-4149` | 401 | Missing or invalid credential |` — the range table.
 RANGE_ROW = re.compile(r"^\|\s*`(\d{4})-(\d{4})`\s*\|\s*(\d{3})\s*\|", re.M)
-# '## `POST HOST/api/v1/logs`' — an aggregator endpoint heading.
-AGG_PATH = re.compile(r"^##\s+`(?:GET|POST|PUT|PATCH|DELETE)\s+HOST(/\S*?)`\s*$", re.M)
 # `| `5500-5999` | 503 | Yes |` — the retry classification.
 RETRY_ROW = re.compile(r"^\|\s*`(\d{4})-(\d{4})`\s*\|\s*(\d{3})\s*\|\s*(Yes|No)\s*\|", re.M)
 # `AUTH-4100` anywhere in running text: an error code, by its format alone.
@@ -91,7 +85,7 @@ TICKED_PATH = re.compile(
 LINK = re.compile(r"\]\(([^)\s]+)\)")
 # The same paths as they appear in plain YAML description text.
 PLAIN_PATH = re.compile(r"(?<![\w./-])((?:[\w-]+/)*[\w-]+\.(?:md|yaml))\b")
-# "... whose roles hold logs.write." — the role a security scheme requires.
+# "... whose roles hold operator." — the role a security scheme requires.
 SCHEME_ROLE = re.compile(r"roles hold ([\w-]+(?:\.[\w-]+)*)")
 HTTP_METHODS = {"get", "put", "post", "delete", "patch", "head", "options", "trace"}
 # `---\nname: ...\n---` — the frontmatter block that decides when a skill loads.
@@ -213,7 +207,7 @@ def main() -> int:
         elif expected != http:
             fail("invariant 3", f"{code} is documented as {http}, range table says {expected}")
 
-    # 4. The five standard endpoints are unversioned; every other path is not.
+    # 4. The schema defines exactly the five standard endpoints, unversioned.
     paths = set(spec["paths"])
     if paths != STANDARD_PATHS:
         for extra in sorted(paths - STANDARD_PATHS):
@@ -221,22 +215,6 @@ def main() -> int:
                                 "the five unversioned standard endpoints")
         for missing in sorted(STANDARD_PATHS - paths):
             fail("invariant 4", f"openapi.yaml no longer defines {missing}")
-    agg = yaml.safe_load(read(AGGREGATOR_YAML))
-    # The aggregator is documented in prose beside its schema. `:recordId` in
-    # the prose is `{recordId}` in the schema; same endpoint.
-    documented_paths = set()
-    for prose, schema, doc in ((AGGREGATOR, AGGREGATOR_YAML, agg),):
-        documented = {re.sub(r":(\w+)", r"{\1}", p) for p in AGG_PATH.findall(read(prose))}
-        documented_paths |= documented
-        if not documented:
-            fail("invariant 4", f"no endpoint headings found in {prose.name}")
-        for path in documented | set(doc["paths"]):
-            if not re.match(r"^/api/v\d+/", path):
-                fail("invariant 4", f"{prose.stem} endpoint {path} is app-specific and "
-                                    "must be served under /api/v{major}/")
-        if documented != set(doc["paths"]):
-            fail("invariant 4", f"{prose.name} documents {sorted(documented)}, "
-                                f"{schema.name} defines {sorted(doc['paths'])}")
 
     # 5. Retryable is exactly the 503 range, non-retryable exactly the 500 range.
     retry = {(int(a), int(b), int(h)): yes == "Yes"
@@ -251,7 +229,7 @@ def main() -> int:
             fail("invariant 5", f"service-calls.md calls {lo}-{hi} ({http}) {verb}")
 
     # 6. Every $ref in every schema file resolves, across files as well as within.
-    loaded = {OPENAPI: spec, AGGREGATOR_YAML: agg}
+    loaded = {OPENAPI: spec}
     refs = 0
     for source in SCHEMAS:
         for ref in iter_refs(loaded[source]):
@@ -341,26 +319,8 @@ def main() -> int:
             if got != expected:
                 fail("invariant 8", f"{where} lists {name} values {got}, "
                                     f"openapi.yaml {schema} has {expected}")
-    # The aggregator's retention table groups the same values: every type once
-    # down its first column, and every severity but DEBUG, which never reaches
-    # the aggregator, once across its header.
-    retention = [cells(row) for row in section(read(AGGREGATOR), "Retention").splitlines()
-                 if row.startswith("|")]
-    retained = {
-        "type": ([value for row in retention[2:] for value in ticked(row[0])],
-                 spec["components"]["schemas"]["LogType"]["enum"]),
-        "severity": ([value for cell in (retention[0][1:] if retention else [])
-                      for value in ticked(cell)],
-                     [s for s in spec["components"]["schemas"]["Severity"]["enum"]
-                      if s != "DEBUG"]),
-    }
-    for name, (got, expected) in retained.items():
-        if sorted(got) != sorted(expected) or len(got) != len(set(got)):
-            fail("invariant 8", f"aggregator-api.md's Retention table covers {name} "
-                                f"values {got}; it must name each of {expected} once")
-    # The outbox table says what happens to a record at each severity before
-    # the aggregator stores it: when it may be removed, and whether it may be
-    # dropped. It names every severity once, DEBUG included, so a new severity
+    # The outbox table says what happens to a record at each severity: when it
+    # may be removed, and whether it may be dropped. It names every severity once, DEBUG included, so a new severity
     # cannot arrive without a rule for whether the outbox may lose it.
     outbox = [cells(row) for row in section(record, "The outbox").splitlines()
               if row.startswith("|")]
@@ -369,20 +329,19 @@ def main() -> int:
     if sorted(held) != sorted(severities) or len(held) != len(set(held)):
         fail("invariant 8", f"log-record.md's outbox table covers severity values {held}; "
                             f"it must name each of {severities} once")
-    # Without an aggregator the outbox is the archive, and its table groups
-    # the values as the aggregator's Retention table does: every type once
-    # down its first column, and every severity, DEBUG included, once across.
-    local = [cells(row) for row in section(record, "Without an aggregator").splitlines()
-             if row.startswith("|")]
+    # The retention table groups the same values: every type once down its
+    # first column, and every severity, DEBUG included, once across its header.
+    retention = [cells(row) for row in section(record, "Retention").splitlines()
+                 if row.startswith("|")]
     kept = {
-        "type": ([value for row in local[2:] for value in ticked(row[0])],
+        "type": ([value for row in retention[2:] for value in ticked(row[0])],
                  spec["components"]["schemas"]["LogType"]["enum"]),
-        "severity": ([value for cell in (local[0][1:] if local else []) for value in ticked(cell)],
-                     severities),
+        "severity": ([value for cell in (retention[0][1:] if retention else [])
+                      for value in ticked(cell)], severities),
     }
     for name, (got, expected) in kept.items():
         if sorted(got) != sorted(expected) or len(got) != len(set(got)):
-            fail("invariant 8", f"log-record.md's Without an aggregator table covers {name} "
+            fail("invariant 8", f"log-record.md's Retention table covers {name} "
                                 f"values {got}; it must name each of {expected} once")
 
     # 9. Every file one skill document names resolves once the plugin is
@@ -461,34 +420,22 @@ def main() -> int:
     for stray in sorted(readme_skills - skill_dirs):
         fail("invariant 12", f"README.md's Skills table names {stray!r}, which is not a skill")
 
-    # 13. The Change-Id format is written once in code, in the script that
-    # mints it. The aggregator's ChangeId pattern restates it for validators,
-    # so the two are compared, Python's named groups aside.
-    loader = importlib.util.spec_from_file_location("mint_change_id", MINT_SCRIPT)
-    minting = importlib.util.module_from_spec(loader)
-    loader.loader.exec_module(minting)
-    minted = re.sub(r"\(\?P<\w+>", "(", minting.CHANGE_ID.pattern)
-    stated = agg["components"]["schemas"].get("ChangeId", {}).get("pattern")
-    if stated != minted:
-        fail("invariant 13", f"aggregator-api.yaml's ChangeId pattern is {stated!r}; "
-                             f"mint_change_id.py mints {minted!r}")
-
-    # 14. sds-auth's Requirements by endpoint table restates every endpoint
+    # 13. sds-auth's Requirements by endpoint table restates every endpoint
     # the schemas define, with the principal each requires. A reader protects
     # an endpoint from that table, so an endpoint missing from it, or listed
     # with another principal, is one protected differently from its schema.
     # A security scheme's principal is the role its description says the
     # credential's roles hold; an empty security list is "None".
     schemes = {}
-    for source, doc in ((OPENAPI, spec), (AGGREGATOR_YAML, agg)):
+    for source, doc in ((OPENAPI, spec),):
         for name, scheme in doc["components"]["securitySchemes"].items():
             held = SCHEME_ROLE.search(" ".join(scheme.get("description", "").split()))
             if not held:
-                fail("invariant 14", f"{source.name}: security scheme {name} names no role "
+                fail("invariant 13", f"{source.name}: security scheme {name} names no role "
                                      "its credential's roles hold")
             schemes[(source, name)] = held.group(1) if held else name
     defined = {}
-    for source, doc in ((OPENAPI, spec), (AGGREGATOR_YAML, agg)):
+    for source, doc in ((OPENAPI, spec),):
         for path, item in doc["paths"].items():
             for method, operation in item.items():
                 if method in HTTP_METHODS:
@@ -504,16 +451,16 @@ def main() -> int:
             endpoint = re.sub(r":(\w+)", r"{\1}", endpoint.replace("HOST/", "/"))
             listed[endpoint] = roles
     if not listed:
-        fail("invariant 14", "no Requirements by endpoint table found in sds-auth/SKILL.md")
+        fail("invariant 13", "no Requirements by endpoint table found in sds-auth/SKILL.md")
     for endpoint in sorted(defined.keys() - listed.keys()):
-        fail("invariant 14", f"sds-auth's Requirements by endpoint table has no row for "
+        fail("invariant 13", f"sds-auth's Requirements by endpoint table has no row for "
                              f"{endpoint}, which a schema defines")
     for endpoint in sorted(listed.keys() - defined.keys()):
-        fail("invariant 14", f"sds-auth's Requirements by endpoint table lists {endpoint}, "
+        fail("invariant 13", f"sds-auth's Requirements by endpoint table lists {endpoint}, "
                              "which no schema defines")
     for endpoint in sorted(defined.keys() & listed.keys()):
         if defined[endpoint] != listed[endpoint]:
-            fail("invariant 14", f"sds-auth lets {sorted(listed[endpoint]) or 'anyone'} call "
+            fail("invariant 13", f"sds-auth lets {sorted(listed[endpoint]) or 'anyone'} call "
                                  f"{endpoint}; its schema lets "
                                  f"{sorted(defined[endpoint]) or 'anyone'}")
 
@@ -543,10 +490,10 @@ def main() -> int:
     print(f"OK - sds-auth restates steps 1-{len(auth)} in the same order, and the "
           f"{len(db_rows)} database failures name each step's own code")
     print("OK - every code's HTTP status matches the range table")
-    print(f"OK - the {len(STANDARD_PATHS)} standard endpoints are unversioned and "
-          f"the {len(documented_paths)} aggregator paths are not")
+    print(f"OK - the schema defines exactly the {len(STANDARD_PATHS)} standard endpoints, "
+          "unversioned")
     print("OK - retryable codes are exactly the 503 range, per error-codes.md")
-    print(f"OK - all {refs} $refs across {len(SCHEMAS)} schema files resolve")
+    print(f"OK - all {refs} $refs in the schema resolve")
     print("OK - manifests parse and agree on the plugin version, and the project "
           "template pins it")
     print("OK - severity and type values agree across log-record.md, sds-logging, "
@@ -556,7 +503,6 @@ def main() -> int:
     print("OK - the contract tests name only registered codes, cover every validation "
           "step, and pair each code with its status; the exemptions are listed once")
     print(f"OK - README.md's Skills table lists exactly the {len(skill_dirs)} skills")
-    print("OK - the aggregator's ChangeId pattern is the one mint_change_id.py mints")
     print(f"OK - sds-auth lists the {len(defined)} endpoints the schemas define, each with "
           "the principal its schema requires")
     print("OK - every skill's frontmatter names its directory and has a description")
