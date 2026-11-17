@@ -5,7 +5,8 @@ description: BioEksen logging and error code conventions. Use when adding log st
 
 # Logging and Error Codes
 
-Every BioEksen app emits logs to the shared log aggregator and identifies its
+Every BioEksen app writes log records in one format, to its own outbox and,
+where the project has one, to the shared log aggregator, and identifies its
 failures with error codes. Both are cross-service contracts: an operator
 filtering the aggregator, and a client handling an API error, depend on every
 app behaving identically.
@@ -38,9 +39,10 @@ already visible in the `ACCESS` log.
 
 ## What MUST NOT be logged
 
-The aggregator is shared across apps and retained. A secret written to it is
-leaked to every operator and every backup. `SECURITY` records are kept for a
-year and `AUDIT` records forever, so a secret written into one outlives every
+The aggregator is shared across apps and retained, and without one the app's
+outbox keeps records as long. A secret written to either is leaked to every
+operator and every backup. `SECURITY` records are kept for a year and `AUDIT`
+records forever, so a secret written into one outlives every
 rotation of it.
 
 - Passwords, tokens, API keys, session IDs, or `Authorization` header contents
@@ -113,14 +115,17 @@ be added to a record after it is written. Emit both from the first version.
 
 ## Transport
 
-The aggregator is the only remote destination for an app's log records. An
-app MUST NOT write to a shared log store, a hosted logging service, or any
-other remote backend.
+Whether the project has a log aggregator is its `.bioeksen/log-aggregator`,
+per `sds-project/SKILL.md`. Where it has one, the aggregator is the only
+remote destination for an app's log records; where it has none, a record
+never leaves the app, and its outbox is the archive, per **Without an
+aggregator** in `references/log-record.md`. Either way, an app MUST NOT write
+to a shared log store, a hosted logging service, or any other remote backend.
 
 Two local destinations sit beside it, and neither is an integration point:
 
-- An app MUST write every record first to its outbox, and submit it from
-  there, per **The outbox** in `references/log-record.md`: an audit outbox in
+- An app MUST write every record first to its outbox, and, with an
+  aggregator, submit it from there, per **The outbox** in `references/log-record.md`: an audit outbox in
   the app's own database, written in the transaction of the change each
   `AUDIT` record describes, and a record outbox on the app's own volume for
   every other record. Together they are the app's local store: what
@@ -137,7 +142,8 @@ forwarder, or grow a query layer without any app, in any language, changing a
 line. An app that bypasses it converts one integration point into one per app
 — the duplication this repository exists to prevent.
 
-A binding takes the aggregator's address from `AGGREGATOR_URL`, the record
+A binding takes the aggregator's address, when there is one, from
+`AGGREGATOR_URL`, the record
 outbox's path from `LOG_OUTBOX_PATH`, and its bound from `LOG_OUTBOX_BOUND`
 (default 100,000). The audit outbox needs no setting of its own: it is a table
 in the app's own database.

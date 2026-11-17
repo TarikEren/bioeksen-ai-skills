@@ -270,8 +270,8 @@ is already answered whenever storage or tooling changes.
 
 ## The outbox
 
-An app writes every record first to its **outbox**, and submits it to the
-aggregator from there. The outbox is the app's own store: what its
+An app writes every record first to its **outbox**, and, when the project
+has an aggregator, submits it from there. The outbox is the app's own store: what its
 `GET /api/admin/logs` reads, per
 `sds-api-design/references/standard-api-endpoints.md`, and what an operator
 falls back on when the aggregator is unreachable or its records are in doubt.
@@ -282,7 +282,7 @@ falls back on when the aggregator is unreachable or its records are in doubt.
 | `INFO`, `WARNING` | Stored or refused, and 7 days after its `timestamp` | Dropped, oldest first, while pending |
 | `ERROR`, `FATAL` | Stored or refused, and 7 days after its `timestamp` | Never dropped |
 
-A record is *pending* from the moment it is written until the aggregator
+With an aggregator, a record is *pending* from the moment it is written until the aggregator
 stores it, answering 201, or refuses it with an answer the app does not retry,
 per **Handling the aggregator's response**. A pending record is never removed
 for its age. An app MAY keep any record longer than the table says, and MUST
@@ -322,6 +322,37 @@ A background sender submits the pending records of both outboxes in batches,
 through `POST /api/v1/logs/batch` in `aggregator-api.md`, and marks each one
 stored or refused by the answer.
 
+### Without an aggregator
+
+When the project's `.bioeksen/log-aggregator` is `none`, per
+`sds-project/SKILL.md`, nothing is submitted and no record is ever pending:
+the outbox is the records' archive. It keeps each as the aggregator would,
+less what needs the aggregator's groups:
+
+| Type | `DEBUG` | `INFO` | `WARNING` | `ERROR`, `FATAL` |
+|------|---------|--------|-----------|------------------|
+| `APP`, `JOB`, `ACCESS` | 7 days | 7 days | 7 days | 90 days |
+| `SECURITY` | 7 days | 1 year | 1 year | 1 year |
+| `AUDIT` | — | Forever | Forever | Forever |
+
+- A window runs from the record's `timestamp`. Forever means never removed
+  and never dropped.
+- Over `LOG_OUTBOX_BOUND`, the oldest records kept 7 days are dropped first;
+  no other record ever is. The drop is recorded once, as a `WARNING` record
+  with no code and `dropped=` in its tail: `LOG-5500` would say the
+  aggregator is unavailable, and there is none.
+- `GET /api/admin/logs` reads every record still kept, and never clamps its
+  `startDate`, as the aggregator never clamps its own.
+- Groups, alerts and the audit chain are the aggregator's, per
+  `aggregator-api.md`. Without one, a person reads the outbox, and an `AUDIT`
+  record is protected by the app's database alone.
+- **When an aggregator is added**, `AGGREGATOR_URL` is set and every record
+  written from then on is pending. The `AUDIT` records already kept are
+  submitted too, oldest first, so the archive holds every one; nothing else
+  written before is.
+- **When it is removed**, the sender stops, and every record still kept stays
+  as this table says.
+
 ## Emission rules
 
 - Logging MUST NOT fail the operation being logged, with one exception: an
@@ -351,7 +382,8 @@ stored or refused by the answer.
 
 ### Handling the aggregator's response
 
-What an app does next is decided by the status alone:
+This applies when the project has an aggregator. What an app does next is
+decided by the status alone:
 
 | Response | Means | The app |
 |----------|-------|---------|

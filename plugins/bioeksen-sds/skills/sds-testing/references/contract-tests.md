@@ -144,6 +144,10 @@ it logs and what it calls.
 | Aggregator down | An unreachable aggregator | A request is handled | It succeeds, and no slower than with the aggregator up | `sds-logging/references/log-record.md` |
 | Malformed record | An aggregator that answers 400 | The submission is handled | It is not retried, and the app records `LOG-4000` locally | `sds-logging/references/log-record.md` |
 | Aggregator unavailable | An aggregator that answers 503 | Records keep coming | They stay pending in the outbox, and are retried behind the breaker | `sds-logging/references/log-record.md` |
+| Nothing submitted | A project without an aggregator | Records are written | No submission is attempted, and no `LOG-5000` or `LOG-5500` record is written | `sds-logging/references/log-record.md` |
+| The outbox as the archive | A project without an aggregator, and a `SECURITY` `WARNING` record | 8 days pass | It is still kept, until a year after its `timestamp` | `sds-logging/references/log-record.md` |
+| Not clamped without an aggregator | A project without an aggregator, and an `AUDIT` record a year old | `GET /api/admin/logs` is called with a `startDate` before it | The record is returned | `sds-api-design/references/standard-api-endpoints.md` |
+| Aggregator added | A project without an aggregator, keeping `AUDIT` and `INFO` records | An aggregator is added | Its `AUDIT` records are submitted, oldest first, and its `INFO` records are not | `sds-logging/references/log-record.md` |
 | Delivered before a run ends | A component that runs only inside jobs, with pending records | Its run ends | It has submitted them first, and any the aggregator did not store are still in the outbox on the runner host | `sds-api-design/references/standard-api-endpoints.md` |
 | Left over, sent first | Records an earlier run left pending on the runner host | The next run starts | They are submitted before that run's own records | `sds-api-design/references/standard-api-endpoints.md` |
 | Batch rejected | A batch answered 400 naming two records | The app resubmits | Without those two, under a new `Idempotency-Key` | `sds-logging/references/aggregator-api.md` |

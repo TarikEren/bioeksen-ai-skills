@@ -1,7 +1,10 @@
 # Log Aggregator API
 
-The log aggregator collects and serves logs from every BioEksen app. Its host
-is denoted `HOST`.
+The log aggregator collects and serves logs from every BioEksen app of a
+project whose `.bioeksen/log-aggregator` is `present`, per
+`sds-project/SKILL.md`. Its host is denoted `HOST`. A project without one
+keeps its records in each app's outbox, per **Without an aggregator** in
+`log-record.md`, and nothing in this document applies to it.
 
 `aggregator-api.yaml` beside this file is the normative OpenAPI 3.1 definition
 of these endpoints. This document is the rationale layer; where the two

@@ -374,6 +374,21 @@ def main() -> int:
     if sorted(held) != sorted(severities) or len(held) != len(set(held)):
         fail("invariant 8", f"log-record.md's outbox table covers severity values {held}; "
                             f"it must name each of {severities} once")
+    # Without an aggregator the outbox is the archive, and its table groups
+    # the values as the aggregator's Retention table does: every type once
+    # down its first column, and every severity, DEBUG included, once across.
+    local = [cells(row) for row in section(record, "Without an aggregator").splitlines()
+             if row.startswith("|")]
+    kept = {
+        "type": ([value for row in local[2:] for value in ticked(row[0])],
+                 spec["components"]["schemas"]["LogType"]["enum"]),
+        "severity": ([value for cell in (local[0][1:] if local else []) for value in ticked(cell)],
+                     severities),
+    }
+    for name, (got, expected) in kept.items():
+        if sorted(got) != sorted(expected) or len(got) != len(set(got)):
+            fail("invariant 8", f"log-record.md's Without an aggregator table covers {name} "
+                                f"values {got}; it must name each of {expected} once")
 
     # 9. Every file one skill document names resolves once the plugin is
     # installed: from the skills root, beside the naming file, or from the

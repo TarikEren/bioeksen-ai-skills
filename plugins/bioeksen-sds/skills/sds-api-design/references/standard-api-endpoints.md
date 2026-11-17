@@ -401,7 +401,11 @@ the aggregator. And an `AUDIT`, `ERROR` or `FATAL` record the aggregator has
 not yet stored stays here past the window until it has, per the same
 document.
 
-A `startDate` earlier than the window MUST be clamped to the start of it rather
+Without an aggregator the outbox keeps records longer, per **Without an
+aggregator** in `sds-logging/references/log-record.md`, and this endpoint
+reads every one still kept: its `startDate` is then never clamped.
+
+With an aggregator, a `startDate` earlier than the window MUST be clamped to the start of it rather
 than rejected, and `filterParams` MUST echo the clamped value. A 400 would make
 a caller guess a boundary it was never told, and the guess goes stale the next
 time the window changes.
@@ -530,7 +534,7 @@ after, so the endpoint takes no credential. Three rules keep it the app's own:
   `error`, from their ends.
 - Nothing else about the user is recorded: no address, no user agent, and no
   page state.
-- Reports are grouped like any failure, per **Groups** in
+- Where the project has an aggregator, reports are grouped like any failure, per **Groups** in
   `sds-logging/references/aggregator-api.md`, so a page that fails for every
   user is one group, not a record per user. Noise from browser extensions and
   old browsers is closed as `close:external`.
