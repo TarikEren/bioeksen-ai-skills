@@ -84,7 +84,7 @@ one is normative and the other says so:
 | Aggregator endpoint schemas | `sds-logging/references/aggregator-api.yaml` — the markdown beside it is rationale |
 | The roles and the company roles | `sds-auth/references/credentials.md`, its **Roles** and **Company roles** tables |
 | The test rule, the test order and its exemptions | `sds-testing/SKILL.md` — `sds-commit/SKILL.md` defines only the trailer that names an exemption |
-| A project's facts: the files under `.bioeksen/`, their values, and when they are asked | `sds-project/SKILL.md` — the software id's format and allocation stay in `sds-logging/references/log-record.md` |
+| A project's facts and services: the files under `.bioeksen/`, their values and fields, and when they are asked | `sds-project/SKILL.md` — the software id's format and allocation stay in `sds-logging/references/log-record.md` |
 | The comment limits: 5 lines a block, 30 words a line | `sds-project/SKILL.md`, its **Comments** section |
 | Configuration: one module, validation before ready, declared values, secrets | `sds-config/SKILL.md` — the variable names are fixed where their values are defined: `LOG_LEVEL` and the transport's in `sds-logging/SKILL.md`, the authentication values' in `sds-auth/references/credentials.md`; and `sds-logging/references/log-record.md` keeps the software id out of configuration |
 | Contract test cases | `sds-testing/references/contract-tests.md` — each case restates one assertion; its code, status or field stays normative in the source the case names |

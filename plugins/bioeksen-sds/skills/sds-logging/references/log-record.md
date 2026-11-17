@@ -324,8 +324,8 @@ stored or refused by the answer.
 
 ### Without an aggregator
 
-When the project's `.bioeksen/log-aggregator` is `none`, per
-`sds-project/SKILL.md`, nothing is submitted and no record is ever pending:
+When the project's `/.bioeksen/services/log-aggregator.md` says `not used`,
+per `sds-project/SKILL.md`, nothing is submitted and no record is ever pending:
 the outbox is the records' archive. It keeps each as the aggregator would,
 less what needs the aggregator's groups:
 

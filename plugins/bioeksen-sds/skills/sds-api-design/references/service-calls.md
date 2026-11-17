@@ -2,7 +2,9 @@
 
 This document is the calling side. `standard-api-endpoints.md` says what an app
 must serve; this says what it must do when it calls another app and that call
-goes wrong.
+goes wrong. It holds for a call to any service the project relies on, per
+**Services** in `sds-project/SKILL.md`, with the limits that service's
+`Interface` documents.
 
 The error codes `UP-5500`, `UP-5501` and `UP-5000` name the ways an outbound
 call fails. Everything here is about what a caller does next.

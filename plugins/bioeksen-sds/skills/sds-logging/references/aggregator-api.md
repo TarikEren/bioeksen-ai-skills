@@ -1,7 +1,7 @@
 # Log Aggregator API
 
 The log aggregator collects and serves logs from every BioEksen app of a
-project whose `.bioeksen/log-aggregator` is `present`, per
+project whose `/.bioeksen/services/log-aggregator.md` says `used`, per
 `sds-project/SKILL.md`. Its host is denoted `HOST`. A project without one
 keeps its records in each app's outbox, per **Without an aggregator** in
 `log-record.md`, and nothing in this document applies to it.

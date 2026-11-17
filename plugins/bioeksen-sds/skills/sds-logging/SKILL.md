@@ -115,9 +115,10 @@ be added to a record after it is written. Emit both from the first version.
 
 ## Transport
 
-Whether the project has a log aggregator is its `.bioeksen/log-aggregator`,
-per `sds-project/SKILL.md`. Where it has one, the aggregator is the only
-remote destination for an app's log records; where it has none, a record
+Whether the project has a log aggregator is its
+`/.bioeksen/services/log-aggregator.md`, per `sds-project/SKILL.md`. Where it
+has one, the aggregator is the only remote destination for an app's log
+records; where it has none, a record
 never leaves the app, and its outbox is the archive, per **Without an
 aggregator** in `references/log-record.md`. Either way, an app MUST NOT write
 to a shared log store, a hosted logging service, or any other remote backend.

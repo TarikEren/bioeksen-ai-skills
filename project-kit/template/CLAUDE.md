@@ -20,8 +20,9 @@ missing or empty, ask for the id.
 
 ## Rules that are easy to break
 
-- Before the first change, read the project's facts under `.bioeksen/`, per
-  the `sds-project` skill, and ask for any that is missing.
+- Before the first change, read the project's facts and services under
+  `.bioeksen/`, per the `sds-project` skill, and ask for any that is missing.
+  Rely on no service the project has not recorded as used.
 - Follow the project's test order, `.bioeksen/test-order`, per the
   `sds-testing` skill: no behaviour changes without a test seen failing for
   the missing behaviour and passing after it. A `feat` or `fix`
