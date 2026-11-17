@@ -693,7 +693,7 @@ components:
           type: string
           maxLength: 8192
           pattern: '^[^\r\n]*$'
-          # The reserved user key names a person by the Entra oid alone, as
+          # The reserved user key names a person by their principal key alone, as
           # the token carries it. An email or a name under it would be kept
           # forever in an AUDIT record nobody may delete, so a record carrying
           # one is refused rather than stored.
@@ -702,7 +702,7 @@ components:
           description: >-
             Prose followed by a logfmt tail, on one line and at most 8192
             characters. Never repeats the error code. A user= value is the
-            person's Entra oid, in lowercase, per
+            person's principal key, a lowercase UUID, per
             sds-logging/references/log-record.md.
       # A record describing a failure names it: ERROR and FATAL carry a code.
       if:

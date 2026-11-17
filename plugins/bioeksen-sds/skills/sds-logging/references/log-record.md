@@ -156,7 +156,7 @@ dashboard or a runbook can rely on the name. Any other key is the app's own.
 | `request` | The request's identifier, per **Correlation** below |
 | `job` | A background run's identifier, in place of `request` |
 | `op` | The operation the record belongs to, from a bounded set the app's binding defines |
-| `user` | The person concerned, by the Entra `oid` their token carries, in lowercase. Never a name, an email or a UPN |
+| `user` | The person concerned, by the principal key their token carries, a lowercase UUID: Entra's `oid`, or Keycloak's `sub`, per `sds-auth/references/credentials.md`. Never a name, an email or a UPN |
 | `attempt` | Which attempt of a retried outbound call this is, counting from 1 |
 | `error` | A failure's own text where it says more than its code's meaning, written `Name: message`: the error's name, then an exception's message or a driver's error |
 | `cause` | The errors beneath that one, outermost first, each written `Name: message` and joined by ` <- ` |
@@ -169,7 +169,7 @@ templates, never from the values a request carries, so a route is
 Each stack skill lists the values its binding sets; a Next.js app's are in
 `sds-nextjs-backend/SKILL.md`.
 
-`user` names a person by the oid alone. The oid identifies nobody once the
+`user` names a person by the principal key alone. The key identifies nobody once the
 employee directory has erased the person's data, so every record naming them
 stays as written and no longer identifies anyone. A name, an email or a UPN
 would be personal data in records that nothing may delete, `AUDIT` records
@@ -178,7 +178,7 @@ altered, per **Audit records** in `aggregator-api.md`. An `AUDIT` record
 therefore names a person nowhere but under `user`: not in its prose, and not
 under another key. The schema enforces the format:
 `LogFields` in `sds-api-design/references/openapi.yaml` refuses a record whose
-`user=` value is anything but a lowercase oid, so the app's own check refuses
+`user=` value is anything but a lowercase UUID, so the app's own check refuses
 it as `LOG-4000`, and the aggregator, were it submitted, as `VAL-4006`.
 
 `error` and `cause` are where an unhandled failure says what actually broke:

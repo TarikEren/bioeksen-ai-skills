@@ -13,31 +13,31 @@ The keywords MUST, SHOULD and MAY are used as in RFC 2119.
 
 ## Where the data comes from
 
-Entra ID is the source of truth. The directory copies it every hour, through
-Microsoft Graph with read-only application permissions, and never writes to
-an Entra user. An employee is keyed by `oid` with `tid`, never by `sub`, per
-**Required claims** in `credentials.md`.
+The identity provider is the source of truth. The directory copies it every
+hour, read-only: through Microsoft Graph on Entra ID, through the admin API
+on Keycloak. It never writes to a user there. An employee is keyed by
+`userId`, their principal key, per **Required claims** in `credentials.md`.
 
 | Field | Holds |
 |-------|-------|
-| `oid`, `tid` | The employee's object id and tenant: the key, the same in every app |
-| `displayName`, `email`, `department` | From Entra. `null` once the employee's data is erased |
-| `state` | `active` when the account can sign in, `disabled` when Entra has blocked or removed it, `erased` when the person's data was erased |
+| `userId` | The employee's principal key: the key, the same in every app |
+| `displayName`, `email`, `department` | From the identity provider. `null` once the employee's data is erased |
+| `state` | `active` when the account can sign in, `disabled` when the identity provider has blocked or removed it, `erased` when the person's data was erased |
 | `roles` | The company roles the employee holds now, per **Company roles** in `credentials.md` |
 
 One store means one answer. Two apps each keeping a copy of who an employee is
 disagree the day the copies drift, and a person who leaves keeps a role in
-every copy nobody updated. The directory follows Entra, so the action that
+every copy nobody updated. The directory follows the identity provider, so the action that
 removes a person's account removes them here within the hour.
 
 ## Erasure
 
 When a person's data must be erased, the directory anonymises their personal
 fields in place: `displayName`, `email` and `department` become `null`, they
-hold no role, and their `state` is `erased`. Their `oid` and `tid` remain, so
-`GET HOST/api/v1/employees/:oid` still finds them.
+hold no role, and their `state` is `erased`. Their `userId` remains, so
+`GET HOST/api/v1/employees/:userId` still finds them.
 
-Their `oid` is also what every log record names them by, per
+Their `userId` is also what every log record names them by, per
 `sds-logging/references/log-record.md`, and an `AUDIT` record is never altered,
 per `sds-logging/references/aggregator-api.md`. Erasing the directory entry is
 therefore enough: every record stays exactly as written, and no longer
@@ -46,7 +46,7 @@ identifies anyone.
 ## An app's own users
 
 An app that kept users of its own keeps them as a profile table keyed by
-`oid`, holding only what the app itself needs about a person: its existing
+`userId`, holding only what the app itself needs about a person: its existing
 foreign keys keep working. The table holds no password, because employees sign
 in with their Microsoft accounts, and no role, because the token carries the
 company roles. Neither is copied from the directory.
@@ -54,7 +54,7 @@ company roles. Neither is copied from the directory.
 ## `GET HOST/api/v1/employees`
 
 Returns the employees, paged as every list is, per
-`sds-api-design/references/app-endpoints.md`, and ordered by `oid`, which
+`sds-api-design/references/app-endpoints.md`, and ordered by `userId`, which
 gives the total order paging needs.
 
 | Parameter | Type | Default | Notes |
@@ -73,8 +73,7 @@ gives the total order paging needs.
     "totalCount": 1,
     "employees": [
         {
-            "oid": "0b2f6c1e-8a43-4d7e-9c15-6f0e2a7b9d31",
-            "tid": "6a1d4f02-93b7-4c5e-8e20-1f7c3d9b4a65",
+            "userId": "0b2f6c1e-8a43-4d7e-9c15-6f0e2a7b9d31",
             "displayName": "Deniz Örnek",
             "email": "deniz.ornek@example.com",
             "department": "Quality Control",
@@ -98,7 +97,7 @@ gives the total order paging needs.
 | 500 | The query failed |
 | 503 | Not ready |
 
-## `GET HOST/api/v1/employees/:oid`
+## `GET HOST/api/v1/employees/:userId`
 
 Returns one employee, with `"status": "ok"` beside their fields, per
 `sds-api-design/references/app-endpoints.md`. An erased employee is found,
@@ -109,7 +108,7 @@ with their personal fields `null`.
 | 200 | Found |
 | 401 | No credential, or one that does not validate |
 | 403 | Authenticated, but neither an app holding `employees.read` nor an operator — `PERM-4150` |
-| 404 | No employee has that `oid` — `RES-4200` |
+| 404 | No employee has that `userId` — `RES-4200` |
 | 429 | Over the caller's allowance — `RATE-4400`, carrying `Retry-After` |
 | 500 | The query failed |
 | 503 | Not ready |

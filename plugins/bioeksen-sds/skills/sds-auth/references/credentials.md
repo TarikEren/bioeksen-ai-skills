@@ -3,6 +3,12 @@
 Token format, claims and lifetimes for the three principals defined in
 `SKILL.md`, and the roles they hold.
 
+The identity provider is the project's `.bioeksen/identity-provider`, per
+`sds-project/SKILL.md`: `entra-id` or `keycloak`. This document holds what
+every provider must give; `entra-id.md` and `keycloak.md` beside it say how
+each does: its issuer, its claim names, its principal key, and how a role
+reaches a token.
+
 ## Format
 
 Every credential is a JWT, signed (never `alg: none`, never symmetric
@@ -13,63 +19,42 @@ reason that the specs already depend on: `AUTH-4102` requires distinguishing
 
 ## Issuer
 
-Tokens are issued by **Microsoft Entra ID**, from one tenant, for every
-principal type.
+Tokens are issued by the identity provider, from one tenant or realm, for
+every principal type. Operator identity, MFA, conditional access and
+offboarding then arrive with the directory rather than being built, and
+someone who leaves loses their tokens by the same action that removes their
+account — the part of an identity system that is hardest to get right and
+easiest to forget.
 
-Entra was chosen because BioEksen operators already have managed accounts in
-it. Operator identity, MFA, conditional access and offboarding arrive with the
-directory rather than being built, and someone who leaves loses their tokens by
-the same action that removes their mailbox — which is the part of an identity
-system that is hardest to get right and easiest to forget.
+One issuer at a time. A verifier that accepts either of two issuers has twice
+the surface and an `iss` check that no longer means anything.
 
-| Value | Form |
-|-------|------|
-| `iss` | `https://login.microsoftonline.com/{tenantId}/v2.0` |
-| Discovery | `{iss}/.well-known/openid-configuration` |
-| Signing keys | `https://login.microsoftonline.com/{tenantId}/discovery/v2.0/keys` |
-| `aud` | The receiving app's Application ID URI, e.g. `api://logs-aggregator` |
+Every app is registered once with the provider, under its software id,
+allocated per `sds-logging/references/log-record.md`. A caller asks for a
+token for the app it is about to call, so `aud` names the receiving app, as
+the claims table requires, without any app arranging it. Naming the
+registration after the software id also lets anything that reads the
+registrations derive which client id belongs to which software id: the
+aggregator needs exactly that mapping to refuse a record submitted under
+another app's `id`, per `sds-logging/references/aggregator-api.md`.
 
-Every app is registered once, with the Application ID URI `api://{software-id}`
-— its software id, allocated per `sds-logging/references/log-record.md`. A
-caller asks for a token for the app it is about to call, using the client
-credentials grant and the scope `api://{that app}/.default`. That is what makes
-`aud` name the receiving app, as the claims table requires, without any app
-arranging it.
-
-Naming the URI after the software id makes `aud` readable as an app's id, and
-lets anything with read access to the directory derive which client id
-belongs to which software id. The aggregator needs exactly that mapping to
-refuse a record submitted under another app's `id` — see
-`sds-logging/references/aggregator-api.md`.
-
-Every app's registration MUST also set:
-
-- **`requestedAccessTokenVersion: 2`**, in its manifest. A version 1 token
-  carries no `azp`, which the aggregator needs to tell which app sent a
-  record. It also names its issuer `https://sts.windows.net/{tenantId}/`, so
-  it fails the `iss` check and is refused with `AUTH-4101`.
-- **Assignment required: Yes**, on its enterprise application. Without it,
-  any account in the tenant, guests included, can sign in to the app and get
-  a token for it. With it, only the people and the apps assigned one of the
-  app's roles can, so the directory's assignments are the app's first check,
-  before any of its code runs.
+Every app's registration MUST refuse a person who holds none of the app's
+roles at sign-in, before any of its code runs, so the provider's accounts are
+not all the app's users. Each provider's reference says how.
 
 ### Principal type
 
-The claims table requires a token to say which principal it carries. Entra does
-not let an app-only token carry an arbitrary claim, so the type is **derived
-from claims Entra does emit**:
+The claims table requires a token to say which principal it carries:
 
 | Token | Principal |
 |-------|-----------|
-| `scp` absent, `roles` present | App |
-| `scp` holds the configured operator scope, and `roles` holds `operator` | Operator |
-| `scp` present otherwise | An employee: a person signed in to the app as themselves. Only the app's own endpoints accept one, per **Company roles** |
-| Neither present | Rejected, `AUTH-4101` |
+| An app-only token, from the client credentials grant | App |
+| A person's token carrying the configured operator scope, with `operator` among its roles | Operator |
+| Any other person's token | An employee: a person signed in to the app as themselves. Only the app's own endpoints accept one, per **Company roles** |
+| A token that is none of these | Rejected, `AUTH-4101` |
 
-This is the distinction the issuer itself draws between a delegated and an
-app-only token, so it cannot drift from what the issuer actually does — which a
-convention invented here could.
+Each provider's reference says which claims tell an app-only token from a
+person's, and where the scope is carried.
 
 Two claims make an operator because each answers a different question. The
 scope says the token was issued *for operator use of this app*: the person's
@@ -90,66 +75,32 @@ What an endpoint answers follows from the principal it requires:
 | Employee | An employee holding the company role the endpoint requires, or any employee when it requires none | Proceeds |
 | Employee | An employee without that role, or an app | `PERM-4150` |
 
-`scp` rather than `roles` is the discriminator because a delegated token can
-carry both: operator roles are app roles assigned to a person, and they arrive
-in the same `roles` claim an app-only token uses. That is also why `operator`
-is assignable to users only, per **Roles**: an app-only token can never carry
-it, and one that somehow did would still have no `scp`. The rule that matters
-is unchanged and still mechanically checkable: an app credential MUST NOT
-satisfy an operator requirement.
-
-### Keycloak, the documented fallback
-
-Keycloak, self-hosted, is the named alternative. It is not deployed, and it is
-not accepted in parallel: one issuer at a time. A verifier that accepts either
-of two issuers has twice the surface and an `iss` check that no longer means
-anything.
-
-Move to it if any of these turns out to hold:
-
-- App-only tokens cannot be made to carry what **Principal type** needs.
-- The access token lifetime below proves unworkable and cannot be changed.
-- Apps must authenticate somewhere Entra cannot be reached.
-
-Everything else in this document holds either way. What changes is this
-section: `iss` becomes `https://{host}/realms/{realm}`, keys move to
-`{iss}/protocol/openid-connect/certs`, and the principal type is carried by a
-literal `typ` claim from a protocol mapper instead of being derived.
+An app credential MUST NOT satisfy an operator requirement. `operator` is
+assignable to people only, per **Roles**, so an app-only token never carries
+it, and one that somehow did would still not be a person's token.
 
 ## Required claims
 
 | Claim | Meaning | Rule |
 |-------|---------|------|
 | `iss` | Issuer | MUST match the configured issuer exactly |
-| `oid` | The principal's object id | MUST be present. With `tid`, the one key a principal is stored, compared and logged under: the person's, or the calling app's service principal's |
-| `sub` | The subject | Never a key: Entra gives the same person a different `sub` in every app registration |
+| The principal key | The person's or the app's stable id | MUST be present. The one key a principal is stored, compared and logged under, the same in every app: Entra's `oid` with `tid`, Keycloak's `sub` |
 | `azp` | The calling client | MUST be present. The client id of the application the token was issued to — for an app principal, the calling app itself |
 | `aud` | Intended audience | MUST name the receiving app; a token for one service MUST NOT be accepted by another |
 | `exp` | Expiry | MUST be present; see lifetimes |
 | `iat` | Issued at | MUST NOT be in the future beyond the skew allowance |
-| `tid` | Tenant | MUST match the configured tenant |
-| `scp` / `roles` | Principal type | The type is derived from these — see **Principal type** |
+| `roles` | The roles the principal holds | A top-level array of strings: the app roles and company roles the directory assigned, per **Roles** |
+| The principal type's claims | Which principal the token carries | Per **Principal type**, in the claims the provider's reference names |
 
 The principal type is what makes "an app credential MUST NOT satisfy an
 operator requirement" checkable. Without it, that rule depends on inspecting
-`sub` formats, which is guesswork. It is a derived value rather than a claim
-named `typ` only because the issuer cannot emit one on an app-only token; the
-requirement is identical.
+the formats of ids, which is guesswork.
 
-A principal is keyed by `oid` with `tid`, never by `sub`. Entra's `sub` is
-pairwise: the same person carries a different one in every app, so a person
-keyed by it in one app is a stranger in the next, and two apps' records of
-them cannot be joined. `oid` is the same in every app of the tenant, and it is
-what `user=` carries in a log record, per
+A principal is keyed by its principal key and nothing else. A value that
+differs from one app to the next, such as Entra's `sub`, makes a person keyed
+by it in one app a stranger in the next, and two apps' records of them cannot
+be joined. The principal key is what `user=` carries in a log record, per
 `sds-logging/references/log-record.md`.
-
-`tid` and `iss` are redundant in a single-tenant configuration, which is the
-point of checking both. `iss` is a string comparison that a copied
-configuration survives intact, and `tid` is the one that fails it.
-
-`roles` is an array of strings: the app roles the directory has assigned to the
-person, or to the calling app. Which roles exist is a closed list — see
-**Roles**.
 
 ## Validation
 
@@ -166,18 +117,12 @@ Every claim above MUST be checked. In particular:
 
 | Credential | Lifetime |
 |------------|----------|
-| Both | The issuer's — on Entra, 60 to 90 minutes |
+| Every credential | The provider's, per its reference |
 
-**A lifetime MUST NOT be assumed.** Entra randomises access token lifetime
-within that range and does not expose it as a policy, so an app reads `exp` and
-works from that. Anything that hardcodes a duration will be wrong for most
-tokens and catastrophically wrong on the day the issuer changes.
-
-This document previously set 24 hours for app credentials, on the grounds that
-a failed refresh takes a service down. That is not achievable here, and on
-inspection it was not the right answer anyway: the cure for a failed refresh is
-a retry policy, not a token that stays valid for a day. Nothing implements the
-old rule yet, so nothing has to migrate.
+**A lifetime MUST NOT be assumed.** A provider may vary it, and may change it,
+so an app reads `exp` and works from that. Anything that hardcodes a duration
+will be wrong for most tokens and catastrophically wrong on the day the
+provider changes.
 
 Short lifetimes bound the damage of a leaked token — from a person's machine
 for an operator, and from a compromised host for an app. The lifetime is also
@@ -212,13 +157,12 @@ That is what "rotatable without downtime" means in practice: the issuer
 publishes a new key before signing with it, and a verifier that re-fetches on an
 unknown `kid` never sees a gap.
 
-Revoking an app credential means rotating that app's client secret or
-certificate, disabling its service principal, or removing its app role
-assignment. **None of those invalidates a token already issued.** The revocation
-window is therefore the token lifetime, up to 90 minutes. An incident that
-cannot wait that long needs the receiving app to stop accepting the `oid`
-itself — a deny list, which is a different mechanism from a credential rotation
-and belongs to whoever runs the incident.
+Revoking an app credential means rotating its client secret or certificate, or
+disabling or unassigning it at the provider. **None of those invalidates a
+token already issued.** The revocation window is therefore the token lifetime.
+An incident that cannot wait that long needs the receiving app to stop
+accepting the principal key itself — a deny list, which is a different
+mechanism from a credential rotation and belongs to whoever runs the incident.
 
 - Credentials MUST NOT be committed to a repository, baked into an image, or
   passed on a command line. They arrive as environment configuration; a
@@ -237,12 +181,12 @@ company roles in **Company roles** below:
 | `operator` | Users only | Every app's registration | Every operator endpoint in the estate: the full health report, an app's own `GET /api/admin/logs`, and the aggregator's read endpoints |
 | `logs.write` | Applications only | The aggregator's registration | Submitting log records, `POST /api/v1/logs` and `POST /api/v1/logs/batch`, and reading the codes the aggregator accepts, `GET /api/v1/codes` |
 | `monitor` | Users only | `bio-softop`'s registration | Read-only use of `bio-softop`'s own pages: health, logs, error groups, tasks, deploys and the registry. No endpoint in these specs, and no action |
-| `employees.read` | Applications only | `bio-softop`'s registration, which serves the employee directory | Reading the employee directory, `GET /api/v1/employees` and `GET /api/v1/employees/{oid}`, per `employees-api.md` |
-| `logs.resolve` | Applications only | The aggregator's registration | Moving an error group along its lifecycle with the issue that tracks it, `PUT /api/v1/groups/{groupId}/issue`, and reading a record to find its group, `GET /api/v1/logs/{recordId}`. Held by the git service's integration alone |
+| `employees.read` | Applications only | `bio-softop`'s registration, which serves the employee directory | Reading the employee directory, `GET /api/v1/employees` and `GET /api/v1/employees/{userId}`, per `employees-api.md` |
+| `logs.resolve` | Applications only | The aggregator's registration | Moving an error group along its lifecycle with the issue that tracks it, `PUT /api/v1/groups/{groupId}/issue`, and reading a record to find its group, `GET /api/v1/logs/{recordId}`. Held by the git provider's integration alone |
 
-"Assignable to" is the app role's allowed member type in the directory. It is
-what makes a user role unobtainable by an app, and the reverse, without any
-receiving app having to check.
+"Assignable to" is enforced by the provider, as its reference says, so a user
+role is unobtainable by an app, and the reverse, without any receiving app
+having to check.
 
 An app role that an app grants to its callers is named `<resource>.<action>`,
 lowercase, e.g. `logs.write`. `operator` keeps its bare name, being the one
@@ -296,20 +240,15 @@ employee is given one once, not once per app:
   specification of the first endpoint that requires it. Each is a kebab-case
   noun, taken from the roles the apps' own users tables held before the
   employee directory.
-- **Each is an Entra security group**, named `bio-role-{role}`. An employee
-  holds the role by being a member of its group, and is added once.
-- **With Entra ID P1**, every app's registration defines the company roles its
-  endpoints require as app roles, assignable to users only, and each is
-  assigned to its group once, when the app is created. Tokens then carry the
-  role names in `roles`, and no employee is ever assigned to an app by hand.
-- **Without P1**, a group cannot be assigned to an app role. The app reads an
-  employee's roles from the employee directory instead,
-  `GET /api/v1/employees/{oid}` in `employees-api.md`, as an app holding
-  `employees.read`.
+- **Each is a group at the identity provider**, named `bio-role-{role}`. An
+  employee holds the role by being a member of its group, and is added once.
+- **The provider puts the role in the token's `roles`**, from the group, as
+  its reference says. Where it cannot, the app reads an employee's roles from
+  the employee directory, `GET /api/v1/employees/{userId}` in
+  `employees-api.md`, as an app holding `employees.read`.
 
-`@bioeksen/sdk` hides which of the two is in use, so an app checks role
-names either way, and, as with every role, ignores the ones it does not
-require.
+`@bioeksen/sdk` hides where a role came from, so an app checks role names
+either way, and, as with every role, ignores the ones it does not require.
 
 | Company role | Means |
 |--------------|-------|
@@ -324,12 +263,13 @@ endpoint, so it presents the person's delegated token instead:
 - A tool the person signs in to directly, such as a CLI or a single-page app,
   obtains a token for the target app with the authorization code flow and
   PKCE, requesting that app's operator scope.
-- A server-side tool that already holds the person's token for itself exchanges
-  it for one addressed to the target app with the on-behalf-of flow, again
-  requesting the target's operator scope.
+- A server-side tool that already holds the person's token for itself
+  exchanges it for one addressed to the target app, again requesting the
+  target's operator scope, by the provider's token exchange: Entra's
+  on-behalf-of flow, or Keycloak's token exchange.
 
-Either way the token that arrives carries the person's `oid`, `scp` and
-`roles`, so the receiving app sees an operator — or refuses a person who is not
+Either way the token that arrives carries the person's principal key, scope and
+roles, so the receiving app sees an operator — or refuses a person who is not
 one — exactly as if the person had called it directly. A tool MUST NOT fall
 back to its own credential when the person's is unavailable: an app credential
 able to act as an operator is the escalation the principal rule exists to
@@ -345,21 +285,21 @@ a missing one is `CFG-5000` at startup, a present but unusable one is
 
 | Value | Variable | Required of | Purpose |
 |-------|----------|-------------|---------|
-| Tenant id | `ENTRA_TENANT_ID` | Every app | The Entra tenant, checked against `tid` |
-| Issuer | `ENTRA_ISSUER` | Every app | The exact `iss` string to compare against |
-| JWKS URI | `ENTRA_JWKS_URI` | Every app | Where signing keys are fetched |
-| JWKS cache max age | `ENTRA_JWKS_MAX_AGE_SECONDS` | Every app | How long keys are held before an unconditional refresh |
-| Audience | `ENTRA_AUDIENCE` | Every app | This app's Application ID URI — the value `aud` must equal |
-| Client id | `ENTRA_CLIENT_ID` | Every app | This app's own identity, used when it calls another app |
-| Client credential | `ENTRA_CLIENT_CERTIFICATE_PATH`, or `ENTRA_CLIENT_SECRET` | Every app | The certificate or secret backing that identity |
-| Operator scope | `ENTRA_OPERATOR_SCOPE` | Every app | The `scp` value marking a delegated token as an operator |
+| Tenant id | `AUTH_TENANT_ID` | Every app on Entra ID | The tenant, checked against `tid`, per `entra-id.md` |
+| Issuer | `AUTH_ISSUER` | Every app | The exact `iss` string to compare against |
+| JWKS URI | `AUTH_JWKS_URI` | Every app | Where signing keys are fetched |
+| JWKS cache max age | `AUTH_JWKS_MAX_AGE_SECONDS` | Every app | How long keys are held before an unconditional refresh |
+| Audience | `AUTH_AUDIENCE` | Every app | This app's identifier at the provider — the value `aud` must equal |
+| Client id | `AUTH_CLIENT_ID` | Every app | This app's own identity, used when it calls another app |
+| Client credential | `AUTH_CLIENT_CERTIFICATE_PATH`, or `AUTH_CLIENT_SECRET` | Every app | The certificate or secret backing that identity |
+| Operator scope | `AUTH_OPERATOR_SCOPE` | Every app | The scope marking a delegated token as an operator's |
 | Clock skew | `AUTH_CLOCK_SKEW_SECONDS` | Every app | 60 seconds, per **Validation** |
 | Client id to software id | — | The aggregator | Served by `bio-softop`'s registry; not configuration |
 | Employee directory | `DIRECTORY_URL` | Apps that read the employee directory | Where the directory is served, `HOST` in `employees-api.md` |
 | Trusted proxies | `TRUSTED_PROXIES` | Apps behind a proxy | The addresses whose `X-Forwarded-For` entries are believed when finding a request's source, per the rate limiting rule in `SKILL.md` |
 
-These names are fixed for every app, as `LOG_LEVEL` is, so an operator finds
-a setting under the same name everywhere.
+These names are fixed for every app and every provider, as `LOG_LEVEL` is, so
+an operator finds a setting under the same name everywhere.
 
 A value required of an app that is missing or unusable is handled as every
 configuration value is, per **When it is validated** in `sds-config/SKILL.md`,

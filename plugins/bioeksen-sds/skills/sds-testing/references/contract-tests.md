@@ -103,8 +103,8 @@ it logs and what it calls.
 | Expired and forged | An expired token that also carries a bad signature | A protected endpoint is called | 401 `AUTH-4102`, because expiry is checked first | `sds-auth/SKILL.md` |
 | Bad signature | An unexpired token signed by a key the verifier does not trust | A protected endpoint is called | 401 `AUTH-4101` | `sds-auth/SKILL.md` |
 | Wrong audience | An unexpired token whose `aud` names another app | It is presented here | 401 `AUTH-4101` | `sds-auth/references/credentials.md` |
-| Version 1 token | An unexpired version 1 token from the configured tenant | A protected endpoint is called | 401 `AUTH-4101` | `sds-auth/references/credentials.md` |
-| Keyed by oid | Two tokens for one person, with the same `oid` and `tid` and different `sub` values | Each is presented | The app treats them as one person, and its records name them by the same `user=` | `sds-auth/references/credentials.md` |
+| Version 1 token, on Entra ID | An unexpired version 1 token from the configured tenant | A protected endpoint is called | 401 `AUTH-4101` | `sds-auth/references/entra-id.md` |
+| Keyed by the principal key | Two tokens for one person, with the same principal key and, on Entra ID, different `sub` values | Each is presented | The app treats them as one person, and its records name them by the same `user=` | `sds-auth/references/credentials.md` |
 | Issuer unreachable | A token with an unknown `kid` while the key fetch fails | A protected endpoint is called | 503 `AUTH-5500` | `sds-auth/references/credentials.md` |
 | Foreign origin | A request whose `Origin` is another site's | An endpoint that accepts only its app's own origin is called | 403 `PERM-4153` | `sds-auth/SKILL.md` |
 | Origin before role | A non-operator's request from another site | An operator endpoint that accepts only its app's own origin is called | 403 `PERM-4153`, not `PERM-4151` | `sds-logging/references/code-prefixes.md` |
@@ -130,7 +130,7 @@ it logs and what it calls.
 | Own text in the tail | A failure whose error says more than its code's meaning | It is logged | The prose is the code's meaning, and the error's name and text are under `error=`, as `Name: message` | `sds-logging/references/log-record.md` |
 | Name survives the build | An error class the app defines, in a production build | An error of it is logged | `error=` carries the name the class sets, not one the build derived | `sds-logging/references/log-record.md` |
 | Operation from a template | A request to a path carrying an identifier | It fails and is logged | `op=` carries the operation's template, and not the identifier | `sds-logging/references/log-record.md` |
-| Person by oid | A request by a signed-in person | A record names them | It carries `user=` and the `oid` of their token, and no name, email or UPN | `sds-logging/references/log-record.md` |
+| Person by the principal key | A request by a signed-in person | A record names them | It carries `user=` and the principal key of their token, and no name, email or UPN | `sds-logging/references/log-record.md` |
 | Redacted cause | A driver error quoting a connection string with a password | It is logged | The password appears in no record | `sds-logging/references/log-record.md` |
 | Level from LOG_LEVEL | `LOG_LEVEL` set to `WARNING` | An `INFO` event happens | No record of it is written | `sds-logging/SKILL.md` |
 | DEBUG stays local | `LOG_LEVEL` set to `DEBUG` | A `DEBUG` event happens | It is in the record outbox, and is never submitted | `sds-logging/references/log-record.md` |
@@ -156,7 +156,7 @@ For `POST /api/client-errors`. The conformance check runs the refusals visible f
 |------|-------|------|------|--------|
 | Report logged | A report from the app's own origin, naming one of its route templates | It is submitted | 200 `{"status": "ok"}`, and one `ERROR` `APP` record with `SYS-5000`, `op="client {route}"`, and the report's `error=` and `cause=` | `sds-api-design/references/standard-api-endpoints.md` |
 | No credential needed | A report with no session and no `Authorization` header | It is submitted | 200, and the record carries no `user=` | `sds-api-design/references/standard-api-endpoints.md` |
-| Person by oid | A report sent with the app's session | It is submitted | The record carries `user=` and the person's oid, and nothing else about them | `sds-api-design/references/standard-api-endpoints.md` |
+| Person by the principal key | A report sent with the app's session | It is submitted | The record carries `user=` and the person's principal key, and nothing else about them | `sds-api-design/references/standard-api-endpoints.md` |
 | Foreign origin | A report whose `Origin` is another site's | It is submitted | 403 `PERM-4153`, and no report is logged | `sds-api-design/references/standard-api-endpoints.md` |
 | No origin | A report carrying no `Origin` | It is submitted | 403 `PERM-4153` | `sds-api-design/references/standard-api-endpoints.md` |
 | Foreign route | A report naming a route the app does not serve | It is submitted | 400 `VAL-4006`, with `route` in `details` | `sds-api-design/references/standard-api-endpoints.md` |
@@ -246,12 +246,12 @@ For the directory, and for an app that reads it.
 
 | Case | Given | When | Then | Source |
 |------|-------|------|------|--------|
-| Directory for an app | An app credential holding `employees.read` | `GET /api/v1/employees` is called | 200, a page of employees ordered by `oid` | `sds-auth/references/employees-api.md` |
+| Directory for an app | An app credential holding `employees.read` | `GET /api/v1/employees` is called | 200, a page of employees ordered by `userId` | `sds-auth/references/employees-api.md` |
 | Directory without the role | An app credential without `employees.read` | `GET /api/v1/employees` is called | 403 `PERM-4150` | `sds-auth/references/credentials.md` |
-| Unknown employee | An `oid` no employee has | `GET /api/v1/employees/:oid` is called | 404 `RES-4200` | `sds-auth/references/employees-api.md` |
+| Unknown employee | A `userId` no employee has | `GET /api/v1/employees/:userId` is called | 404 `RES-4200` | `sds-auth/references/employees-api.md` |
 | Unknown company role | A `role` filter the company roles list does not hold | `GET /api/v1/employees` is called | 400 `VAL-4002` | `sds-auth/references/employees-api.md` |
-| Erased employee | An employee whose data was erased | They are fetched by `oid` | 200, `state: erased`, every personal field `null`, and no role | `sds-auth/references/employees-api.md` |
-| Roles without P1 | An app on a tenant without Entra ID P1, and an employee in a `bio-role-*` group | The employee calls an endpoint requiring that role | The app finds the role through the directory, and the call proceeds | `sds-auth/references/credentials.md` |
+| Erased employee | An employee whose data was erased | They are fetched by `userId` | 200, `state: erased`, every personal field `null`, and no role | `sds-auth/references/employees-api.md` |
+| Roles without P1, on Entra ID | An app on a tenant without Entra ID P1, and an employee in a `bio-role-*` group | The employee calls an endpoint requiring that role | The app finds the role through the directory, and the call proceeds | `sds-auth/references/entra-id.md` |
 
 ## Audit chain
 

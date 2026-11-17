@@ -206,7 +206,7 @@ repositories and services that use the schema; `sds-database` § 5 and
   requires, so every record carries the request's correlation id.
 - **Never log** what `sds-logging/SKILL.md` forbids: secrets and tokens, a
   body in full, or personal data beyond the identifier needed to correlate.
-  A person is named only by `user=` and the `oid` of their token.
+  A person is named only by `user=` and the principal key of their token.
 - **`op` comes from the SDK**, which sets it from where the record is written.
   These are the values, the bounded set `sds-logging/references/log-record.md`
   requires; route templates are used, never actual paths, so no identifier

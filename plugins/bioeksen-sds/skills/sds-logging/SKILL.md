@@ -47,7 +47,7 @@ rotation of it.
 - Full payment or identity numbers
 - Request or response bodies in full — log the fields you actually need
 - Personal data beyond the identifier needed to correlate the event. A person
-  is named only by their Entra oid, under the reserved key `user`, per
+  is named only by their principal key, under the reserved key `user`, per
   `references/log-record.md`
 
 If a value must be referenced but not exposed, log a stable hash or the last
@@ -81,7 +81,7 @@ Rules:
 |------|---------|
 | `APP` | General application behavior; the default when nothing else fits |
 | `SECURITY` | Authentication, authorization, credential changes, suspected abuse |
-| `AUDIT` | Deliberate record of who changed what, kept for accountability: forever, so never at `DEBUG`. It names a person only by `user=` and their oid, and the aggregator chains it so that it cannot be altered, per **Audit records** in `references/aggregator-api.md` |
+| `AUDIT` | Deliberate record of who changed what, kept for accountability: forever, so never at `DEBUG`. It names a person only by `user=` and their principal key, and the aggregator chains it so that it cannot be altered, per **Audit records** in `references/aggregator-api.md` |
 | `ACCESS` | Request-level records: method, path, status, duration |
 | `JOB` | Scheduled and background work |
 

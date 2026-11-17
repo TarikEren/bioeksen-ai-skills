@@ -20,7 +20,7 @@ paths:
       summary: List the employees
       description: >-
         Pages as every list does, per sds-api-design/references/app-endpoints.md,
-        ordered by oid. Filtered by a company role, or by state.
+        ordered by userId. Filtered by a company role, or by state.
       operationId: listEmployees
       tags: [employees]
       security:
@@ -59,7 +59,7 @@ paths:
       responses:
         "200":
           description: >-
-            The matching employees, ordered by oid. A page beyond the last
+            The matching employees, ordered by userId. A page beyond the last
             returns an empty employees array with the true totalCount.
           headers:
             Cache-Control:
@@ -83,11 +83,11 @@ paths:
         "503":
           $ref: "#/components/responses/NotReady"
 
-  /api/v1/employees/{oid}:
+  /api/v1/employees/{userId}:
     get:
       summary: Fetch one employee
       description: >-
-        An erased employee is still found, by the oid the records that name
+        An erased employee is still found, by the userId the records that name
         them carry, with every personal field null.
       operationId: getEmployee
       tags: [employees]
@@ -97,12 +97,12 @@ paths:
       parameters:
         - $ref: "#/components/parameters/RequestId"
         - $ref: "#/components/parameters/RequestDeadline"
-        - name: oid
+        - name: userId
           in: path
           required: true
-          description: The employee's Entra object id.
+          description: The employee's principal key, as their token carries it.
           schema:
-            $ref: "#/components/schemas/Oid"
+            $ref: "#/components/schemas/UserId"
       responses:
         "200":
           description: Found.
@@ -192,7 +192,7 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
     NotFound:
-      description: RES-4200. No employee has that oid.
+      description: RES-4200. No employee has that userId.
       headers:
         X-Request-Id:
           $ref: "#/components/headers/RequestId"
@@ -234,9 +234,9 @@ components:
     Error:
       $ref: "../../sds-api-design/references/openapi.yaml#/components/schemas/Error"
 
-    # An Entra object id as the token carries it: a lowercase UUID, the form a
-    # log record's user= value takes.
-    Oid:
+    # The principal key the identity provider issues, per credentials.md: Entra's
+    # oid, or Keycloak's sub. Both are lowercase UUIDs, the form user= takes.
+    UserId:
       type: string
       pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
 
@@ -252,21 +252,19 @@ components:
       type: string
       enum: [active, disabled, erased]
       description: >-
-        active when the account can sign in; disabled when Entra has blocked
-        or removed it; erased when the person's data was erased, and only the
-        oid remains.
+        active when the account can sign in; disabled when the identity
+        provider has blocked or removed it; erased when the person's data was
+        erased, and only the userId remains.
 
-    # One employee. An erased employee keeps the oid and the tid, which the
-    # records naming them carry, and nothing else: every personal field is
-    # null, and they hold no role.
+    # One employee. An erased employee keeps the userId, which the records
+    # naming them carry, and nothing else: every personal field is null, and
+    # they hold no role.
     Employee:
       type: object
-      required: [oid, tid, displayName, email, department, state, roles]
+      required: [userId, displayName, email, department, state, roles]
       properties:
-        oid:
-          $ref: "#/components/schemas/Oid"
-        tid:
-          $ref: "#/components/schemas/Oid"
+        userId:
+          $ref: "#/components/schemas/UserId"
         displayName:
           type: [string, "null"]
           minLength: 1
@@ -342,7 +340,7 @@ components:
           minimum: 0
         employees:
           type: array
-          description: Ordered by oid. Empty, never null.
+          description: Ordered by userId. Empty, never null.
           items:
             $ref: "#/components/schemas/EmployeeItem"
         filterParams:

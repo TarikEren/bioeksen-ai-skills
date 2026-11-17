@@ -522,7 +522,7 @@ after, so the endpoint takes no credential. Three rules keep it the app's own:
 | Field | Value |
 |-------|-------|
 | `severity`, `type`, `code` | `ERROR`, `APP`, `SYS-5000` |
-| `message` | `unhandled error`, then the tail: `op="client {route}"`, `error=`, `cause=`, `request=`, and `user=` with the person's oid when the request carries the app's session |
+| `message` | `unhandled error`, then the tail: `op="client {route}"`, `error=`, `cause=`, `request=`, and `user=` with the person's principal key when the request carries the app's session |
 
 - `error=` and `cause=` are redacted, as any text from a library is, and
   written on one line, per `sds-logging/references/log-record.md`. When the
