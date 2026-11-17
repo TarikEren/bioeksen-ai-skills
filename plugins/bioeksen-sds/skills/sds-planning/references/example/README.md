@@ -68,12 +68,13 @@ Write the tests first, from the acceptance criteria (DEC-002).
 - `—` shows that nobody asks a question.
 
 **The Trace column and the Trace lines.** `§n` is a section of the
-requirements document that these files replace. They show the history only.
-You do not need them for the build.
+requirements document that these files replace. They show where a rule came
+from, never how it changed. You do not need them for the build.
 
 **How to change a decision.**
-1. Change the `DEC` row: the rule and the **Status**. An answer makes a
-   *Pending* row *Decided*.
+1. Change the `DEC` row: the rule and the **Status**. Write the rule as it is
+   now, not the rule it replaces or the date. An answer makes a *Pending* row
+   *Decided*.
 2. Remove the row from the *Open decisions* list below.
 3. Change the build items in its **Affects** column and their acceptance
    criteria.

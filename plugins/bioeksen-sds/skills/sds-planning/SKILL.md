@@ -68,6 +68,24 @@ the answer comes is written down as a *Pending* decision.
 
 `references/spec-format.md` gives each file's skeleton, in order.
 
+## Spec files
+
+Every file of the set, the README included, MUST hold at most **200 lines**.
+A file read whole fits one reading, by a person or in an agent's context; a
+longer one is read in parts, and its parts drift apart unnoticed.
+
+A subject that outgrows its area file splits. Its decisions stay together in
+one file, and its items move to further area files, each named for the part of
+the subject it holds. The README's **Where to find an ID.** then names each
+file's items by range, one range per file:
+
+```markdown
+- The items `WID-10` to `WID-39` are in `widgets.md`, and `WID-40` to
+  `WID-59` in `retirement.md`.
+```
+
+An id never changes when its item moves to another file.
+
 ## Identifiers
 
 | Form | Names | Example |
@@ -102,7 +120,7 @@ headings by subject:
 | Owner | Who decides it, from the README's **Owners** list |
 | Ask | The question that decides or confirms it, `questions.md n`, or `—` |
 | Affects | The build items that carry the rule |
-| Trace | Where the rule came from: a section of an earlier document, a finding. History only; never needed for the build |
+| Trace | Where the rule came from: a section of an earlier document, a finding. Never how the rule changed; never needed for the build |
 
 | Status | Meaning |
 |---|---|
@@ -112,6 +130,13 @@ headings by subject:
 
 - **Every row's rule is in force,** whatever its status. A *Pending* row is not
   a gap: it is the rule the build follows until its owner says otherwise.
+- **A row states the rule as it is now.** When a decision changes, its row is
+  rewritten with the new rule and status. It never keeps the rule it replaces,
+  says what the rule was or previously held, or dates when it was decided or
+  changed: version control keeps how it changed. A row that carries its
+  history makes every reader, a person or an agent, sort the rule in force
+  from the rules that no longer are, on every reading. The same holds for an
+  item, its rules and its criteria.
 - **A *Pending* row MUST name its question** in its Ask column, and appear in
   the README's **Open decisions** list. A *Decided* row MAY name one too: a
   question that asks its owner to confirm it, while it stays in force.
@@ -211,8 +236,8 @@ The questions file, `/docs/questions.md`, holds the questions to the owners,
 numbered, in the language the owners read. A number is permanent while the
 file exists, because rows cite it. When an answer comes:
 
-1. Change the decision's row: the rule and its status. An answer makes a
-   *Pending* row *Decided*.
+1. Change the decision's row: the rule and its status, rewritten as they are
+   now, per **Decisions**. An answer makes a *Pending* row *Decided*.
 2. Remove the row from the README's **Open decisions** list.
 3. Change the build items in its Affects column, and their acceptance
    criteria.
@@ -302,7 +327,10 @@ The first form checks the set itself:
   at least its **Acceptance.**, and criteria whose numbers rise, each used
   once;
 - every item is in a stage, a part through its main item where no stage lists
-  it, and an item in several stages names its part in each.
+  it, and an item in several stages names its part in each;
+- no decision row or item records how it changed: a former rule, or the date
+  it was decided or changed;
+- no file is longer than 200 lines.
 
 The second form also reads every file under the test paths for criterion ids.
 Each one cited must exist, and every criterion due by `--through`, the last

@@ -142,6 +142,86 @@ class DecisionTest(SpecTest):
         self.assertFinding("ID, Decision, Status, Owner, Ask, Affects, Trace")
 
 
+class HistoryTest(SpecTest):
+    """A specification states each rule as it is now; version control keeps how it changed."""
+
+    def test_a_decision_that_records_when_it_was_decided(self):
+        self.edit("widgets.md", "two different persons. | Default",
+                  "two different persons, decided on 2026-10-09. | Default")
+        self.assertFinding("DEC-005", "history")
+
+    def test_a_decision_that_names_its_former_rule(self):
+        self.edit("widgets.md", "needs a reason. | Pending",
+                  "needs a reason; it was optional. | Pending")
+        self.assertFinding("DEC-006", "history")
+
+    def test_an_item_that_records_its_history(self):
+        self.edit("widgets.md", "3. A request names a widget by its numeric id.",
+                  "3. A request names a widget by its numeric id, previously by its code.")
+        self.assertFinding("WID-10", "history")
+
+    def test_a_rule_that_names_a_date_is_not_history(self):
+        self.edit("widgets.md", "The code never changes. | Pending",
+                  "The code never changes, also for widgets made before 2026-01-01. | Pending")
+        status, out = self.run_check()
+        self.assertEqual(status, 0, out)
+
+
+class FileLengthTest(SpecTest):
+    """A specification file holds at most 200 lines."""
+
+    def pad_to(self, name: str, lines: int) -> None:
+        path = self.specs / name
+        text = path.read_text(encoding="utf-8")
+        missing = lines - len(text.splitlines())
+        path.write_text(text + "Each widget has one owner.\n" * missing, encoding="utf-8")
+
+    def test_a_file_of_200_lines(self):
+        self.pad_to("widgets.md", 200)
+        status, out = self.run_check()
+        self.assertEqual(status, 0, out)
+
+    def test_a_file_of_201_lines(self):
+        self.pad_to("widgets.md", 201)
+        self.assertFinding("widgets.md:201", "200 lines")
+
+
+class SplitTest(SpecTest):
+    """One prefix's items may span files, by ranges the README names."""
+
+    def split_retirement(self) -> None:
+        widgets = self.specs / "widgets.md"
+        head, tail = widgets.read_text(encoding="utf-8").split("### WID-40 Retire requests")
+        widgets.write_text(head, encoding="utf-8")
+        (self.specs / "retirement.md").write_text(
+            "# Widget Registry — Retirement\n\n## Retirement\n\n### WID-40 Retire requests" + tail,
+            encoding="utf-8")
+
+    def test_a_prefix_split_across_files_by_range(self):
+        self.split_retirement()
+        self.edit("README.md", "- The items `FND` and `WID` are in `widgets.md`.",
+                  "- The items `FND` and `WID-10` to `WID-39` are in `widgets.md`.\n"
+                  "- The items `WID-40` to `WID-49` are in `retirement.md`.")
+        status, out = self.run_check()
+        self.assertEqual(status, 0, out)
+
+    def test_two_ranges_on_one_line(self):
+        self.split_retirement()
+        self.edit("README.md", "- The items `FND` and `WID` are in `widgets.md`.",
+                  "- The items `FND` are in `widgets.md`.\n"
+                  "- The items `WID-10` to `WID-39` are in `widgets.md`, and `WID-40` to "
+                  "`WID-49` in `retirement.md`.")
+        status, out = self.run_check()
+        self.assertEqual(status, 0, out)
+
+    def test_an_item_outside_every_range(self):
+        self.split_retirement()
+        self.edit("README.md", "- The items `FND` and `WID` are in `widgets.md`.",
+                  "- The items `FND` and `WID-10` to `WID-39` are in `widgets.md`.\n"
+                  "- The items `WID-50` to `WID-59` are in `retirement.md`.")
+        self.assertFinding("WID-40", "retirement.md")
+
+
 class ItemTest(SpecTest):
     def test_an_item_without_acceptance_criteria(self):
         self.edit("widgets.md",

@@ -11,7 +11,8 @@ This script checks what can be checked without reading the prose for its
 meaning: every id is defined once and every reference to one resolves; every
 decision row is complete; every item has its blocks and its criteria, and sits
 in the file the README names; the open decisions are exactly the Pending
-rows; and every item is in a stage of the build order. An item that is not the
+rows; every item is in a stage of the build order; no decision or item records
+how it changed; and no file is longer than 200 lines. An item that is not the
 first of its group, such as WID-41 beside WID-40, is a part of the group's main
 item: it needs only its criteria, and it is built in the main item's stages
 unless a stage lists it.
@@ -37,6 +38,15 @@ from pathlib import Path
 from typing import NamedTuple
 
 STATUSES = ("Decided", "Pending", "Default")
+# A file longer than this is split, per **Spec files** in sds-planning.
+MAX_LINES = 200
+# How a rule changed is version control's to keep: a former rule, or the date
+# a rule was decided or changed. A date a rule itself names is not history.
+HISTORY = re.compile(r"\b(?:previously|formerly|it was|changed from|used to be)\b"
+                     r"|\b(?:decided|answered|changed|confirmed|revised)\b[^|\n]*?"
+                     r"\b\d{4}-\d{2}-\d{2}\b", re.I)
+# `WID-40` to `WID-49` — a range of one prefix's items, in the README.
+ITEM_SPAN = re.compile(r"`([A-Z][A-Z0-9]*)-(\d+)` to `\1-(\d+)`")
 DECISION_COLUMNS = ["ID", "Decision", "Status", "Owner", "Ask", "Affects", "Trace"]
 REQUIRED_BLOCKS = ("What", "Rules", "Acceptance")
 NO_QUESTION = "—"
@@ -148,6 +158,7 @@ class Specification:
         self.prefixes: set[str] = set()
         self.owners: set[str] = set()
         self.homes: dict[str, str] = {}
+        self.spans: list[tuple[str, int, int, str]] = []
         self.ranges: dict[str, list[tuple[int, int]]] = {}
         self.decisions: dict[str, Decision] = {}
         self.items: dict[str, Item] = {}
@@ -173,6 +184,7 @@ class Specification:
         return None
 
     def check(self) -> None:
+        self.check_lengths()
         self.read_identifiers()
         self.read_owners()
         self.read_homes()
@@ -188,6 +200,30 @@ class Specification:
     @property
     def readme(self) -> str:
         return self.texts["README.md"]
+
+    def check_lengths(self) -> None:
+        for name, text in self.texts.items():
+            count = len(text.splitlines())
+            if count > MAX_LINES:
+                self.find(name, MAX_LINES + 1,
+                          f"{name} is {count} lines long, and a specification file holds "
+                          f"at most {MAX_LINES} lines: split it, per **Spec files** in "
+                          "sds-planning/SKILL.md")
+
+    def find_history(self, name: str, line: int, subject: str, text: str) -> None:
+        match = HISTORY.search(text)
+        if match:
+            self.find(name, line, f"{subject} records its history, \"{match.group(0)}\": it "
+                                  "states the rule in force now, and version control keeps "
+                                  "how it changed")
+
+    def home_of(self, item: str) -> str | None:
+        """The file the README names for an item: by a range holding it, or by its prefix."""
+        prefix, number = item.split("-")
+        for kind, low, high, file in self.spans:
+            if kind == prefix and low <= int(number) <= high:
+                return file
+        return self.homes.get(prefix)
 
     def read_identifiers(self) -> None:
         forms: set[str] = set()
@@ -226,13 +262,21 @@ class Specification:
                     parse_ranges(ranged.group(2)))
                 continue
             waiting: list[str] = []
-            for token in re.findall(r"`([^`]+)`", line):
+            # Each range belongs to the first file named after it on the line.
+            spans = [(span.start(), span.group(1), int(span.group(2)), int(span.group(3)))
+                     for span in ITEM_SPAN.finditer(line) if span.group(1) in self.prefixes]
+            for found in re.finditer(r"`([^`]+)`", line):
+                token = found.group(1)
                 if token in self.prefixes:
                     waiting.append(token)
                 elif token.endswith(".md"):
                     self.homes.update((prefix, token) for prefix in waiting)
+                    self.spans += [(kind, low, high, token)
+                                   for at, kind, low, high in spans if at < found.start()]
+                    spans = [span for span in spans if span[0] > found.start()]
                     waiting = []
-        for prefix in sorted(self.prefixes - self.homes.keys()):
+        spanned = {kind for kind, *_ in self.spans}
+        for prefix in sorted(self.prefixes - self.homes.keys() - spanned):
             self.find("README.md", first, "**Where to find an ID.** does not say which "
                                           f"file holds the `{prefix}` items")
 
@@ -279,6 +323,7 @@ class Specification:
             self.find(name, line, f"{decision} is Pending and names no question: its Ask "
                                   "column names the question that decides it")
         targets = [target.strip() for target in affects.split(",") if target.strip()]
+        self.find_history(name, line, decision, " | ".join(row))
         if not targets:
             self.find(name, line, f"{decision} affects no item")
         for target in targets:
@@ -307,10 +352,14 @@ class Specification:
                     given = ", ".join(f"AC{number}" for number in numbers)
                     self.find(name, line, f"{item} numbers its criteria {given}; the numbers "
                                           "rise, and each is used once")
-                home = self.homes.get(prefix)
-                if home and home != name:
+                home = self.home_of(item)
+                if home is None and any(kind == prefix for kind, *_ in self.spans):
+                    self.find(name, line, f"{item} is in {name}, but no range in the README's "
+                                          "**Where to find an ID.** holds it")
+                elif home and home != name:
                     self.find(name, line, f"{item} is in {name}; the README puts the "
                                           f"`{prefix}` items in {home}")
+                self.find_history(name, line, item, body)
                 self.items[item] = Item(name, line, numbers, BLOCK.findall(body))
 
     def main_of(self, item: str) -> str | None:
@@ -395,6 +444,8 @@ class Specification:
 
     def check_references(self) -> None:
         for name, text in self.texts.items():
+            # A range's ends need not be items: `WID-40` to `WID-49` names a span.
+            text = ITEM_SPAN.sub(lambda span: " " * len(span.group(0)), text)
             for match in self.reference.finditer(text):
                 target, criterion = match.group(1), match.group(2)
                 item = self.items.get(target)

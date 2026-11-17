@@ -34,6 +34,8 @@ The text follows ASD-STE-100 (Simplified Technical English).
 
 **Where to find an ID.**
 - The items `{PREFIX}` and `{PREFIX}` are in `{area}.md`.
+- The items `{PREFIX}-10` to `{PREFIX}-39` are in `{area}.md`, and
+  `{PREFIX}-40` to `{PREFIX}-59` in `{area-part}.md`.
 - Each decision is in the file of its subject:
   - `{area}.md`: DEC-001 to DEC-011; DEC-013.
 
@@ -113,7 +115,7 @@ Each term has one meaning.
 |---|---|
 | Release and version | A test plan, a validation report and a question to an owner all name the version they were made from |
 | Authority statement | Without it, an old requirements document, a ticket or the old code competes with the specification, and the build follows whichever its reader found first |
-| **Files** and **Where to find an ID.** | A reader holding an id finds its file in one step. The checker reads the prefixes' files and the decision ranges from this list, and refuses an item or a decision outside them |
+| **Files** and **Where to find an ID.** | A reader holding an id finds its file in one step. The checker reads the prefixes' files, the item ranges of a prefix split across files, and the decision ranges from this list, and refuses an item or a decision outside them |
 | **Identifiers.** | The item prefixes are the project's own; the checker reads them from this table's forms (`{PREFIX}-nn`) and treats nothing else as an item id. An id like `A-104` in a Trace column is left alone |
 | **Decision status.**, **Owners.**, **The Ask column.** | They make a *Pending* row read as a rule in force with a named owner and question, not as a gap. The checker reads the owners from the list's backticked codes |
 | **How to change a decision.** | The four steps of `SKILL.md`, **Questions**, where every editor sees them |
@@ -155,6 +157,10 @@ system refuses the action with its reason, and no row changes.}
 
 - **The decisions come first**, because every item below cites them. A reader
   who reads the file in order meets each rule before the items that carry it.
+- **At most 200 lines**, as every file of the set. A longer subject splits,
+  per **Spec files** in `SKILL.md`.
+- **Each row and item states the rule as it is now**, never the rule it
+  replaced or the date it changed, per **Decisions** in `SKILL.md`.
 - **The decision table's header is fixed**: `ID`, `Decision`, `Status`,
   `Owner`, `Ask`, `Affects`, `Trace`, in that order. The checker refuses a
   decision table with other columns rather than guess which cell is which.
@@ -276,7 +282,7 @@ the answer comes and why it matters.}
 
 **For:** DEC-{nnn}, DEC-{nnn}. **Owner:** {CODE}.
 
-**Answer:** {empty until answered; the date and who answered, after}
+**Answer:** {empty until answered; then the answer, and who gave it}
 ```
 
 The number is permanent while the file exists, because decision rows cite it.
