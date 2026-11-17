@@ -13,7 +13,7 @@ permissions:
 
 env:
   KIT_REPOSITORY: TarikEren/bioeksen-ai-skills
-  KIT_REF: v0.9.0
+  KIT_REF: v0.10.0
 
 jobs:
   conventions:

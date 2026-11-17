@@ -2,7 +2,7 @@
 # KIT_REF moves with that pin, in the same ops commit, per sds-ci.
 variables:
   KIT_REPOSITORY: TarikEren/bioeksen-ai-skills
-  KIT_REF: v0.9.0
+  KIT_REF: v0.10.0
   # The commit and release note checks read history, not just the tip.
   GIT_DEPTH: "0"
 
