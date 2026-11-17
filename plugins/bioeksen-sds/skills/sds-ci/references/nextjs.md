@@ -11,8 +11,8 @@ that template carries out `SKILL.md`, which outranks it, and the project's
 1. **`/AGENTS.md` § Delivery**, and the scripts in `package.json`: which checks
    exist and what each one runs. It names where this app implements
    `SKILL.md`.
-2. **`.forgejo/workflows/ci.yml`, the Dockerfile and any local-development
-   compose file.**
+2. **The CI definition, the Dockerfile and any local-development compose
+   file.**
 
 ## The jobs
 

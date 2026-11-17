@@ -1,0 +1,57 @@
+# The bioeksen-sds kit's checks, at the release .claude/settings.json pins.
+# KIT_REF moves with that pin, in the same ops commit, per sds-ci.
+name: bioeksen
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+env:
+  KIT_REPOSITORY: TarikEren/bioeksen-ai-skills
+  KIT_REF: v0.9.0
+
+jobs:
+  conventions:
+    runs-on: [self-hosted, ci]
+    timeout-minutes: 10
+    env:
+      BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+      HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+      FIRST_PUSH: ${{ github.event.before == '0000000000000000000000000000000000000000' }}
+    steps:
+      # The commit and release note checks read history, not just the tip.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # A read-only token, when the kit's repository is private; sds-ci allows no other secret.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: ${{ env.KIT_REPOSITORY }}
+          ref: ${{ env.KIT_REF }}
+          path: .bioeksen-sds
+          token: ${{ secrets.BIOEKSEN_SDS_READ_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Check the commit messages
+        if: github.event_name == 'pull_request' || (github.ref == 'refs/heads/main' && env.FIRST_PUSH == 'false')
+        run: python3 .bioeksen-sds/project-kit/tools/commit_msg.py --range "$BASE..$HEAD"
+
+      - name: Check that each feat and fix commit changes a test
+        if: github.event_name == 'pull_request' || (github.ref == 'refs/heads/main' && env.FIRST_PUSH == 'false')
+        run: python3 .bioeksen-sds/project-kit/tools/check_tests.py --range "$BASE..$HEAD"
+
+      - name: Check the release note
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: python3 .bioeksen-sds/project-kit/tools/check_release_note.py "${GITHUB_REF_NAME#v}"
+
+      # Start the service, however the project runs it, then check its standard endpoints.
+      # The check needs .bioeksen-sds/project-kit/requirements.txt installed.
+      # - name: Check the standard endpoints
+      #   run: python3 .bioeksen-sds/project-kit/conformance/check_service.py --base-url http://localhost:8080

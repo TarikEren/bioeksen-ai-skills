@@ -366,7 +366,7 @@ times, so it costs a count, not a copy.
 ## `PUT HOST/api/v1/groups/:groupId/issue`
 
 Moves a group to the state its issue is in, per **States**. The aggregator is
-connected to the local git service, whose integration calls this endpoint as
+connected to the project's git provider, whose integration calls this endpoint as
 an app holding `logs.resolve`:
 
 | When, in the git service | Body |
@@ -403,7 +403,7 @@ an app holding `logs.resolve`:
 ```json
 {
     "state": "fix_merged",
-    "issue": "https://git.bioeksen.local/bio-inventory/issues/42",
+    "issue": "https://github.com/bioeksen/bio-inventory/issues/42",
     "changeId": "bio-inventory-20261007T101500-a3f9"
 }
 ```

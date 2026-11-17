@@ -98,7 +98,7 @@ Change-Id: <a freshly minted identifier>
 ## Merging
 One commit is one release note entry, so a branch MUST reach the main branch with every commit's message and trailer intact:
 - **Rebase-merge, or a merge commit**, keeps each commit as written. A merge commit itself carries no entry, per [release-notes](references/release-notes.md)
-- **Squash-merge** replaces a branch's commits with one, and GitHub builds its message by concatenating theirs — several `Change-Id:` trailers in one commit, or none if the message is replaced. A squash-merged commit MUST be edited before merging into this format, with a description covering the whole branch, exactly one freshly minted `Change-Id:`, and, in a monorepo, the trailers the script prints for the branch's combined change
+- **Squash-merge** replaces a branch's commits with one, and the git provider builds its message from theirs, or from its own template, per its reference in `sds-ci` — several `Change-Id:` trailers in one commit, or none. A squash-merged commit MUST be edited before merging into this format, with a description covering the whole branch, exactly one freshly minted `Change-Id:`, and, in a monorepo, the trailers the script prints for the branch's combined change
 
 ## Versioning
 The next release's version follows from the commits it contains, as in SemVer:

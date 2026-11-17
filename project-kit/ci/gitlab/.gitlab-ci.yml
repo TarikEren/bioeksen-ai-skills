@@ -1,0 +1,37 @@
+# The bioeksen-sds kit's checks, at the release .claude/settings.json pins.
+# KIT_REF moves with that pin, in the same ops commit, per sds-ci.
+variables:
+  KIT_REPOSITORY: TarikEren/bioeksen-ai-skills
+  KIT_REF: v0.9.0
+  # The commit and release note checks read history, not just the tip.
+  GIT_DEPTH: "0"
+
+conventions:
+  tags: [ci]
+  timeout: 10m
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG =~ /^v/
+  before_script:
+    # A read-only token, when the kit's repository is private; sds-ci allows no other secret.
+    - git clone --quiet --depth 1 --branch "$KIT_REF"
+      "https://${BIOEKSEN_SDS_READ_TOKEN:+x-access-token:$BIOEKSEN_SDS_READ_TOKEN@}github.com/$KIT_REPOSITORY.git"
+      .bioeksen-sds
+  script:
+    - |
+      if [ "$CI_PIPELINE_SOURCE" = "merge_request_event" ]; then
+        RANGE="$CI_MERGE_REQUEST_DIFF_BASE_SHA..$CI_COMMIT_SHA"
+      elif [ -z "$CI_COMMIT_TAG" ] && [ "$CI_COMMIT_BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
+        RANGE="$CI_COMMIT_BEFORE_SHA..$CI_COMMIT_SHA"
+      fi
+      if [ -n "$RANGE" ]; then
+        python3 .bioeksen-sds/project-kit/tools/commit_msg.py --range "$RANGE"
+        python3 .bioeksen-sds/project-kit/tools/check_tests.py --range "$RANGE"
+      fi
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        python3 .bioeksen-sds/project-kit/tools/check_release_note.py "${CI_COMMIT_TAG#v}"
+      fi
+  # Start the service, however the project runs it, then check its standard endpoints:
+  # python3 .bioeksen-sds/project-kit/conformance/check_service.py --base-url http://localhost:8080

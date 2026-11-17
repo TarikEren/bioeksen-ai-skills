@@ -48,9 +48,15 @@ CONTRACT_TESTS = TESTING / "references" / "contract-tests.md"
 COMMIT_MSG = ROOT / "project-kit" / "tools" / "commit_msg.py"
 TEMPLATE = ROOT / "project-kit" / "template"
 TEMPLATE_SETTINGS = TEMPLATE / ".claude" / "settings.json"
-TEMPLATE_WORKFLOW = TEMPLATE / ".forgejo" / "workflows" / "bioeksen.yml"
+# The CI file a project copies for its git provider, per sds-ci and sds-project,
+# and where each keeps the kit's repository and tag.
+CI_FILES = {
+    "github": (ROOT / "project-kit" / "ci" / "github" / ".github" / "workflows" / "bioeksen.yml", "env"),
+    "gitlab": (ROOT / "project-kit" / "ci" / "gitlab" / ".gitlab-ci.yml", "variables"),
+}
+# A CI definition, of any provider, that the template must not carry.
+CI_DEFINITIONS = (".github", ".gitlab", ".gitlab-ci.yml", ".forgejo", ".gitea")
 # Where the CI image carries a bioeksen-sds release's project kit, per sds-ci.
-KIT_PATH = re.compile(r"/opt/bioeksen-sds/(v[^/\s]+)/project-kit")
 
 # sds-auth restates exactly steps 1-10 of the selection procedure.
 AUTH_STEPS = 10
@@ -284,11 +290,11 @@ def main() -> int:
             fail("invariant 7", f"marketplace.json says {own['name']} is "
                                 f"{listed[own['name']]}, plugin.json says {own.get('version')}")
 
-        # 10. The project template pins the release it ships in, in both the
-        # places a generated project reads it, so the skills an assistant
-        # loads and the checks CI runs come from one version. CI runs the CI
-        # image's copy of that release's kit, never a checkout, from the only
-        # workflow directory sds-ci allows.
+        # 10. The project template pins the release it ships in, and so does
+        # each provider's CI file, so the skills an assistant loads and the
+        # checks CI runs come from one version. CI checks the kit out of the
+        # repository the settings name. The template carries no CI file: a
+        # project copies its own provider's.
         marketplace = manifests[MARKETPLACE]["name"]
         pinned = f"v{own.get('version')}"
         settings = json.loads(read(TEMPLATE_SETTINGS))
@@ -296,18 +302,23 @@ def main() -> int:
         if source.get("ref") != pinned:
             fail("invariant 10", f"template settings.json pins {source.get('ref')!r}, "
                                  f"the plugin is {pinned}")
-        if not TEMPLATE_WORKFLOW.is_file():
-            fail("invariant 10", f"the template has no {TEMPLATE_WORKFLOW.relative_to(ROOT)}")
-        else:
-            kit = str((yaml.safe_load(read(TEMPLATE_WORKFLOW)) or {}).get("env", {}).get("KIT"))
-            match = KIT_PATH.fullmatch(kit)
-            if not match or match.group(1) != pinned:
-                fail("invariant 10", f"template workflow runs the kit from {kit!r}, "
-                                     f"not /opt/bioeksen-sds/{pinned}/project-kit")
-        for directory in (".github", ".gitea"):
-            if (TEMPLATE / directory).exists():
-                fail("invariant 10", f"the template carries {directory}/, "
-                                     "a workflow directory sds-ci forbids")
+        for provider, (ci_file, key) in CI_FILES.items():
+            where = ci_file.relative_to(ROOT)
+            if not ci_file.is_file():
+                fail("invariant 10", f"{provider} has no CI file at {where}")
+                continue
+            values = (yaml.safe_load(read(ci_file)) or {}).get(key) or {}
+            if values.get("KIT_REF") != pinned:
+                fail("invariant 10", f"{where} checks the kit out at "
+                                     f"{values.get('KIT_REF')!r}, the plugin is {pinned}")
+            if values.get("KIT_REPOSITORY") != source.get("repo"):
+                fail("invariant 10", f"{where} checks the kit out of "
+                                     f"{values.get('KIT_REPOSITORY')!r}, the settings name "
+                                     f"{source.get('repo')!r}")
+        for name in CI_DEFINITIONS:
+            if (TEMPLATE / name).exists():
+                fail("invariant 10", f"the template carries {name}: a project copies the CI "
+                                     "file of its own git provider")
         if settings.get("enabledPlugins", {}).get(f"{own['name']}@{marketplace}") is not True:
             fail("invariant 10", f"template settings.json does not enable "
                                  f"{own['name']}@{marketplace}")

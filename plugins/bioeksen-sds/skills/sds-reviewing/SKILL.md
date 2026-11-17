@@ -427,8 +427,8 @@ For each review, update:
 - **The review log:** one row.
 - **Status at a glance:** a row for each new finding, linked to its heading,
   and the rows of earlier findings the review changed. Anchors follow the
-  forge's slug rules; on Forgejo, lower case, punctuation dropped, spaces
-  turned to hyphens.
+  git provider's slug rules, per `sds-ci/references/github.md` or
+  `sds-ci/references/gitlab.md`.
 - **Coverage:** what was reviewed, and how.
 - **Questions:** new ones as `Open`. When the author answers, the status
   becomes `Answered (review N):` and the decision.

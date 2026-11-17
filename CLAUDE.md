@@ -150,11 +150,12 @@ in CI on every push and pull request, and locally when you run it.
    resolves from the naming skill's own directory and nowhere else.
 10. The project template pins the release it ships in: the `ref` in
     `project-kit/template/.claude/settings.json` equals `v{plugin version}`,
-    its workflow, `.forgejo/workflows/bioeksen.yml`, runs the kit from
-    `/opt/bioeksen-sds/v{plugin version}/project-kit`, the CI image's copy of
-    that release, the template carries no `.github/` or `.gitea/` directory,
-    which `sds-ci` forbids, and the plugin is enabled. A release bumps both
-    pins in the same commit as the plugin version.
+    and so does `KIT_REF` in each git provider's CI file,
+    `project-kit/ci/github/.github/workflows/bioeksen.yml` and
+    `project-kit/ci/gitlab/.gitlab-ci.yml`, whose `KIT_REPOSITORY` is the
+    repository the settings name. The template itself carries no CI file of
+    any provider, and the plugin is enabled. A release bumps every pin in the
+    same commit as the plugin version.
 11. The contract test catalogue can be trusted as a test plan. Every error code
     named anywhere under `sds-testing/` is in the registry; every code in the
     `sds-auth` validation order has a case in the catalogue's Auth table; and

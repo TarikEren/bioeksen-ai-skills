@@ -126,7 +126,7 @@ class AttributionTest(MonorepoTest):
 
     def test_a_change_no_unit_reaches_carries_the_monorepos_id(self):
         self.assertAttributed({".claude/settings.json": "{ }", "README.md": "y",
-                               ".forgejo/workflows/ci.yml": "name: ci2\n"}, "bio-software")
+                               ".github/workflows/ci.yml": "name: ci2\n"}, "bio-software")
 
     def test_a_package_no_unit_depends_on_is_named_without_affects(self):
         self.assertAttributed({"tooling/lint/package.json": package("@bioeksen/lint"),

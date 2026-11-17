@@ -18,14 +18,18 @@ generated project runs to stay on them.
    |------|------|
    | `.claude/settings.json` | Registers this marketplace and enables `bioeksen-sds`, pinned to a release, so the skills load for anyone who trusts the project folder |
    | `CLAUDE.md` | Tells an assistant where the id lives, which skills govern the project, and which checks to run. The project appends its own notes |
-   | `.forgejo/workflows/bioeksen.yml` | Runs the commit, test and release note checks on the `ci` runner, from the CI image's copy of the kit, with a marked place for the conformance check |
    | `.githooks/commit-msg` | Checks each commit message locally, and mints its `Change-Id:` |
 
 3. **Adds `.bioeksen-sds/` to the project's `.gitignore`.** That is where a
    developer who wants the local hook, or the checks, checks out this
-   repository. CI never does: its job runs the copy the CI image carries
-   under `/opt/bioeksen-sds/{tag}/`, per `sds-ci`.
-4. **MAY write `.bioeksen/test-paths`**, one glob per line, when the project's
+   repository, and where CI checks it out too.
+4. **Copies the CI file for the project's git provider**, once the
+   `sds-project` skill has recorded it: `ci/github/.github/workflows/bioeksen.yml`
+   or `ci/gitlab/.gitlab-ci.yml`. Each runs the commit, test and release note
+   checks on the `ci` runner, from a checkout of this repository at the pinned
+   release, with a marked place for the conformance check. A generator that
+   does not know the provider copies neither, and the assistant asks.
+5. **MAY write `.bioeksen/test-paths`**, one glob per line, when the project's
    tests live where the test check's built-in list would not find them. A
    project whose tests follow its language's usual layout needs no file.
 
@@ -48,12 +52,12 @@ building a service.
 
 ## Pinning
 
-`.claude/settings.json` and the workflow both name one release of this
-repository, as `ref` and as the tag in `KIT`. The skills an assistant reads
+`.claude/settings.json` and each CI file name one release of this
+repository, as `ref` and as `KIT_REF`. The skills an assistant reads
 and the checks CI runs then come from the same version, and a contract change
 reaches a project when someone bumps both — never silently from `main`.
-Invariant 10 in `scripts/check_invariants.py` keeps the template pinned to the
-release it ships in.
+Invariant 10 in `scripts/check_invariants.py` keeps the template and both CI
+files pinned to the release they ship in.
 
 Claude Code registers the marketplace once a person accepts the workspace trust
 dialog for the project folder. The plugin is listed by a relative path, so it
@@ -67,8 +71,9 @@ If this repository is private:
   it has no token of its own and a `GITHUB_TOKEN` in the environment does not
   authenticate it by itself. `gh auth login` followed by `gh auth setup-git`
   provides them.
-- CI needs nothing: it runs the kit the CI image carries, and never checks
-  this repository out.
+- CI needs `BIOEKSEN_SDS_READ_TOKEN`, a token that can only read this
+  repository, as a CI secret, per `sds-ci`. A runner whose image carries the
+  pinned release MAY run that copy instead, and then needs nothing.
 
 ## The tools
 

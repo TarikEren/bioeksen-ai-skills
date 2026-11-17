@@ -1,12 +1,12 @@
 ---
 name: sds-ci
-description: BioEksen CI, runner, delivery and AI task conventions. Use when writing, changing or proposing a forge workflow, registering or configuring a runner, setting up deployment, changing a container image or a local-development compose file, preparing a release, finding out why a run failed, or delegating a task to an AI model that pushes to the forge.
+description: BioEksen CI, runner, delivery and AI task conventions, on GitHub or GitLab. Use when writing, changing or proposing a CI workflow or pipeline, registering or configuring a runner, setting up deployment, changing a container image or a local-development compose file, preparing a release, finding out why a run failed, or delegating a task to an AI model that pushes to the git provider.
 ---
 
 # CI, Runners and AI Tasks
 
-Every workflow runs code, and the forge lets whoever writes a workflow choose
-where it runs. A workflow file is read from the commit that triggered it, so
+Every workflow runs code, and the git provider lets whoever writes a workflow
+choose where it runs. A workflow file is read from the commit that triggered it, so
 anyone able to push a branch, a person or a model working on a task, can
 write a workflow that asks for any runner its repository can reach. These
 rules decide which code runs where, and holding what, so that the answer does
@@ -16,8 +16,16 @@ The pipeline is only worth trusting if it runs the same checks a developer
 runs and cannot be talked out of a failure. So: **the pipeline runs the
 project's own scripts**, and **a gate is never weakened to get a run green**.
 
+The provider is the project's `.bioeksen/git-provider`, per
+`sds-project/SKILL.md`: `github` or `gitlab`. This skill states what CI must
+do; the provider's reference says how. A pull request here is a merge request
+on GitLab, and a workflow is a pipeline.
+
 The keywords MUST, SHOULD and MAY are used as in RFC 2119.
 
+- `references/github.md` and `references/gitlab.md` — each provider's
+  mechanism for every rule below: where the CI definition lives, runner
+  scopes, the job token, secrets, protected paths, tags and branches.
 - `references/nextjs.md` — how an app scaffolded from the nextjs template
   carries this skill out: its toolchain checks, its branches, its image and
   its migration step.
@@ -39,11 +47,11 @@ hold and what they are registered to, never by their labels:
 
 - The `deploy` runner MUST be registered to the deploy repository alone, and
   the `ai` runner to the AI task repository alone: never to an app
-  repository, an organisation or the instance. No other runner is registered
+  repository, a group or organisation, or the whole provider. No other runner is registered
   on the application server.
 - No app repository contains a deployment workflow. When a release tag is
   pushed, `v*` in a repository holding one service and `{software-id}/v*` in a
-  monorepo, the git service's integration, bio-softop, verifies the release,
+  monorepo, the git provider's integration, bio-softop, verifies the release,
   per **Releases and deployment** below, and dispatches the deploy
   repository's workflow, from that repository's own protected main branch,
   with the released unit's software id, the version and the commit. A merge
@@ -59,8 +67,8 @@ Registering it to a repository no app branch can write to is what puts it out
 of reach, whatever a workflow says. The same holds for the `ai` runner, whose
 credentials can push to every app repository's `ai/**` branches.
 
-Everything the application server hosts, the forge, the databases and the
-apps, is therefore out of reach of unreviewed code. The `ci` runner is where
+Everything the application server hosts, the databases and the apps, is
+therefore out of reach of unreviewed code. The `ci` runner is where
 unreviewed code is expected to run, and it is isolated for that.
 
 ## Isolating `ci` jobs
@@ -71,8 +79,8 @@ model's task branch, and the tests either of them wrote. Its job containers:
 - MUST be created for one job and destroyed after it.
 - MUST NOT reach the host's container engine, through a mounted socket or
   otherwise, and MUST NOT run privileged or on the host network.
-- MUST have network egress limited to an allowlist: the forge, the package
-  registries a build needs, and, for AI task runs, the model server.
+- MUST have network egress limited to an allowlist: the git provider, the
+  package registries a build needs, and, for AI task runs, the model server.
   Everything else is refused, the application server's databases included.
 - MUST run build tools with their telemetry off, and MUST NOT write to a
   build cache shared across jobs. A shared cache, where one is added, may be
@@ -82,9 +90,11 @@ A cache entry is trusted by whoever reads it, and a `ci` job runs code nobody
 has reviewed. Written from a model's task branch, an entry could record a
 passing result under the very key the main branch's build computes next.
 
-A `ci` job's automatic token can write to its own repository's unprotected
-branches. Nothing trusts an unprotected branch: a branch reaches main only
-through review, so what the token can write is never acted on unreviewed.
+A `ci` job's automatic token MUST be limited to reading its own repository,
+as the provider's reference shows. Where a provider still lets it write an
+unprotected branch, nothing trusts an unprotected branch: a branch reaches
+main only through review, so what the token can write is never acted on
+unreviewed.
 
 - Release tags, `v*`, or `{software-id}/v*` in a monorepo, per
   `sds-commit/references/release-notes.md`, MUST be protected tags that only
@@ -95,17 +105,19 @@ through review, so what the token can write is never acted on unreviewed.
 - Deployment credentials MUST exist only on the `deploy` runner's host, and
   the bot account's token and the wrapper's app credential only on the `ai`
   runner's host, each as that host's own configuration. None of them is
-  stored as a forge secret.
-- The only forge secret a workflow MAY be given is one that harms nothing
-  when read: a read-only token for the package registry.
+  stored as a CI secret.
+- The only CI secrets a workflow MAY be given are ones that harm nothing when
+  read: a read-only token for the package registry, and a read-only token for
+  the `bioeksen-ai-skills` repository, `BIOEKSEN_SDS_READ_TOKEN`, when it is
+  private, for checking the kit out.
 - A build that needs a registry token receives it as a build secret. It is
   never a build argument, a copied file or an environment variable in the
   image, all of which leave it in an image layer.
 
-A forge secret is available to every workflow that runs from its repository's
-own branches, a pull request's included. A secret stored there is readable by
-any workflow a branch adds, which is exactly the workflow no reviewer has
-seen. Kept on a runner's host, a credential is readable only by jobs that
+A CI secret is available to the workflows its repository's branches run,
+including, on most providers, a pull request's. A secret stored there is
+readable by any workflow a branch adds, which is exactly the workflow no
+reviewer has seen. Kept on a runner's host, a credential is readable only by jobs that
 runner takes, and only the one repository it is registered to can give it
 one.
 
@@ -119,7 +131,7 @@ production has a version and a release note, and a merged fix reaches
 production at a moment the estate can name.
 
 - Every release is deployed, whatever it increments: patch, minor or major.
-- Before dispatching, the git service's integration verifies that:
+- Before dispatching, the git provider's integration verifies that:
   - the tag points to a commit reachable from the repository's protected
     main branch;
   - the release's note exists in that commit, at `/release-notes/{version}.md`,
@@ -178,28 +190,28 @@ production at a moment the estate can name.
 
 ## Workflow definitions
 
-- Workflow files live in `.forgejo/workflows/`, a repository's only workflow
-  directory. They are written and changed only by people, in `ops` commits
-  per `sds-commit/SKILL.md`, and reviewed like code.
-- A repository MUST NOT contain `.gitea/workflows/` or `.github/workflows/`.
-  The forge runs workflows from either when `.forgejo/workflows/` is absent,
-  so a file added there would replace the reviewed ones.
-- A repository's **protected paths** are `.forgejo/**`, `.gitea/**`,
-  `.github/**`, `**/.bioeksen/**`, every AGENTS.md and CLAUDE.md file, and
-  every path an AGENTS.md assigns to no role, `.claude/**` among them. They
-  are the workflow directories, the software ids, and the rules the
-  repository's roles and models work under. In a monorepo they also include
+- The **CI definition** lives where the provider reads it: `.github/` on
+  GitHub, and `.gitlab-ci.yml` with the `.gitlab/` files it includes on
+  GitLab. It is written and changed only by people, in `ops` commits per
+  `sds-commit/SKILL.md`, and reviewed like code. A project starts from the
+  kit's file for its provider, which `sds-project/SKILL.md` copies at
+  initialization.
+- A repository holds its own provider's CI definition and no other's. A
+  second definition is one nobody reviews as CI, and it runs the day the
+  repository moves to that provider.
+- A repository's **protected paths** are its CI definition, `**/.bioeksen/**`,
+  every AGENTS.md and CLAUDE.md file, and every path an AGENTS.md assigns to
+  no role, `.claude/**` among them. They are the CI definition, the project's
+  facts and software ids, and the rules the repository's roles and models
+  work under. In a monorepo they also include
   the root build files, the shared packages and the tooling, `packages/**`
   and `tooling/**` in `bio-software`: a change there reaches every unit at
   once.
-- Every `ai/**` branch MUST be covered by a branch protection rule listing the
-  protected paths as protected file patterns, so the forge refuses a push that
-  changes one.
-  - Write the patterns with `**`. The forge's glob treats `.` as a separator
-    as well as `/`, so `.forgejo/workflows/*` does not match `ci.yml`.
-  - Verify on the deployed version of the forge that the rule refuses a push
-    that *creates* a branch, not only one that updates it. A defect in the
-    forge family once let a newly created branch through.
+- A change to a protected path MUST be refused or held by the provider
+  itself, not only by the push gate: GitHub refuses the push to `ai/**` by a
+  ruleset, and GitLab requires a person's approval before the change reaches
+  main, per the provider's reference. Verify that the rule holds for a push
+  that *creates* a branch, not only one that updates it.
 
 This rule is the second layer, not the first. The push gate under **AI task
 runs** refuses the same changes before they leave the workstation, and a
@@ -223,7 +235,7 @@ Read first, before proposing a change to a workflow:
    and the release-notes format.
 
 The workflow is the user's. You propose a change to it in your report, as the
-exact YAML and the reason; you never edit `.forgejo/`.
+exact YAML and the reason; you never edit the CI definition.
 
 - **Each job runs a script the project already has**, the same one a developer
   runs locally. If a check has no script, the script is added first, by the
@@ -236,13 +248,15 @@ exact YAML and the reason; you never edit `.forgejo/`.
   pull request: one `Change-Id` per commit, carrying the id `sds-commit` gives
   it, and in a monorepo exactly the `Affects:` and `Changes-Package:` trailers
   its paths give it; and a test or a `Test-Exempt:` trailer on every `feat`
-  and `fix` (`sds-testing`). It runs the CI image's copy of the kit, under
-  `/opt/bioeksen-sds/{tag}/`, at the release `.claude/settings.json` pins; the
-  two versions move together. The job's token reads only this repository, so
-  the kit is never checked out.
-- **The pinned release must be in the image.** A job that cannot find it
-  there reports not run and fails, per **Keeping the suite honest** in
-  `sds-testing/SKILL.md`. A newer release existing never fails a job: the pin
+  and `fix` (`sds-testing`). It runs the kit at the release
+  `.claude/settings.json` pins, checked out of `bioeksen-ai-skills` at that
+  tag, as `KIT_REPOSITORY` and `KIT_REF` in the kit's CI file name it, with
+  `BIOEKSEN_SDS_READ_TOKEN` when the repository is private. A runner whose
+  image carries that release MAY run the image's copy, under
+  `/opt/bioeksen-sds/{tag}/`, instead. The two versions move together.
+- **The pinned release must exist.** A job that can neither check it out nor
+  find it in the image reports not run and fails, per **Keeping the suite
+  honest** in `sds-testing/SKILL.md`. A newer release existing never fails a job: the pin
   moves when a person moves it. A task whose result depends on the pinned
   release lists the pin file among its cache inputs, so moving the pin runs
   it again.
@@ -267,10 +281,11 @@ exact YAML and the reason; you never edit `.forgejo/`.
   whether it may empty one.
 - **Every job has a timeout**, and artifacts that explain a failure (test
   reports, traces) are kept with a retention limit.
-- **Actions are pinned to full commits**, with the release in a comment, and
-  resolve through the forge's own mirror. Untrusted input (branch names, pull
-  request titles, commit messages) reaches a `run:` step only through an
-  environment variable.
+- **Everything a workflow pulls in is pinned**: a GitHub action to its full
+  commit, with the release in a comment; a GitLab include, component or image
+  to a commit or a digest. Untrusted input (branch names, pull request titles,
+  commit messages) reaches a script step only through an environment
+  variable.
 
 ### Gating the stage loop
 
@@ -374,8 +389,8 @@ each of these MUST be attempted and seen refused:
 |---------|-----------|
 | A workflow on an app branch asking for the `deploy` or `ai` runner's labels | Runner registration: no runner takes the job |
 | The model's sandbox reading the bot token or the wrapper's credential | Neither is mounted into the sandbox |
-| A push that creates `ai/{task-id}` with a change under `.forgejo/workflows/` | The push gate, and the branch protection rule behind it |
-| A push to `ai/{task-id}` adding `.gitea/workflows/` or `.github/workflows/`, or changing `.claude/hooks/` or `/AGENTS.md` | The push gate, and the branch protection rule behind it |
+| A push that creates `ai/{task-id}` with a change to the CI definition | The push gate, and the provider's rule behind it |
+| A push to `ai/{task-id}` adding the other provider's CI definition, or changing `.claude/hooks/` or `/AGENTS.md` | The push gate, and the provider's rule behind it |
 | A `ci` job connecting to a database port on the application server | The egress allowlist |
 | A `ci` job connecting to an arbitrary internet host | The egress allowlist |
 | A `ci` job publishing a package or pushing to another repository | Its credentials: the automatic token and a read-only registry token |
@@ -392,7 +407,7 @@ A check that could not be run is reported as not run, never as passed, per
 ## Reading a failed run
 
 1. **Read the failure, not the summary**: the failed job's log and its
-   artifacts, from the forge's run page, as the user gives them to you.
+   artifacts, from the provider's run page, as the user gives them to you.
 2. **Classify it:**
    - **Code:** the change is wrong. It goes to the developer who owns it.
    - **Test:** a test is wrong, or proves a defect. It goes to the tester.
@@ -424,7 +439,7 @@ A check that could not be run is reported as not run, never as passed, per
 - The scripts a proposed job runs exist, and pass locally, or each one that
   cannot run locally is named with the reason.
 - The Docker image builds, if you changed it and Docker is available.
-- A proposed workflow change is in the report as the exact YAML, its actions
-  pinned to full commits.
+- A proposed workflow change is in the report as the exact YAML, everything
+  it pulls in pinned, per **The jobs**.
 - The report names the gates, what each one runs, and anything you could not
   check.
