@@ -1,7 +1,8 @@
 # Contract Tests
 
 The cases a BioEksen service's tests MUST contain for each convention it
-implements, written before the code, per `SKILL.md`. A service with no list
+implements, each seen failing for the missing behaviour in the project's test
+order, per `SKILL.md`. A service with no list
 endpoint needs no list cases; a service that serves one needs all of them.
 
 Each case restates one assertion and names its **Source**, the document

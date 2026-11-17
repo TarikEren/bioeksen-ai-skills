@@ -52,13 +52,16 @@ of `${CLAUDE_SKILL_DIR}`, which is this skill's own directory.
   database reviewer against § 5 and § 6 here.
 - A change that needs both is two tasks: the data change first, handed over
   as a data contract (§ 7), then the code that uses it.
-- **In the test-first loop,** the tests of constraints, database objects and
-  raw SQL are acceptance tests, written by the tester before the change
+- **In the stage loop,** the tests of constraints, database objects and
+  raw SQL are acceptance tests, written by the tester, before the change under
+  tests first
   from the acceptance criteria and the stage plan's data contract
   (`sds-planning/SKILL.md`), and hidden from the developers, per
   **Acceptance tests** in `sds-testing/SKILL.md`.
 
 ### Skeleton
+
+Only under tests first, per **The order** in `sds-testing/SKILL.md`.
 
 The stage plan's skeleton task for the data model holds the models, columns and types
 the contract names, with the migration that creates them, so that the

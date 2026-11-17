@@ -358,7 +358,7 @@ behaves differently because of it, not by the failure being interesting.
 ### Not implemented
 
 An operation the contract names but no code implements yet — a stub written so
-that its tests can be seen failing first, per `sds-testing/SKILL.md` — is
+that its tests, written first, can be seen failing, per `sds-testing/SKILL.md` — is
 `SYS-5000`, answered 500. No earlier condition in the procedure holds, so step
 45 decides.
 

@@ -2,7 +2,7 @@
 
 This is a BioEksen service. The conventions every BioEksen service shares —
 the standard endpoints, error codes, logging, authentication, configuration,
-commits, release notes and test-first development — live in the `bioeksen-sds` plugin's skills,
+commits, release notes and testing — live in the `bioeksen-sds` plugin's skills,
 not in this file.
 They load on their own when a task needs them; `.claude/settings.json`
 installs them once this folder is trusted.
@@ -20,8 +20,11 @@ missing or empty, ask for the id.
 
 ## Rules that are easy to break
 
-- Work test-first, per the `sds-testing` skill: no behaviour changes without a
-  test that failed before the change and passes after it. A `feat` or `fix`
+- Before the first change, read the project's facts under `.bioeksen/`, per
+  the `sds-project` skill, and ask for any that is missing.
+- Follow the project's test order, `.bioeksen/test-order`, per the
+  `sds-testing` skill: no behaviour changes without a test seen failing for
+  the missing behaviour and passing after it. A `feat` or `fix`
   commit that changes no test names its exemption in a `Test-Exempt:` trailer,
   and only an exemption that skill lists counts.
 - Error codes come verbatim from the closed list in the `sds-logging` skill.

@@ -456,6 +456,9 @@ bug:
 
 ## Skeleton
 
+Only under tests first, per **The order** in `sds-testing/SKILL.md`; under
+implementation first there is none.
+
 In the stage loop of `sds-planning/SKILL.md`, the stage plan's skeleton task
 builds the contract's surface before any behaviour, so that the tester can
 write tests that compile and fail for the right reason. A UI skeleton holds:
@@ -490,7 +493,7 @@ pnpm run build
 Also run the component tests that cover the change, through the project's
 results-only interface.
 Add tests for new client behaviour, reading labels from the dictionaries: in
-the test-first loop these are your own tests, beside the code
+the stage loop these are your own tests, beside the code
 (e.g. `app/**/*.test.tsx`), while the acceptance tests are the tester's and hidden
 from you. How to write them is in [`../sds-testing/SKILL.md`](../sds-testing/SKILL.md).
 

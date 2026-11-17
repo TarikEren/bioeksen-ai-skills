@@ -62,6 +62,7 @@ served under `/api/v{major}/`, and the five standard endpoints above are the
 only unversioned ones. The rule, and the 90 day deprecation window a bump
 carries, are in the same document.
 
-An endpoint is written test-first, per `sds-testing/SKILL.md`: the cases its
+An endpoint is written with its tests, in the project's test order, per
+`sds-testing/SKILL.md`: the cases its
 tests contain — the envelope, the codes, the correlation header, the list
 and method rules — are in `sds-testing/references/contract-tests.md`.

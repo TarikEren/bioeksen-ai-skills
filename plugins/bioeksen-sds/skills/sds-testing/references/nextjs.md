@@ -25,8 +25,8 @@ every `sds-*` skill does, wins over all three.
 ## The roles
 
 The template runs **Acceptance tests** as a loop of roles. `qa-engineer` is the
-tester: it writes the tests before the code exists and never sees product
-code. The developer roles never see the tests, only their titles and results.
+tester: it writes the tests, before the code exists under tests first and once
+it is done under implementation first, and never sees product code. The developer roles never see the tests, only their titles and results.
 
 | Kind | Where | Owner |
 |---|---|---|
@@ -42,7 +42,7 @@ disposable database; flows end to end.
 The matchers that print expected and received values are `toBe`,
 `toMatchObject` and `toHaveTextContent`.
 
-The skeleton's not-implemented error is `NotImplemented`. A new acceptance test
+Under tests first, the skeleton's not-implemented error is `NotImplemented`. A new acceptance test
 is not marked `it.failing`: expected-to-fail tests stay for defects found after
 a task was done and deferred.
 

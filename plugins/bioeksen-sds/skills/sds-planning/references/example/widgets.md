@@ -11,7 +11,7 @@ force. A *Pending* rule stays in force until the owner answers.
 | ID | Decision | Status | Owner | Ask | Affects | Trace |
 |---|---|---|---|---|---|---|
 | DEC-001 | The application uses Next.js (App Router) and TypeScript. The database is PostgreSQL 16 or later. | Decided | PO | — | FND-01, FND-02 | §2 |
-| DEC-002 | Tests come first, from the acceptance criteria, and cite them. The coverage floor only goes up. | Decided | PO | — | FND-02 | §5 |
+| DEC-002 | Tests are written from the acceptance criteria, and cite them. The coverage floor only goes up. | Decided | PO | — | FND-02 | §5 |
 | DEC-003 | A widget gets its code from the next number of the register at the first save. The code never changes. | Pending | QA | questions.md 1 | WID-10 | §3.1 |
 | DEC-004 | The system never deletes a widget. `RETIRED` is the end state. | Decided | PO | questions.md 2 | WID-10, WID-30, WID-40 | §3.2 |
 | DEC-005 | The creator and the reviewer of a widget are two different persons. | Default | PO | — | WID-20, WID-30 | §3.3 |

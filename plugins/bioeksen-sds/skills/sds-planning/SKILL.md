@@ -1,6 +1,6 @@
 ---
 name: sds-planning
-description: BioEksen specifications and build planning. Use when writing, changing or reviewing a service's specification — its decisions, build items and acceptance criteria — when a rule is missing and has to be asked, when ordering the build into stages with exit criteria, and when writing a stage's plan for the test-first loop; and when checking a specification, or the tests' citations of its acceptance criteria, with the checker that ships with this skill.
+description: BioEksen specifications and build planning. Use when writing, changing or reviewing a service's specification — its decisions, build items and acceptance criteria — when a rule is missing and has to be asked, when ordering the build into stages with exit criteria, and when writing a stage's plan for the stage loop, in the project's test order; and when checking a specification, or the tests' citations of its acceptance criteria, with the checker that ships with this skill.
 ---
 
 # Specifications and Planning
@@ -274,7 +274,7 @@ sentence the same way. In practice:
 
 ## The stage plan
 
-Before a stage's tests are written, whoever runs the loop writes the stage
+Before a stage's tests or code are written, whoever runs the loop writes the stage
 plan, `/docs/plans/test_plan.md`. It holds the current stage only, and the
 next stage replaces it. The tester and the developers work from it; neither
 writes it, because each must not shape what the other is held to.
@@ -283,7 +283,7 @@ writes it, because each must not shape what the other is held to.
 |---|---|
 | The stage | Its items, its exit criterion, and the *Pending* rules in force for it |
 | The contract | The API surface with its error codes, the data model with its migrations, the UI with its accessible names and dictionary keys, and the test seams. The acceptance tests reach the code only through it |
-| The skeleton | The task that builds the contract's surface before any behaviour, per the stack skill's **Skeleton** rules, so the tests compile and fail for the missing behaviour |
+| The skeleton | Under tests first, the task that builds the contract's surface before any behaviour, per the stack skill's **Skeleton** rules, so the tests compile and fail for the missing behaviour. None under implementation first |
 | The tasks | In order. Each names the criteria it closes, its *Done when*, and the test tier for each criterion, per `sds-testing/SKILL.md` |
 | Fixtures and helpers | The data each tier needs, and the helpers to reuse or add |
 
@@ -298,15 +298,19 @@ A stage is built in this loop. Each step's own skill is normative for it:
 1. **Decisions.** List the stage's *Pending* decisions. Their rules are in
    force; ask the questions that are not yet asked.
 2. **Plan.** Write the stage plan (**The stage plan**).
-3. **Skeleton.** Build the contract's surface, with no behaviour, per the stack
-   skill.
-4. **Tests.** The tester writes the acceptance tests from the criteria and the
-   plan, blind to the code, and sees each fail for the missing behaviour, per
-   **Acceptance tests** in `sds-testing/SKILL.md`.
-5. **Build.** The developers make them pass, one criterion at a time, blind to
-   the tests.
-6. **Review.** Per `sds-reviewing/SKILL.md`.
-7. **Exit.** The stage's exit criterion passes; each acceptance criterion of
+3. **Skeleton.** Under tests first only: build the contract's surface, with
+   no behaviour, per the stack skill.
+4. **Tests and build**, in the project's order, per **The order** in
+   `sds-testing/SKILL.md`:
+   - tests first: the tester writes the acceptance tests from the criteria and
+     the plan, blind to the code, and sees each fail for the missing
+     behaviour; then the developers make them pass, one criterion at a time,
+     blind to the tests;
+   - implementation first: the developers build to the criteria and the plan;
+     then the tester writes the acceptance tests, blind to the code, and sees
+     each fail by changing its expected value.
+5. **Review.** Per `sds-reviewing/SKILL.md`.
+6. **Exit.** The stage's exit criterion passes; each acceptance criterion of
    its items has a test that passes; and the coverage floor, the typecheck,
    the linter and the production build pass.
 

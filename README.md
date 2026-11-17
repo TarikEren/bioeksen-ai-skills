@@ -13,8 +13,8 @@ kinds of skill:
 - **The shared practice**, how every BioEksen codebase is built whatever its
   stack: `sds-config`, `sds-testing`, `sds-database`, `sds-reviewing` and
   `sds-ci`. `sds-testing` is here because its contract tests are how two
-  services know they keep the agreements, and test-first is what keeps those
-  tests able to fail. `sds-config` is here because an app that reports ready on
+  services know they keep the agreements, and seeing each fail first is what
+  keeps those tests able to fail. `sds-config` is here because an app that reports ready on
   a configuration it cannot use breaks the promise every load balancer relies
   on, and a secret leaked from one app's configuration is the whole estate's
   incident. The others are here because a schema, a review or a pipeline that
@@ -42,7 +42,7 @@ BioEksen personnel and authorised parties.
 | [`sds-config`](plugins/bioeksen-sds/skills/sds-config/) | Configuration: one validated module, checked before the app reports ready, every value declared, secrets kept out of logs, commits and clients |
 | [`sds-commit`](plugins/bioeksen-sds/skills/sds-commit/) | Conventional commit format and the release version it implies |
 | [`sds-planning`](plugins/bioeksen-sds/skills/sds-planning/) | Specifications and build planning: decisions with their status, owner and open question, build items with numbered acceptance criteria that every test cites, a build order of stages with checkable exit criteria, the stage plan, and a checker for the set and the tests' citations |
-| [`sds-testing`](plugins/bioeksen-sds/skills/sds-testing/) | Test-first development: no behaviour change without a test that failed first, acceptance tests written ahead of the code and blind to it, how tests are written and run, and the contract tests every convention above requires |
+| [`sds-testing`](plugins/bioeksen-sds/skills/sds-testing/) | Testing: no behaviour change without a test seen failing for the missing behaviour, in the project's order, tests first or implementation first; acceptance tests blind to the code; how tests are written and run, and the contract tests every convention above requires |
 | [`sds-database`](plugins/bioeksen-sds/skills/sds-database/) | Schemas and migrations: one source of truth, constraints that enforce the specification, forward-only migrations safe on a live database, transactions, parameterised and indexed queries, and disposable databases only |
 | [`sds-project`](plugins/bioeksen-sds/skills/sds-project/) | A project's recorded choices: the git provider, the identity provider, the log aggregator, bio-softop's services and the test order, read before the first change and asked when missing; and the comment limits, 5 lines a block and 30 words a line, with a checker for each |
 | [`sds-reviewing`](plugins/bioeksen-sds/skills/sds-reviewing/) | Reviewing a change and recording the review: an independent reviewer's passes in priority order, every finding verified before it is reported, and a record in which no finding is lost |
@@ -62,7 +62,7 @@ sds-api-design ──── error envelope carries a code ────┐
                                                     log records)
 
 sds-config ─── every value validated before the app reports ready, as CFG- codes
-sds-testing ── a contract test for each rule above, written before the code
+sds-testing ── a contract test for each rule above, seen failing first
 sds-commit ─── the test lands in its feat or fix commit, or the commit names
                its exemption
 sds-database ─ constraints that hold the specification, and migrations that

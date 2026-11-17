@@ -45,7 +45,8 @@ same group are parts of that subject. All IDs are unique across the files. An
 ID is never used again, also after its row or item is removed.
 
 **How to read a build item.**
-Write the tests first, from the acceptance criteria (DEC-002).
+Write the tests from the acceptance criteria, in the project's test order
+(DEC-002).
 
 **Decision status.**
 

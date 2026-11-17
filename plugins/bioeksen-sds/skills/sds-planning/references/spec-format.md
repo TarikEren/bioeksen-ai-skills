@@ -243,7 +243,8 @@ service. Each enabled only by validated configuration in a test environment.}
 
 ## Skeleton
 
-{The task that builds the contract's surface with no behaviour: exports that
+{Under tests first only. The task that builds the contract's surface with no
+behaviour: exports that
 throw the not-implemented error, routes that answer it, components that render
 a stub, and the migration.}
 
@@ -265,7 +266,7 @@ a stub, and the migration.}
   those criteria's tests pass. A reviewer checks that every criterion of the
   stage's items is in exactly one task.
 - **The tier** is the lowest that can prove each criterion, per
-  `sds-testing/SKILL.md`, decided before the tests are written so the tester
+  `sds-testing/SKILL.md`, decided before the tests or the code are written so the tester
   and the developers expect the same seams.
 
 ## The questions file

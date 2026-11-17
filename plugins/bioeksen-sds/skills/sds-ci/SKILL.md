@@ -272,14 +272,15 @@ exact YAML and the reason; you never edit `.forgejo/`.
   request titles, commit messages) reaches a `run:` step only through an
   environment variable.
 
-### Gating the test-first loop
+### Gating the stage loop
 
-The acceptance tests of a unit are merged into its branch before the code
-that makes them pass, per **Acceptance tests** in `sds-testing/SKILL.md`. So:
+Under tests first, the acceptance tests of a unit are merged into its branch
+before the code that makes them pass, per **Acceptance tests** in `sds-testing/SKILL.md`. So:
 
-- **A unit's branch** runs every suite on every push and pull request. Red
-  acceptance tests there are expected until the unit's iteration ends, so they
-  report without blocking merges inside the unit.
+- **A unit's branch** runs every suite on every push and pull request. Under
+  tests first, red acceptance tests there are expected until the unit's
+  iteration ends, so they report without blocking merges inside the unit;
+  under implementation first they block, as on `main`.
 - **`main`** requires every suite green, the acceptance suite included.
   Merging a unit into `main` is the loop's last gate.
 - **CI runs the acceptance suite through the runners directly** and keeps

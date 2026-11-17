@@ -11,7 +11,7 @@ A test exists to catch a specific regression. Two principles govern everything h
 2. Every test exercises the real subject under test.
 ```
 
-Test-first development is required, per `SKILL.md`: write a failing test, implement the minimum change, then refactor. For regression tests, demonstrate that the test detects the defect before accepting the fix.
+Every test is seen failing for the missing behaviour, per `SKILL.md`, in the order the project records: under tests first, write a failing test, implement the minimum change, then refactor; under implementation first, implement, then write the test and see it fail by changing its expectation. For regression tests, demonstrate that the test detects the defect before accepting the fix.
 
 A test earns its place by protecting observable behavior, not by increasing coverage, freezing implementation details, or satisfying process requirements.
 
@@ -341,7 +341,7 @@ Use `try/finally`, test lifecycle hooks, or equivalent framework mechanisms wher
 
 ## Principle 5: Follow a Verifiable TDD Workflow
 
-Test-first is required for new behavior and regression fixes, per `SKILL.md`.
+Under tests first, per **The order** in `SKILL.md`, every new behavior follows this cycle. Under implementation first, GREEN comes before RED, and RED is seen by changing the test's expectation. A regression fix reproduces the defect first in either order.
 
 ```text
 RED:
@@ -360,10 +360,11 @@ REFACTOR:
   Rerun the whole suite.
 ```
 
-### When test-first seems impractical
+### When a failing test first seems impractical
 
-These situations make test-first harder, never optional. The exemptions in
-`SKILL.md` are the only ones. Test-first may seem impractical when:
+Under tests first, these situations make the failing test first harder, never
+optional. The exemptions in `SKILL.md` are the only ones. It may seem
+impractical when:
 
 * Investigating an unfamiliar legacy system.
 * Reproducing a difficult intermittent failure.
@@ -446,7 +447,7 @@ When asked to write or modify tests, follow this procedure:
    Identify meaningful boundary and failure cases.
 
 5. IMPLEMENT
-   Write the test first and see it fail, per `SKILL.md`.
+   Write the test and see it fail, in the project's test order, per `SKILL.md`.
    Keep the subject real and justify every test double.
 
 6. VERIFY

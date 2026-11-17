@@ -279,8 +279,8 @@ repositories and services that use the schema; `sds-database` § 5 and
 
 What to test is below. How to write and run tests, including known defects
 and database suites, is in [`../sds-testing/SKILL.md`](../sds-testing/SKILL.md).
-In the test-first loop, the acceptance tests are the tester's and hidden from
-you; the tests below are your own unit tests, beside the code
+In the stage loop, the acceptance tests are the tester's and hidden from you,
+whichever comes first; the tests below are your own unit tests, beside the code
 (e.g. `lib/**/*.test.ts`), run through the project's results-only interface.
 
 - **Every service function you change gets tests** for at least the success
@@ -296,6 +296,9 @@ you; the tests below are your own unit tests, beside the code
   (`sds-database` § 8).
 
 ### Skeleton
+
+Only under tests first, per **The order** in `sds-testing/SKILL.md`; under
+implementation first there is none.
 
 In the stage loop of `sds-planning/SKILL.md`, the stage plan's skeleton task
 builds the contract's surface before any behaviour, so that the tester can

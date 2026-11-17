@@ -185,9 +185,12 @@ The database reviewer takes these passes instead, in this order.
 
 ### Reviewing tests before implementation
 
-In the project's test-first loop, the code reviewer reviews the tester's new
-tests before any implementation (`sds-testing`, **Acceptance tests**). There
-is no code yet, only the skeleton, so the tests are the thing under review.
+Under tests first, per **The order** in `sds-testing/SKILL.md`, the code
+reviewer reviews the tester's new tests before any implementation
+(**Acceptance tests**). There is no code yet, only the skeleton, so the tests
+are the thing under review. Under implementation first the tests arrive with
+or after the code, and are reviewed in the Tests pass of **Review in priority
+order**: each seen failing per **A test that cannot fail proves nothing**.
 The passes, in order:
 
 1. **Traceability**, per **Criteria and coverage** in `sds-testing/SKILL.md`.
@@ -267,7 +270,7 @@ Run only commands that leave the working tree as you found it:
 - `git status`, `git diff`, `git log`, `git show`, `git rev-parse`;
 - the project's typecheck;
 - the project's linter with the changed paths;
-- the tests covering the change: in the test-first loop, through the
+- the tests covering the change: in the stage loop, through the
   results-only interface, which reviewers may also run directly with the
   runners.
 
@@ -307,7 +310,7 @@ it is recorded, so make every claim checkable.
 - **Checks:** each command you ran and its result, including the
   results-only interface's summary. Never claim a check you did not run.
 - **Verdict:** *Approve*, *Approve with follow-ups*, or *Request changes*,
-  naming what blocks. In the test-first loop, whoever runs the loop ends an
+  naming what blocks. In the stage loop, whoever runs the loop ends an
   iteration only when no Critical or Major finding is open.
 - **Findings**, most severe first. Each one has:
   - **Title:** one line stating the defect.
@@ -372,7 +375,7 @@ project has none yet, start this one; the skeletons are in
 If code cites findings through a single file name, keep that file as a pointer
 to the record.
 
-In the test-first loop each reviewer keeps its own folder,
+In the stage loop each reviewer keeps its own folder,
 `<record>/<reviewer>/`, with its own review numbering, so that two reviewers
 working in parallel never write the same file or take the same number. Only
 reviewers and whoever runs the loop read the record: whoever runs the loop

@@ -1,15 +1,17 @@
 ---
 name: sds-testing
-description: BioEksen test-first development and testing practice. Use before writing or changing behaviour in a BioEksen service — a feature, a bug fix, an endpoint, a log statement, an auth check — to write the failing test first and find the contract test a shared convention requires; and when writing, changing, running or reviewing tests — acceptance tests written ahead of the code and blind to it, each citing the acceptance criteria it proves, cases derived from the specification, the lowest tier that can prove a claim, outcome assertions, fixtures and fakes, known defects, and running database and browser suites safely.
+description: BioEksen testing practice. Use before writing or changing behaviour in a BioEksen service — a feature, a bug fix, an endpoint, a log statement, an auth check — to follow the project's recorded test order, tests first or implementation first, to see every test fail for the missing behaviour, and to find the contract test a shared convention requires; and when writing, changing, running or reviewing tests — acceptance tests written ahead of the code and blind to it, each citing the acceptance criteria it proves, cases derived from the specification, the lowest tier that can prove a claim, outcome assertions, fixtures and fakes, known defects, and running database and browser suites safely.
 ---
 
-# Test-First Development
+# Testing
 
-Every behaviour a BioEksen service gains or changes is driven by a test written
-first. The shared conventions make this unusually direct: nearly every rule in
-the other `sds-*` skills is already an assertion — `limit=0` is 400 `VAL-4005`,
-a rejection's log record carries the response's code — so the expected value of
-most tests is written down before the code exists.
+Every behaviour a BioEksen service gains or changes is covered by a test that
+has been seen failing for the missing behaviour. Whether the test or the code
+comes first is the project's choice, per **The order**. The shared conventions
+make tests unusually direct: nearly every rule in the other `sds-*` skills is
+already an assertion — `limit=0` is 400 `VAL-4005`, a rejection's log record
+carries the response's code — so the expected value of most tests is written
+down before the code exists, whichever comes first.
 
 A test is evidence that the code does what its specification asks. Test code
 is held to the same bar as product code: **type-safe, secure and modular**. A
@@ -31,6 +33,9 @@ skill of this plugin, relative to the plugin's skills directory: the parent
 of `${CLAUDE_SKILL_DIR}`, which is this skill's own directory.
 
 ## Read first
+
+Start with the project's test order, `.bioeksen/test-order`, per **The
+order**. Then:
 
 1. **The specification and the stage plan**, per `sds-planning/SKILL.md`: the
    acceptance criteria are the cases, and the plan names the contract, the
@@ -78,23 +83,41 @@ stricter rule, follow the stricter rule.
 
 ## The rule
 
-Behaviour MUST NOT change without a test that failed before the change and
-passes after it. That holds for a new feature, a bug fix, and any change to
-what a caller, an operator or a reader of the logs can observe.
+Behaviour MUST NOT change without a test that covers it, has been seen failing
+for the missing behaviour, and passes after the change. That holds for a new
+feature, a bug fix, and any change to what a caller, an operator or a reader
+of the logs can observe.
 
 A refactor changes no behaviour, so it needs no new test — but it MUST start
 with the behaviour it touches covered and green, and end the same way. A
 refactor that needs a test changed before it passes is a behaviour change.
 
-The failure is the point. A test written after its code passes the first time
-it runs, so nobody has seen it able to fail, and a test that cannot fail tests
-nothing. Watching it fail first is the only evidence that it checks what it
-claims to.
+The failure is the point. A test nobody has seen fail may be unable to, and a
+test that cannot fail tests nothing. Seeing it fail for the missing behaviour
+is the only evidence that it checks what it claims to.
 
 The rule governs what reaches a shared branch, not the order keystrokes
 happened in. CI checks that every `feat` or `fix` commit changes a test or
 names an exemption; review checks that the test would have failed without the
 change.
+
+## The order
+
+The project records which comes first in `.bioeksen/test-order`, per
+`sds-project/SKILL.md`. Read it before the first change. When it is missing,
+ask the user, as that skill says, and record the answer: never pick one.
+
+| | `tests-first` | `implementation-first` |
+|---|---|---|
+| A behaviour's own test | Written and seen failing before its code, per **The cycle** | Written after its code, in the same commit, and seen failing per **A test that cannot fail proves nothing** |
+| A unit's acceptance tests | Land first, red, against the skeleton, per **Acceptance tests** | Written once the unit's code is done, still from the criteria and blind to the code |
+| The skeleton | Built before any behaviour | None |
+| The `acceptance` exemption | Applies | Unused: each `feat` or `fix` commit carries its own tests |
+
+Both give the same evidence: a test seen failing for the missing behaviour, and
+passing with it. Tests first gets it as a side effect of the order;
+implementation first gets it by breaking the expectation on purpose. Neither
+allows a test nobody has seen fail.
 
 ## Exemptions
 
@@ -103,16 +126,19 @@ change.
 | `docs` | Prose no test can read: documentation, comments, a specification |
 | `config` | A configuration value, where the code that reads it is already tested |
 | `generated` | Code produced by a generator from a source that is itself tested |
-| `acceptance` | Behaviour driven by its unit's acceptance tests, already on its branch, per **Acceptance tests** |
+| `acceptance` | Under tests first, behaviour driven by its unit's acceptance tests, already on its branch, per **Acceptance tests** |
 
 These are the only exemptions. A commit relying on one names it with the
 trailer `sds-commit/SKILL.md` defines, so the claim is visible in review and
 checkable in CI.
 
 A spike is not an exemption. Spike code answers a question and is thrown away;
-it is never merged, and the real implementation starts again, test-first.
+it is never merged, and the real implementation starts again, in the
+project's order.
 
 ## The cycle
+
+Under tests first:
 
 1. **Red.** Write one test for one behaviour. Run it and watch it fail — and
    fail *for the missing behaviour*: an assertion that the status, the code or
@@ -125,11 +151,18 @@ it is never merged, and the real implementation starts again, test-first.
    green.
 4. Repeat for the next behaviour.
 
+Under implementation first, write the code for one behaviour, then its test.
+Run the test green, then see it fail per **A test that cannot fail proves
+nothing**, and restore it. Refactor with everything green.
+
 ## Acceptance tests
 
 Every unit of development — a feature, a sprint, a task — MUST have acceptance
-tests that are red before its code exists, written by someone who has not seen
-that code, for a developer who does not see them:
+tests written by someone who has not seen its code, for a developer who does
+not see them. Under tests first they are red before the code exists; under
+implementation first they are written once it is done, and each is seen
+failing by changing its expected value, per **A test that cannot fail proves
+nothing**:
 
 - **The tester writes them from the specification**: the acceptance criteria
   of the unit's items, the contract the `sds-*` skills define, and the stage
@@ -138,18 +171,18 @@ that code, for a developer who does not see them:
 - **The developer MUST NOT see them.** The developer works from each test's
   title, the criteria it cites and its result, alongside the same
   specification and stage plan, and makes it pass.
-- **They land first, red,** in `test` commits on the unit's branch, each seen
+- **Under tests first, they land first, red,** in `test` commits on the unit's branch, each seen
   failing for the missing behaviour, not for a missing name: the developer
   first builds the skeleton the tests compile against. They are never marked
   expected to fail. They are red because the behaviour is not there yet, not
   because of a defect.
-- **The unit's branch is red until the unit ends; the main branch only ever
-  receives green.** Merging the unit into it is the loop's last gate.
+- **Under tests first, the unit's branch is red until the unit ends; the main
+  branch only ever receives green.** Merging the unit into it is the loop's last gate.
 
-A developer's own tests, such as a unit test beside the code it drives, still
-follow **The cycle** and land in the commit with their behaviour. A `feat` or
-`fix` commit whose only tests are its unit's acceptance tests, already on its
-branch, names the `acceptance` exemption.
+A developer's own tests, such as a unit test beside the code it drives, follow
+**The cycle** and land in the commit with their behaviour. Under tests first, a
+`feat` or `fix` commit whose only tests are its unit's acceptance tests,
+already on its branch, names the `acceptance` exemption.
 
 A developer who writes both the code and its only test can shape either to fit
 the other. A test written blind to the code cannot be bent to it, and code
@@ -212,7 +245,8 @@ each of its criteria has an acceptance test that passes.
 
 ### Red for the right reason, against the skeleton
 
-**The cycle** still holds, adapted. Before implementation the developers build a
+Under tests first, **The cycle** still holds, adapted. Before implementation
+the developers build a
 skeleton of the contract: exports that throw a not-implemented error, routes
 that answer `SYS-5000` (500), components that render a stub. Each new test
 runs against it and must fail with the rule's own signal: the not-implemented
@@ -232,8 +266,8 @@ as not run, with its reason, and never counted as red.
 
 ### The developer's loop
 
-The developers close the unit one criterion at a time, in the order of the
-stage plan's tasks:
+Under tests first, the developers close the unit one criterion at a time, in
+the order of the stage plan's tasks:
 
 1. Take the next criterion of the task.
 2. Implement it, following **The cycle** for the developer's own tests.
@@ -326,8 +360,9 @@ already guarantees is dropped without a word.
 ## The standard endpoints
 
 For the five standard endpoints the failing suite already exists: this
-skill's conformance check, which ships with it. Run it against the service
-before implementing them, and its failures are the red list:
+skill's conformance check, which ships with it. Under tests first, run it
+against the service before implementing them, and its failures are the red
+list; under implementation first, it is what they pass before their commit:
 
 ```bash
 pip install -r ${CLAUDE_SKILL_DIR}/scripts/requirements.txt
@@ -471,8 +506,9 @@ flaky, slow or hard to set up. That would hide a test; this records a defect.
 
 ## A test that cannot fail proves nothing
 
-**The cycle** has every new test seen failing for the missing
-behaviour. Where the code already exists, do it like this:
+Under tests first, **The cycle** has every new test seen failing for the
+missing behaviour. Under implementation first, and wherever the code already
+exists, do it like this:
 
 1. Feed it the case the rule forbids, or change its expected value locally.
 2. Confirm it goes red **with the rule's own message**, not a setup error, a
@@ -565,12 +601,12 @@ its guard.**
 A developer's test lands in the same commit as the behaviour it drives, typed
 for that behaviour as `feat` or `fix`: one commit is one change, per
 `sds-commit/SKILL.md`. A `test` commit is for tests added to behaviour that
-already exists, and for a unit's acceptance tests, written ahead of it. A red
-state is never pushed to a shared branch, except the acceptance tests on their
-own unit's branch, per **Acceptance tests**; the main branch only ever
-receives green.
+already exists, and, under tests first, for a unit's acceptance tests, written
+ahead of it. A red state is never pushed to a shared branch, except, under
+tests first, the acceptance tests on their own unit's branch, per
+**Acceptance tests**; the main branch only ever receives green.
 
-## When it seems impossible to test first
+## When a behaviour seems impossible to test
 
 | The behaviour depends on | Write the test by |
 |--------------------------|-------------------|
@@ -610,7 +646,8 @@ works in production lets anyone mint an identity.
 | It sounds like | What it is |
 |----------------|------------|
 | "This is too simple to need a test" | Simple code breaks too, and its test is the cheapest one to write |
-| "I will add the test afterwards" | A test written afterwards has never been seen failing, and afterwards rarely comes |
+| "I will add the test later" | Later rarely comes. The test lands in the commit with its code, seen failing, whichever comes first |
+| "It passed the first time, so it works" | Then nobody has seen it fail. Change its expectation and watch it go red before trusting it |
 | "I tested it by hand" | Once, in one state; the next change will not repeat it |
 | "The test would only repeat the code" | Then its expectation came from the code; take it from the contract |
 | "There is no time" | The time is spent anyway, later, finding what the test would have caught |

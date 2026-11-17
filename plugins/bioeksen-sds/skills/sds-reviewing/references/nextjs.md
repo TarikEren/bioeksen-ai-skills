@@ -29,7 +29,8 @@ Another Next.js app maps the names below to its own.
   in `lib/db.ts`.
 - **UI conventions:** HeroUI only.
 - **Overfitting:** `NODE_ENV === "test"` outside the test seams.
-- **Red for the right reason:** the skeleton's not-implemented error is
+- **Red for the right reason**, under tests first: the skeleton's
+  not-implemented error is
   `NotImplemented`.
 - **Commands:** `pnpm run typecheck`; `pnpm run lint` with the changed paths;
   the tests through `test:results`. Never run `next build` unless asked.

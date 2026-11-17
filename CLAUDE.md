@@ -84,7 +84,7 @@ one is normative and the other says so:
 | Aggregator endpoint schemas | `sds-logging/references/aggregator-api.yaml` — the markdown beside it is rationale |
 | Employee directory endpoint schemas | `sds-auth/references/employees-api.yaml` — the markdown beside it is rationale |
 | The roles and the company roles | `sds-auth/references/credentials.md`, its **Roles** and **Company roles** tables |
-| The test-first rule and its exemptions | `sds-testing/SKILL.md` — `sds-commit/SKILL.md` defines only the trailer that names an exemption |
+| The test rule, the test order and its exemptions | `sds-testing/SKILL.md` — `sds-commit/SKILL.md` defines only the trailer that names an exemption |
 | A project's facts: the files under `.bioeksen/`, their values, and when they are asked | `sds-project/SKILL.md` — the software id's format and allocation stay in `sds-logging/references/log-record.md` |
 | The comment limits: 5 lines a block, 30 words a line | `sds-project/SKILL.md`, its **Comments** section |
 | Configuration: one module, validation before ready, declared values, secrets | `sds-config/SKILL.md` — the variable names are fixed where their values are defined: `LOG_LEVEL` and the transport's in `sds-logging/SKILL.md`, the authentication values' in `sds-auth/references/credentials.md`; and `sds-logging/references/log-record.md` keeps the software id out of configuration |
@@ -205,7 +205,8 @@ which invariant 4 checks. The prose writes a path parameter as
 - A change to what a record holds or what a standard endpoint returns updates
   the fixtures in `project-kit/conformance/fixtures/` in the same commit, with
   a case the old rule accepted and the new one rejects, or the reverse.
-- A change here starts red, as `sds-testing` asks of every service: write the
+- A change here starts red: this repository works tests first, as its
+  `.bioeksen/test-order` records, per `sds-testing`. Write the
   fixture, the invariant or the tool test first, run it, and see it fail for
   the reason the change addresses, before editing the schema, the prose or the
   tool it checks.
