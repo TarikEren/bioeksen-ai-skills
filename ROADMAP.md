@@ -412,9 +412,9 @@ list — should be public is a decision nobody has taken.
 | # | Step | Detail |
 |---|------|--------|
 | 12.1 | Transfer | Move it to the company organisation. GitHub redirects the old path, so nothing breaks on the day |
-| 12.2 | Decide visibility | If private, developers need `gh auth login` and `gh auth setup-git`, per `project-kit/README.md`. CI needs nothing: since `sds-ci` it runs the kit the CI image carries |
-| 12.3 | One commit | Point `README.md`'s install commands, and the `repo` in the template's `settings.json`, at the new path |
-| 12.4 | Workflows | If it moves to the estate's forge, this repository's own `.github/workflows/invariants.yml` moves to `.forgejo/workflows/`, as `sds-ci` requires of every repository there. The project template's workflow already lives there |
+| 12.2 | Decide visibility | If private, developers need `gh auth login` and `gh auth setup-git`, per `project-kit/README.md`. CI then needs `BIOEKSEN_SDS_READ_TOKEN`, a read-only token, to check the kit out, per `sds-ci` |
+| 12.3 | One commit | Point `README.md`'s install commands, the `repo` in the template's `settings.json`, and `KIT_REPOSITORY` in both providers' CI files, at the new path |
+| 12.4 | Workflows | If it moves to the company's GitLab, this repository's own `.github/workflows/invariants.yml` becomes a `.gitlab-ci.yml`, per `sds-ci/references/gitlab.md` |
 
 ---
 

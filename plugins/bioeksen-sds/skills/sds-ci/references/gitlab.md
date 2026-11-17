@@ -4,7 +4,9 @@ How a project whose `.bioeksen/git-provider` is `gitlab` carries out
 `SKILL.md`. A pull request is a merge request here, and a workflow a
 pipeline. Where a feature depends on the GitLab tier, this says so. A rule the
 tier cannot enforce is recorded as a gap in the project's notes, because the
-push gate is then its only layer.
+push gate is then its only layer. A self-managed instance, such as one on the
+company's own servers, is carried out the same way as GitLab.com: its tier,
+and what its administrator has enabled, decide what it can enforce.
 
 ## The CI definition
 

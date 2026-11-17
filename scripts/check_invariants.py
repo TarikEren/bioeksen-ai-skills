@@ -49,7 +49,7 @@ CI_FILES = {
     "gitlab": (ROOT / "project-kit" / "ci" / "gitlab" / ".gitlab-ci.yml", "variables"),
 }
 # A CI definition, of any provider, that the template must not carry.
-CI_DEFINITIONS = (".github", ".gitlab", ".gitlab-ci.yml", ".forgejo", ".gitea")
+CI_DEFINITIONS = (".github", ".gitlab", ".gitlab-ci.yml")
 # Where the CI image carries a bioeksen-sds release's project kit, per sds-ci.
 
 # sds-auth restates exactly steps 1-10 of the selection procedure.

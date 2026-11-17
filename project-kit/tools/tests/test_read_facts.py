@@ -95,10 +95,10 @@ class FactsTest(ProjectCase):
         self.assertIn("missing", out)
 
     def test_a_value_outside_the_choices(self):
-        self.record(self.root, "git-provider", "forgejo")
+        self.record(self.root, "git-provider", "bitbucket")
         status, out = self.read()
         self.assertEqual(status, 1, out)
-        self.assertIn("forgejo", out)
+        self.assertIn("bitbucket", out)
         self.assertIn("github", out)
 
     def test_a_software_id_in_the_wrong_format(self):
