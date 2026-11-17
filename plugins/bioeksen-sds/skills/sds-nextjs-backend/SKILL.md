@@ -285,7 +285,9 @@ you; the tests below are your own unit tests, beside the code
 
 - **Every service function you change gets tests** for at least the success
   path, a validation failure and an authorisation failure. Add not-found and
-  conflict cases where they apply.
+  conflict cases where they apply. A validation failure means a rule the
+  function decides, never what its parameter types already guarantee, per
+  **The cases** in `sds-testing/SKILL.md`.
 - **Assert outcomes, not call shapes.** A test that checks which ORM method was
   called breaks on a harmless rewrite, and proves nothing about the result.
 - **Pure domain logic** is tested directly, without mocks.

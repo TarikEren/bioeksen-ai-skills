@@ -291,6 +291,15 @@ MAY override it and record that it has.
   The question goes to the decision's owner, and the rule in force until the
   answer comes is recorded as a *Pending* decision, per
   `sds-planning/SKILL.md`.
+- **Never a case for what the design already guarantees.** A case tests a rule
+  someone decided, never a property the type system, the schema, the
+  framework or the platform enforces by construction: a password field that
+  takes only text holds text, and a typed parameter holds its type. Such a
+  test cannot fail without the language or the framework failing first, so
+  it proves nothing about the app, and it costs every run and every reader.
+  At an untyped boundary — a request body, a query string, a form post, a
+  file — the type check is a rule the app makes, and the contract cases test
+  it there, once, through the app's validation.
 - **List the cases before writing any.** For each rule, go through:
 
 | Case | For example |
@@ -306,7 +315,8 @@ MAY override it and record that it has.
 | Language | Each locale the UI supports, where copy or formatting changes |
 | Accessibility | The accessible name, what is announced, where focus goes |
 
-Drop a row only when it cannot apply, and say why in the report.
+Drop a row that cannot apply, and say why in the report. A row the design
+already guarantees is dropped without a word.
 
 - **Add the contract cases.** For every endpoint, configuration value and log
   record a task adds, the cases `references/contract-tests.md` says every
@@ -580,7 +590,8 @@ works in production lets anyone mint an identity.
 
 ## Before handing back
 
-- Every rule in scope has its case list, and every dropped case has a reason.
+- Every rule in scope has its case list, every dropped case that could apply
+  has a reason, and no test asserts what the design already guarantees.
 - Every acceptance criterion in scope is cited by an acceptance test, and every
   citation names a criterion that exists: the checker's `--tests` run passes.
 - Every new test cites its source, asserts an outcome, and has been seen to

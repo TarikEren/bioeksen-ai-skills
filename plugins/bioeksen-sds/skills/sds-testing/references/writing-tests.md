@@ -143,6 +143,8 @@ When upstream behavior genuinely surprised you, write one narrow characterizatio
 
 Apply the same boundary within your own code. Constructors, getters, constants, and trivial forwarding methods need tests only when they validate, normalize, default, derive, enforce, or cause meaningful side effects. Otherwise, test the first consumer-visible behavior that depends on them.
 
+Never test what the design already guarantees: a typed value holding its type, a text field holding text, a required column refusing null when the schema declares it. Per **The cases** in `SKILL.md`, a case tests a decided rule; at an untyped boundary the app's validation is that rule, and the contract cases cover it once.
+
 ### Gate Function
 
 ```text

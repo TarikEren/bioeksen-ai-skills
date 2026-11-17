@@ -130,6 +130,8 @@ Take one pass per concern, in this order.
    cannot fail proves nothing** and **Known defects**.
    - Does each changed rule have a test for its success path, a validation
      failure and an authorisation failure?
+   - Does any test assert what the design already guarantees, such as a
+     typed value holding its type? It proves nothing; report it for removal.
    - Do the tests assert outcomes rather than call shapes?
    - Does each expected-to-fail test have a precondition test beside it?
 6. **UI conventions.** The UI skill's colour, component, copy, component-kind

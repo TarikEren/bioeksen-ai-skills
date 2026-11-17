@@ -181,6 +181,10 @@ be checkable by itself:
   timeout"; "the 61st upload in one hour", not "too many uploads". A value the
   tester has to choose is a value the developer may choose differently.
 - **Both sides of a rule**: what it allows, and what it refuses.
+- **A decided rule, never what the design guarantees**: not "the password is
+  text" for a field that takes only text. Every criterion gets a test, and a
+  test of what the type system or the framework already ensures cannot fail,
+  per **The cases** in `sds-testing/SKILL.md`.
 - **A refusal is defined once.** The group's heading paragraph says what
   "fails" means, for example: the system refuses the action with its reason,
   and no row changes.
