@@ -18,7 +18,8 @@ say about itself.
 
 ## Module header
 
-Every module starts with a block comment that answers three questions:
+Every module starts with a block comment that answers three questions, in at
+most 5 lines and 30 words a line, per **Comments** in `sds-project/SKILL.md`:
 
 1. **What is this module?** One sentence.
 2. **What does it implement?** The build item or the decision, by its id, such
@@ -29,13 +30,8 @@ Every module starts with a block comment that answers three questions:
 
 ```typescript
 /**
- * Widget lifecycle moves (WID-30, DEC-005).
- *
- * The transition table lives here, not in the route handler or the form, so
- * that every entry point (API, server action, job) applies the same rules.
- *
- * The status is read inside the transaction that writes the new one. Reading
- * it first and writing later lets two approvals race past the check.
+ * Widget lifecycle moves (WID-30, DEC-005). One table, so every entry point applies the same rules.
+ * The status is read in the transaction that writes the new one, so two approvals cannot race.
  */
 import "server-only";
 ```
@@ -57,14 +53,8 @@ Document what a caller cannot see from the signature:
 
 ```typescript
 /**
- * Publishes a revision and opens its read assignments, in one transaction.
- *
- * Authorises `actor` against the document's ACL before reading anything.
- *
- * @throws AppError `PERM-4150` when the actor may not publish this document.
- * @throws AppError `RES-4200` when the document or revision does not exist.
- * @throws AppError `RES-4301` when another publish won the race.
- * (The codes are the registry's, in sds-logging's code-prefixes.md.)
+ * Publishes a revision and opens its read assignments, in one transaction; authorises `actor` first.
+ * @throws AppError `PERM-4150` not permitted, `RES-4200` no such revision, `RES-4301` lost a race.
  */
 export async function publish(
   actor: Actor,
@@ -107,4 +97,5 @@ const total = await db.document.count({ where: { folderId, status } });
 | Commented-out code | Version control keeps history |
 | A comment that disagrees with the code | Worse than none; fix one of them |
 | Change history (`// changed by X on …`) | That is the commit log |
+| A block over 5 lines, or a line over 30 words | The specification holds a long reason; the comment cites it, per `sds-project/SKILL.md` |
 | Secrets, internal hostnames or personal data in examples | Comments ship with the code |

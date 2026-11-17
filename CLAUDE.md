@@ -50,6 +50,8 @@ implement. Treat a change here as an API change, not a docs tweak.
 - `release-notes/{version}.md` — one per release, per the Releases section below
 - `ROADMAP.md` — decisions taken and work not yet done; not a contract
 - `.bioeksen/software-id` — this repository's own software id, `bioeksen-sds`
+- `.bioeksen/test-order` and `.bioeksen/git-provider` — this repository's own
+  recorded choices, per `sds-project`: tests first, on GitHub
 - `.bioeksen/test-paths` — which paths count as tests here, for the kit's test
   check: the invariant checker, the conformance fixtures and the kit tools'
   unit tests
@@ -83,6 +85,8 @@ one is normative and the other says so:
 | Employee directory endpoint schemas | `sds-auth/references/employees-api.yaml` — the markdown beside it is rationale |
 | The roles and the company roles | `sds-auth/references/credentials.md`, its **Roles** and **Company roles** tables |
 | The test-first rule and its exemptions | `sds-testing/SKILL.md` — `sds-commit/SKILL.md` defines only the trailer that names an exemption |
+| A project's facts: the files under `.bioeksen/`, their values, and when they are asked | `sds-project/SKILL.md` — the software id's format and allocation stay in `sds-logging/references/log-record.md` |
+| The comment limits: 5 lines a block, 30 words a line | `sds-project/SKILL.md`, its **Comments** section |
 | Configuration: one module, validation before ready, declared values, secrets | `sds-config/SKILL.md` — the variable names are fixed where their values are defined: `LOG_LEVEL` and the transport's in `sds-logging/SKILL.md`, the authentication values' in `sds-auth/references/credentials.md`; and `sds-logging/references/log-record.md` keeps the software id out of configuration |
 | Contract test cases | `sds-testing/references/contract-tests.md` — each case restates one assertion; its code, status or field stays normative in the source the case names |
 | Release units: attribution, trailers and a unit's release range | `sds-commit/references/release-notes.md`, its **Release units** section — `mint_change_id.py` implements attribution for the staged change, the kit's `units.py` applies the same code to commits already made, and `SKILL.md` restates the trailers and the scope of a breaking commit |
